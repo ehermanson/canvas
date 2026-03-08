@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Room Plan - Furniture Layout Designer</title>
+  <meta name="description"
+    content="Design your perfect room layout. Drag and drop furniture, customize room shapes, and plan your space with precision." />
+  <script>
+    (() => {
+      var theme = localStorage.getItem('room-planner-theme');
+      if (theme === 'dark' || (!theme && theme !== 'light')) {
+        document.documentElement.classList.add('dark');
+      }
+    })();
+  </script>
+</head>
+
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+
+</html>

@@ -1,0 +1,25 @@
+{
+  "name": "canvas-tools-workspace",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:hang-time": "npm run dev --workspace @canvas-tools/hang-time",
+    "dev:room-plan": "npm run dev --workspace @canvas-tools/room-plan",
+    "deploy:hang-time": "npm run deploy --workspace @canvas-tools/hang-time",
+    "deploy:room-plan": "npm run deploy --workspace @canvas-tools/room-plan",
+    "build:hang-time": "npm run build --workspace @canvas-tools/hang-time",
+    "build:room-plan": "npm run build --workspace @canvas-tools/room-plan",
+    "test:hang-time": "npm run test --workspace @canvas-tools/hang-time",
+    "test:room-plan": "npm run test --workspace @canvas-tools/room-plan",
+    "test:viewport": "npm run test --workspace @canvas-tools/viewport",
+    "lint": "npm run lint --workspace @canvas-tools/hang-time && npm run lint --workspace @canvas-tools/room-plan",
+    "build": "npm run build:hang-time && npm run build:room-plan",
+    "test": "npm run test:viewport && npm run test:hang-time && npm run test:room-plan",
+    "ci": "npm run test && npm run build"
+  }
+}

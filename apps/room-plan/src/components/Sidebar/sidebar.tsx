@@ -1,0 +1,2491 @@
+import {
+  ChevronDown,
+  Copy,
+  History,
+  Home,
+  Layers,
+  Lock,
+  Moon,
+  MoreHorizontal,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Plus,
+  Redo2,
+  RotateCw,
+  Sofa,
+  Sun,
+  Trash2,
+  Undo2,
+  Unlink,
+  Unlock,
+} from 'lucide-react';
+import {
+  FloatingIconButton,
+  InspectorSectionHeader,
+  SuiteDialogContent,
+  ToolLinkButton,
+  ToolPanel,
+  ToolPanelHeader,
+  ToolPanelTitle,
+} from '@canvas-tools/ui';
+import { AnimatePresence, motion } from 'motion/react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Button } from '@/components/ui/button';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
+import {
+  Dialog,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
+import {
+  FURNITURE_CATEGORIES,
+  FURNITURE_PRESETS,
+  PULLOUT_SOFA_DEFAULTS,
+} from '@/data/furniture-presets';
+import { ROOM_TEMPLATES } from '@/data/room-templates';
+import type { PlannerProjectsReturn } from '@/hooks/use-planner-projects';
+import type { RoomPlannerReturn } from '@/hooks/use-room-planner';
+import { useTheme } from '@/hooks/use-theme';
+import { cn } from '@/lib/utils';
+import type {
+  FurnitureItem,
+  FurniturePreset,
+  FurnitureShape,
+  PulloutBedSize,
+  PulloutSofaState,
+  Unit,
+  Wall,
+  WallFeature,
+} from '@/types';
+import { ROOM_SHAPE_ICONS } from './room-shape-icons';
+
+export const HANG_TIME_URL = 'https://hang-time.app';
+
+export function OpenHangTimeLink({ className }: { className?: string }) {
+  return (
+    <ToolLinkButton
+      className={className}
+      href={HANG_TIME_URL}
+      label="Open Hang Time"
+    />
+  );
+}
+
+interface SidebarProps {
+  planner: RoomPlannerReturn;
+  projects: PlannerProjectsReturn;
+}
+
+type Formatter = RoomPlannerReturn['toDisplay'];
+type Parser = RoomPlannerReturn['fromDisplay'];
+type Theme = ReturnType<typeof useTheme>['theme'];
+
+type RoomSectionPlanner = Pick<RoomPlannerReturn, 'applyTemplate'>;
+
+type WallsSectionPlanner = Pick<
+  RoomPlannerReturn,
+  | 'addWallFeature'
+  | 'disconnectEndpoint'
+  | 'fromDisplay'
+  | 'removeWall'
+  | 'removeWallFeature'
+  | 'room'
+  | 'selectedWallId'
+  | 'setSelectedWallId'
+  | 'setWallLength'
+  | 'toDisplay'
+  | 'unit'
+  | 'updateWallFeature'
+>;
+
+type FurnitureSectionPlanner = Pick<
+  RoomPlannerReturn,
+  | 'addFurniture'
+  | 'duplicateFurniture'
+  | 'furniture'
+  | 'fromDisplay'
+  | 'removeFurniture'
+  | 'rotateFurniture'
+  | 'setPulloutBedSize'
+  | 'selectedId'
+  | 'selectedIds'
+  | 'setSelectedId'
+  | 'togglePulloutSofa'
+  | 'toDisplay'
+  | 'unit'
+  | 'updateFurniture'
+  | 'updatePulloutSofa'
+>;
+
+type HeaderControls = Pick<
+  RoomPlannerReturn,
+  'canRedo' | 'canUndo' | 'redo' | 'undo'
+>;
+type HistoryDebugPlanner = Pick<
+  RoomPlannerReturn,
+  | 'discardFutureHistory'
+  | 'historyDebug'
+  | 'jumpToHistory'
+  | 'returnToLatestHistory'
+>;
+
+type ProjectControls = Pick<
+  PlannerProjectsReturn,
+  | 'activeProject'
+  | 'activeSnapshot'
+  | 'createProject'
+  | 'createSnapshot'
+  | 'deleteProject'
+  | 'deleteSnapshot'
+  | 'duplicateProject'
+  | 'duplicateSnapshot'
+  | 'exportProject'
+  | 'importProject'
+  | 'projects'
+  | 'renameProject'
+  | 'renameSnapshot'
+  | 'selectProject'
+  | 'selectSnapshot'
+>;
+
+const featureMeta = {
+  closet: {
+    Icon: ClosetIcon,
+    accentClass: 'text-stone-400',
+    cardClass: 'border-stone-400/20 bg-stone-400/[0.03]',
+    label: 'closet',
+  },
+  door: {
+    Icon: DoorIcon,
+    accentClass: 'text-indigo-500',
+    cardClass: 'border-indigo-500/20 bg-indigo-500/[0.03]',
+    label: 'door',
+  },
+  opening: {
+    Icon: OpeningIcon,
+    accentClass: 'text-emerald-500',
+    cardClass: 'border-emerald-500/20 bg-emerald-500/[0.03]',
+    label: 'opening',
+  },
+  window: {
+    Icon: WindowIcon,
+    accentClass: 'text-sky-500',
+    cardClass: 'border-sky-500/20 bg-sky-500/[0.03]',
+    label: 'window',
+  },
+} as const;
+
+const featureOptionClass =
+  'flex flex-col items-center gap-1 rounded-md border p-2 transition-colors';
+
+const featureOptionInactiveClass =
+  'border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 text-gray-400 dark:text-white/30 hover:border-gray-300 dark:hover:border-white/20 hover:bg-gray-50 dark:hover:bg-white/10';
+
+function DoorIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      className={className}
+    >
+      <rect x="2" y="2" width="7" height="12" rx="0.5" />
+      <circle cx="7.5" cy="8.5" r="0.8" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+function WindowIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      className={className}
+    >
+      <rect x="2" y="3" width="12" height="10" rx="0.5" />
+      <line x1="8" y1="3" x2="8" y2="13" />
+      <line x1="2" y1="8" x2="14" y2="8" />
+    </svg>
+  );
+}
+
+function ClosetIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      className={className}
+    >
+      <rect x="2" y="2" width="12" height="12" rx="0.5" />
+      <line x1="8" y1="2" x2="8" y2="14" />
+      <circle cx="6.5" cy="8" r="0.7" fill="currentColor" stroke="none" />
+      <circle cx="9.5" cy="8" r="0.7" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+function OpeningIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      className={className}
+    >
+      <path d="M3 13V3" />
+      <path d="M13 13V3" />
+      <path d="M3 3h10" />
+    </svg>
+  );
+}
+
+function SectionHeader({
+  icon: Icon,
+  iconColor,
+  label,
+  onToggle,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  iconColor: string;
+  label: string;
+  onToggle: () => void;
+}) {
+  return (
+    <InspectorSectionHeader
+      onClick={onToggle}
+      icon={Icon}
+      iconClassName={iconColor}
+      label={label}
+      variant="inline"
+    />
+  );
+}
+
+function NumberInput({
+  label,
+  max = 9999,
+  min = 0,
+  onChange,
+  step = 0.125,
+  suffix,
+  value,
+}: {
+  label: string;
+  max?: number;
+  min?: number;
+  onChange: (value: number) => void;
+  step?: number;
+  suffix?: string;
+  value: number;
+}) {
+  return (
+    <div className="flex flex-col gap-1">
+      <Label className="text-xs text-gray-500 dark:text-white/50">
+        {label}
+      </Label>
+      <div className="relative">
+        <Input
+          type="number"
+          value={
+            value % 1 === 0
+              ? value.toFixed(0)
+              : Number.parseFloat(value.toFixed(3))
+          }
+          onChange={(event) => {
+            const nextValue = Number.parseFloat(event.target.value);
+            if (!Number.isNaN(nextValue)) {
+              onChange(clamp(nextValue, min, max));
+            }
+          }}
+          min={min}
+          max={max}
+          step={step}
+          className="h-8 pr-8 text-xs"
+        />
+        {suffix ? (
+          <span className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-xs text-gray-400 dark:text-white/30">
+            {suffix}
+          </span>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function SidebarHeader({
+  canRedo,
+  canUndo,
+  onClose,
+  redo,
+  theme,
+  toggleTheme,
+  undo,
+}: HeaderControls & {
+  onClose: () => void;
+  theme: Theme;
+  toggleTheme: () => void;
+}) {
+  return (
+    <ToolPanelHeader className="py-3">
+      <ToolPanelTitle
+        leading={
+          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600">
+            <Home className="h-4 w-4 text-white" />
+          </div>
+        }
+        title="Room Plan"
+        subtitle="Room layout studio"
+        actions={
+          <>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={undo}
+              disabled={!canUndo}
+            >
+              <Undo2 className="h-3.5 w-3.5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={redo}
+              disabled={!canRedo}
+            >
+              <Redo2 className="h-3.5 w-3.5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={toggleTheme}
+            >
+              {theme === 'dark' ? (
+                <Sun className="h-3.5 w-3.5" />
+              ) : (
+                <Moon className="h-3.5 w-3.5" />
+              )}
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={onClose}
+            >
+              <PanelLeftClose className="h-3.5 w-3.5" />
+            </Button>
+          </>
+        }
+      />
+    </ToolPanelHeader>
+  );
+}
+
+function formatProjectBrowserDate(timestamp: string) {
+  try {
+    return new Intl.DateTimeFormat(undefined, {
+      month: 'short',
+      day: 'numeric',
+    }).format(new Date(timestamp));
+  } catch {
+    return '';
+  }
+}
+
+function ProjectManagerDialog({
+  activeProject,
+  open,
+  projects,
+  selectProject,
+  setOpen,
+}: ProjectControls & {
+  open: boolean;
+  setOpen: (open: boolean) => void;
+}) {
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <SuiteDialogContent className="max-h-[min(80vh,760px)] w-[min(720px,calc(100vw-2rem))] max-w-none overflow-hidden p-0">
+        <DialogHeader className="border-b border-gray-200/70 px-6 py-5 dark:border-white/10">
+          <DialogTitle className="text-left text-xl text-gray-950 dark:text-white">
+            Project Browser
+          </DialogTitle>
+          <DialogDescription className="text-left text-gray-500 dark:text-white/50">
+            Choose a saved project to open.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="px-6 py-5">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <p className="text-xs text-gray-500 dark:text-white/45">
+              {projects.length} available{' '}
+              {projects.length === 1 ? 'project' : 'projects'}
+            </p>
+            <span className="text-[11px] text-gray-400 dark:text-white/35">
+              Current: {activeProject.name}
+            </span>
+          </div>
+
+          <ScrollArea className="h-[min(60vh,520px)] rounded-2xl border border-gray-200/70 bg-white/70 p-2 dark:border-white/10 dark:bg-slate-950/35">
+            <div className="space-y-2">
+              {projects.map((project) => {
+                const isActive = project.id === activeProject.id;
+                const currentSnapshot =
+                  project.snapshots.find(
+                    (snapshot) => snapshot.id === project.activeSnapshotId,
+                  ) ?? project.snapshots[0];
+
+                return (
+                  <button
+                    key={project.id}
+                    type="button"
+                    onClick={() => {
+                      selectProject(project.id);
+                      setOpen(false);
+                    }}
+                    className={cn(
+                      'flex w-full items-center justify-between rounded-xl border px-4 py-3 text-left transition-colors',
+                      isActive
+                        ? 'border-cyan-400/70 bg-cyan-500/[0.08] shadow-[0_0_0_1px_rgba(34,211,238,0.15),0_12px_30px_-22px_rgba(6,182,212,0.8)]'
+                        : 'border-gray-200/70 bg-white/70 hover:border-gray-300 dark:border-white/10 dark:bg-white/[0.02] dark:hover:border-white/20',
+                    )}
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate text-base font-medium text-gray-900 dark:text-white">
+                        {project.name}
+                      </p>
+                      <p className="truncate text-sm text-gray-500 dark:text-white/45">
+                        {currentSnapshot?.name} · {project.snapshots.length}{' '}
+                        {project.snapshots.length === 1
+                          ? 'snapshot'
+                          : 'snapshots'}
+                      </p>
+                    </div>
+                    <div className="shrink-0 pl-4 text-right">
+                      <p className="text-[11px] text-gray-400 dark:text-white/35">
+                        {formatProjectBrowserDate(project.updatedAt)}
+                      </p>
+                      <p className="mt-1 text-[11px] text-gray-400 dark:text-white/35">
+                        {isActive ? 'Open now' : 'Open'}
+                      </p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </ScrollArea>
+        </div>
+      </SuiteDialogContent>
+    </Dialog>
+  );
+}
+
+function SidebarProjectActions({
+  onBrowseProjects,
+  onCreateProject,
+}: {
+  onBrowseProjects: () => void;
+  onCreateProject: () => void;
+}) {
+  return (
+    <div className="border-b border-gray-200/50 px-4 py-3 dark:border-white/10">
+      <div className="grid gap-2 sm:grid-cols-2">
+        <Button
+          variant="outline"
+          size="sm"
+          className="justify-start bg-white/80 dark:bg-slate-900/60"
+          onClick={onBrowseProjects}
+        >
+          <Layers className="mr-2 h-3.5 w-3.5" />
+          Browse Projects
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          className="justify-start bg-white/80 dark:bg-slate-900/60"
+          onClick={onCreateProject}
+        >
+          <Plus className="mr-2 h-3.5 w-3.5" />
+          New Project
+        </Button>
+      </div>
+      <OpenHangTimeLink className="mt-2 w-full" />
+    </div>
+  );
+}
+
+function ProjectBrowserSection({
+  controls,
+  projectBrowserOpen,
+  setProjectBrowserOpen,
+}: {
+  controls: ProjectControls;
+  projectBrowserOpen: boolean;
+  setProjectBrowserOpen: (open: boolean) => void;
+}) {
+  const {
+    activeProject,
+    activeSnapshot,
+    createSnapshot,
+    deleteSnapshot,
+    renameProject,
+    renameSnapshot,
+    duplicateSnapshot,
+    selectSnapshot,
+  } = controls;
+  const [isOpen, setIsOpen] = useState(false);
+  const [projectDraftName, setProjectDraftName] = useState(activeProject.name);
+  const [snapshotDraftName, setSnapshotDraftName] = useState(
+    activeSnapshot.name,
+  );
+
+  useEffect(() => {
+    setProjectDraftName(activeProject.name);
+    setSnapshotDraftName(activeSnapshot.name);
+  }, [activeProject.name, activeSnapshot.name]);
+
+  const commitProjectRename = useCallback(() => {
+    renameProject(activeProject.id, projectDraftName);
+  }, [activeProject.id, projectDraftName, renameProject]);
+
+  const commitSnapshotRename = useCallback(() => {
+    renameSnapshot(activeProject.id, activeSnapshot.id, snapshotDraftName);
+  }, [activeProject.id, activeSnapshot.id, renameSnapshot, snapshotDraftName]);
+
+  return (
+    <>
+      <ProjectManagerDialog
+        {...controls}
+        open={projectBrowserOpen}
+        setOpen={setProjectBrowserOpen}
+      />
+      <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+        <div>
+          <CollapsibleTrigger className="flex w-full items-start gap-2 py-2 text-left transition-colors hover:text-gray-900 dark:hover:text-white">
+            <Layers className="mt-0.5 h-4 w-4 shrink-0 text-cyan-500" />
+            <div className="min-w-0 flex-1">
+              <h2 className="text-sm font-medium text-gray-700 dark:text-white/80">
+                Project
+              </h2>
+              <p className="mt-0.5 truncate text-xs text-gray-500 dark:text-white/40">
+                {activeProject.name} / {activeSnapshot.name}
+              </p>
+            </div>
+            <ChevronDown
+              className={cn(
+                'mt-0.5 h-3.5 w-3.5 shrink-0 text-gray-400 transition-transform duration-200',
+                !isOpen && '-rotate-90',
+              )}
+            />
+          </CollapsibleTrigger>
+
+          <CollapsibleContent className="pt-2">
+            <div className="rounded-2xl border border-gray-200/60 bg-gray-50/70 px-3 pt-3 pb-3 dark:border-white/10 dark:bg-white/[0.03]">
+              <div className="space-y-4">
+                <div className="grid gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs text-gray-500 dark:text-white/50">
+                      Project name
+                    </Label>
+                    <Input
+                      value={projectDraftName}
+                      onChange={(event) =>
+                        setProjectDraftName(event.target.value)
+                      }
+                      onBlur={commitProjectRename}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter') {
+                          event.currentTarget.blur();
+                        }
+                      }}
+                      className="h-9 bg-white/80 dark:bg-slate-900/70"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs text-gray-500 dark:text-white/50">
+                      Snapshot name
+                    </Label>
+                    <Input
+                      value={snapshotDraftName}
+                      onChange={(event) =>
+                        setSnapshotDraftName(event.target.value)
+                      }
+                      onBlur={commitSnapshotRename}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter') {
+                          event.currentTarget.blur();
+                        }
+                      }}
+                      className="h-9 bg-white/80 dark:bg-slate-900/70"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <Separator className="sm:col-span-2" />
+                </div>
+
+                <div>
+                  <div className="mb-2 flex items-center justify-between gap-3">
+                    <Label className="text-xs text-gray-500 dark:text-white/50">
+                      Snapshots
+                    </Label>
+                    <span className="text-[11px] text-gray-400 dark:text-white/35">
+                      {activeProject.snapshots.length} variations
+                    </span>
+                  </div>
+                  <div className="space-y-2">
+                    {activeProject.snapshots.map((snapshot) => {
+                      const isActive = snapshot.id === activeSnapshot.id;
+
+                      return (
+                        <div
+                          key={snapshot.id}
+                          className={cn(
+                            'flex items-center gap-2 rounded-xl border px-3 py-2 transition-colors',
+                            isActive
+                              ? 'border-violet-400/70 bg-violet-500/[0.08] shadow-[0_0_0_1px_rgba(167,139,250,0.12),0_10px_28px_-22px_rgba(139,92,246,0.8)]'
+                              : 'border-gray-200/70 bg-white/70 hover:border-gray-300 dark:border-white/10 dark:bg-white/[0.02] dark:hover:border-white/20',
+                          )}
+                        >
+                          <button
+                            type="button"
+                            onClick={() =>
+                              selectSnapshot(activeProject.id, snapshot.id)
+                            }
+                            className="flex min-w-0 flex-1 items-center justify-between text-left"
+                          >
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-medium text-gray-900 dark:text-white">
+                                {snapshot.name}
+                              </p>
+                              <p className="truncate text-xs text-gray-500 dark:text-white/45">
+                                Updated{' '}
+                                {formatProjectBrowserDate(snapshot.updatedAt)}
+                              </p>
+                            </div>
+                            <span className="shrink-0 pl-3 text-[11px] text-gray-400 dark:text-white/35">
+                              {isActive ? 'Live' : 'Open'}
+                            </span>
+                          </button>
+
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 shrink-0 text-gray-400 hover:text-gray-700 dark:text-white/40 dark:hover:text-white"
+                                onClick={(event) => event.stopPropagation()}
+                              >
+                                <MoreHorizontal className="h-4 w-4" />
+                                <span className="sr-only">
+                                  Snapshot actions
+                                </span>
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent
+                              align="end"
+                              className="w-44 p-1.5"
+                              onClick={(event) => event.stopPropagation()}
+                            >
+                              <div className="space-y-1">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="w-full justify-start"
+                                  onClick={() =>
+                                    duplicateSnapshot(
+                                      activeProject.id,
+                                      snapshot.id,
+                                    )
+                                  }
+                                >
+                                  <Copy className="mr-2 h-3.5 w-3.5" />
+                                  Duplicate
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="w-full justify-start text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300"
+                                  onClick={() =>
+                                    deleteSnapshot(
+                                      activeProject.id,
+                                      snapshot.id,
+                                    )
+                                  }
+                                  disabled={
+                                    activeProject.snapshots.length === 1
+                                  }
+                                >
+                                  <Trash2 className="mr-2 h-3.5 w-3.5" />
+                                  Delete
+                                </Button>
+                              </div>
+                            </PopoverContent>
+                          </Popover>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-3 w-full justify-start"
+                    onClick={() => createSnapshot(activeProject.id)}
+                  >
+                    <Plus className="mr-2 h-3.5 w-3.5" />
+                    New Snapshot
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </CollapsibleContent>
+        </div>
+      </Collapsible>
+    </>
+  );
+}
+
+function RoomShapeSection({
+  open,
+  onToggle,
+  planner,
+}: {
+  onToggle: () => void;
+  open: boolean;
+  planner: RoomSectionPlanner;
+}) {
+  const { applyTemplate } = planner;
+
+  return (
+    <Collapsible open={open}>
+      <SectionHeader
+        icon={Home}
+        label="Room Shape"
+        iconColor="text-blue-500"
+        onToggle={onToggle}
+      />
+      <CollapsibleContent>
+        <div className="space-y-3 pb-3">
+          <div>
+            <Label className="mb-1.5 text-xs text-gray-500 dark:text-white/50">
+              Templates
+            </Label>
+            <div className="grid grid-cols-4 gap-1.5">
+              {ROOM_TEMPLATES.map((template) => {
+                const ShapeIcon = ROOM_SHAPE_ICONS[template.name];
+
+                return (
+                  <button
+                    key={template.name}
+                    type="button"
+                    className="flex flex-col items-center gap-1 rounded-md border border-gray-200 bg-white p-2 transition-colors hover:border-gray-300 hover:bg-gray-50 dark:border-white/10 dark:bg-white/5 dark:hover:border-white/20 dark:hover:bg-white/10"
+                    onClick={() => applyTemplate(template.vertices)}
+                  >
+                    {ShapeIcon ? (
+                      <ShapeIcon className="h-6 w-6 text-gray-500 dark:text-white/60" />
+                    ) : null}
+                    <span className="text-center text-[10px] leading-tight text-gray-600 dark:text-white/50">
+                      {template.name}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
+  );
+}
+
+function WallsSection({
+  open,
+  onToggle,
+  planner,
+}: {
+  onToggle: () => void;
+  open: boolean;
+  planner: WallsSectionPlanner;
+}) {
+  const { room, selectedWallId, setSelectedWallId } = planner;
+
+  return (
+    <Collapsible open={open}>
+      <SectionHeader
+        icon={Layers}
+        label={`Walls (${room.walls.length})`}
+        iconColor="text-cyan-500"
+        onToggle={onToggle}
+      />
+      <CollapsibleContent>
+        <div className="space-y-3 pb-3">
+          <div className="rounded-md bg-cyan-50/70 p-2 text-[10px] leading-relaxed text-cyan-700 dark:bg-cyan-950/30 dark:text-cyan-300">
+            Click an endpoint handle on the canvas to draw new wall segments.
+            Drag endpoints to reshape. Drag one endpoint onto another to connect
+            them.
+          </div>
+
+          {room.walls.map((wall, wallIndex) => (
+            <WallCard
+              key={wall.id}
+              wall={wall}
+              wallIndex={wallIndex}
+              planner={planner}
+              isSelected={wall.id === selectedWallId}
+              onSelect={() => setSelectedWallId(wall.id)}
+            />
+          ))}
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
+  );
+}
+
+function WallCard({
+  isSelected,
+  onSelect,
+  planner,
+  wall,
+  wallIndex,
+}: {
+  isSelected: boolean;
+  onSelect: () => void;
+  planner: WallsSectionPlanner;
+  wall: Wall;
+  wallIndex: number;
+}) {
+  const {
+    addWallFeature,
+    disconnectEndpoint,
+    fromDisplay,
+    removeWall,
+    removeWallFeature,
+    room,
+    setWallLength,
+    toDisplay,
+    unit,
+    updateWallFeature,
+  } = planner;
+
+  const endpointMap = new Map(
+    room.endpoints.map((endpoint) => [endpoint.id, endpoint]),
+  );
+  const start = endpointMap.get(wall.startId);
+  const end = endpointMap.get(wall.endId);
+
+  if (!start || !end) {
+    return null;
+  }
+
+  const wallLength = getWallLength(start.x, start.y, end.x, end.y);
+  const startConnections = getConnectionCount(
+    room.walls,
+    wall.startId,
+    wall.id,
+  );
+  const endConnections = getConnectionCount(room.walls, wall.endId, wall.id);
+  const unitSuffix = getUnitSuffix(unit);
+  const measurementStep = getMeasurementStep(unit);
+
+  return (
+    <div
+      data-sidebar-wall-id={wall.id}
+      className={cn(
+        'cursor-pointer space-y-2 rounded-md border p-2 transition-[border-color,box-shadow]',
+        isSelected
+          ? 'border-2 border-cyan-400/80 shadow-[0_0_0_1px_rgba(34,211,238,0.22),0_0_18px_rgba(34,211,238,0.18)] dark:border-cyan-400/70 dark:shadow-[0_0_0_1px_rgba(56,189,248,0.2),0_0_20px_rgba(14,165,233,0.18)]'
+          : 'border-gray-200/50 hover:border-gray-300/50 dark:border-white/5 dark:hover:border-white/10',
+      )}
+      onClick={onSelect}
+    >
+      <div className="flex items-center gap-2">
+        <span className="inline-flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-indigo-500/80 text-[10px] font-bold text-white">
+          {wallIndex + 1}
+        </span>
+        <div className="relative flex-1">
+          <Input
+            type="number"
+            value={formatMeasurementValue(wallLength, unit, toDisplay)}
+            onChange={(event) => {
+              const nextValue = Number.parseFloat(event.target.value);
+              if (!Number.isNaN(nextValue) && nextValue > 0) {
+                setWallLength(wall.id, fromDisplay(nextValue));
+              }
+            }}
+            className="h-7 pr-8 text-xs"
+            min={1}
+            step={measurementStep}
+          />
+          <span className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-[10px] text-gray-400 dark:text-white/30">
+            {unitSuffix}
+          </span>
+        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-6 w-6 flex-shrink-0 p-0"
+          title="Remove wall"
+          onClick={() => removeWall(wall.id)}
+        >
+          <Trash2 className="h-3 w-3 text-red-400" />
+        </Button>
+      </div>
+
+      {startConnections > 0 || endConnections > 0 ? (
+        <div className="flex gap-1 text-[10px]">
+          {startConnections > 0 ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-5 px-1.5 text-[10px] text-amber-500"
+              title="Disconnect start endpoint"
+              onClick={() => disconnectEndpoint(wall.startId, wall.id)}
+            >
+              <Unlink className="mr-0.5 h-2.5 w-2.5" />
+              Start
+            </Button>
+          ) : null}
+          {endConnections > 0 ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-5 px-1.5 text-[10px] text-amber-500"
+              title="Disconnect end endpoint"
+              onClick={() => disconnectEndpoint(wall.endId, wall.id)}
+            >
+              <Unlink className="mr-0.5 h-2.5 w-2.5" />
+              End
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
+
+      {wall.features.length > 0 ? (
+        <div className="space-y-1.5 pt-1">
+          <span className="text-[10px] font-medium tracking-wider text-gray-400 uppercase dark:text-white/30">
+            Features
+          </span>
+          {wall.features.map((feature) => (
+            <WallFeatureCard
+              key={feature.id}
+              feature={feature}
+              fromDisplay={fromDisplay}
+              removeWallFeature={removeWallFeature}
+              toDisplay={toDisplay}
+              unit={unit}
+              updateWallFeature={updateWallFeature}
+              wallId={wall.id}
+              wallLength={wallLength}
+            />
+          ))}
+        </div>
+      ) : null}
+
+      <WallFeatureActions
+        wallId={wall.id}
+        wallLength={wallLength}
+        addWallFeature={addWallFeature}
+      />
+    </div>
+  );
+}
+
+function WallFeatureCard({
+  feature,
+  fromDisplay,
+  removeWallFeature,
+  toDisplay,
+  unit,
+  updateWallFeature,
+  wallId,
+  wallLength,
+}: {
+  feature: WallFeature;
+  fromDisplay: Parser;
+  removeWallFeature: RoomPlannerReturn['removeWallFeature'];
+  toDisplay: Formatter;
+  unit: Unit;
+  updateWallFeature: RoomPlannerReturn['updateWallFeature'];
+  wallId: string;
+  wallLength: number;
+}) {
+  const { Icon, accentClass, cardClass, label } = featureMeta[feature.type];
+  const unitSuffix = getUnitSuffix(unit);
+  const measurementStep = getMeasurementStep(unit);
+
+  return (
+    <div className={cn('space-y-2 rounded-md border p-2', cardClass)}>
+      <div className="flex items-center gap-1.5">
+        <Icon className={cn('h-3.5 w-3.5', accentClass)} />
+        <span className={cn('text-[11px] font-medium capitalize', accentClass)}>
+          {label}
+        </span>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="ml-auto h-5 w-5 p-0"
+          onClick={() => removeWallFeature(wallId, feature.id)}
+        >
+          <Trash2 className="h-3 w-3 text-red-400" />
+        </Button>
+      </div>
+
+      <div className="flex items-center gap-1.5">
+        <span className="w-7 flex-shrink-0 text-[9px] text-gray-400 dark:text-white/25">
+          Pos
+        </span>
+        <CompactMeasurementInput
+          value={feature.offset}
+          unit={unit}
+          toDisplay={toDisplay}
+          suffix={unitSuffix}
+          step={measurementStep}
+          onChange={(value) =>
+            updateWallFeature(wallId, feature.id, {
+              offset: clamp(fromDisplay(value), 0, wallLength - feature.width),
+            })
+          }
+        />
+        <span className="w-4 flex-shrink-0 text-center text-[9px] text-gray-400 dark:text-white/25">
+          W
+        </span>
+        <CompactMeasurementInput
+          value={feature.width}
+          unit={unit}
+          toDisplay={toDisplay}
+          suffix={unitSuffix}
+          step={measurementStep}
+          min={1}
+          onChange={(value) => {
+            if (value > 0) {
+              updateWallFeature(wallId, feature.id, {
+                width: Math.min(
+                  wallLength - feature.offset,
+                  fromDisplay(value),
+                ),
+              });
+            }
+          }}
+        />
+      </div>
+
+      {feature.type === 'door' ? (
+        <DoorFeatureControls
+          swingDirection={feature.swingDirection ?? 'inward'}
+          swingHand={feature.swingHand ?? 'left'}
+          onChange={(patch) => updateWallFeature(wallId, feature.id, patch)}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+function CompactMeasurementInput({
+  min = 0,
+  onChange,
+  step,
+  suffix,
+  toDisplay,
+  unit,
+  value,
+}: {
+  min?: number;
+  onChange: (value: number) => void;
+  step: number;
+  suffix: string;
+  toDisplay: Formatter;
+  unit: Unit;
+  value: number;
+}) {
+  return (
+    <div className="relative flex-1">
+      <Input
+        type="number"
+        value={formatMeasurementValue(value, unit, toDisplay)}
+        onChange={(event) => {
+          const nextValue = Number.parseFloat(event.target.value);
+          if (!Number.isNaN(nextValue)) {
+            onChange(nextValue);
+          }
+        }}
+        className="h-5 pr-5 text-[10px]"
+        min={min}
+        step={step}
+      />
+      <span className="pointer-events-none absolute top-1/2 right-1.5 -translate-y-1/2 text-[8px] text-gray-400 dark:text-white/20">
+        {suffix}
+      </span>
+    </div>
+  );
+}
+
+function DoorFeatureControls({
+  onChange,
+  swingDirection,
+  swingHand,
+}: {
+  onChange: (patch: Partial<WallFeature>) => void;
+  swingDirection: NonNullable<WallFeature['swingDirection']>;
+  swingHand: NonNullable<WallFeature['swingHand']>;
+}) {
+  return (
+    <div className="grid grid-cols-2 gap-1.5">
+      <div className="flex flex-col gap-0.5">
+        <span className="text-[10px] text-gray-400 dark:text-white/30">
+          Swing
+        </span>
+        <div className="grid grid-cols-2 gap-1">
+          <FeatureOptionButton
+            selected={swingDirection === 'inward'}
+            title="Swing inward (into room)"
+            label="Inward"
+            onClick={() => onChange({ swingDirection: 'inward' })}
+          >
+            <InwardSwingIcon />
+          </FeatureOptionButton>
+          <FeatureOptionButton
+            selected={swingDirection === 'outward'}
+            title="Swing outward (away from room)"
+            label="Outward"
+            onClick={() => onChange({ swingDirection: 'outward' })}
+          >
+            <OutwardSwingIcon />
+          </FeatureOptionButton>
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-0.5">
+        <span className="text-[10px] text-gray-400 dark:text-white/30">
+          Hinge
+        </span>
+        <div className="grid grid-cols-2 gap-1">
+          <FeatureOptionButton
+            selected={swingHand === 'left'}
+            title="Hinge on left (start) side"
+            label="Left"
+            onClick={() => onChange({ swingHand: 'left' })}
+          >
+            <LeftHingeIcon />
+          </FeatureOptionButton>
+          <FeatureOptionButton
+            selected={swingHand === 'right'}
+            title="Hinge on right (end) side"
+            label="Right"
+            onClick={() => onChange({ swingHand: 'right' })}
+          >
+            <RightHingeIcon />
+          </FeatureOptionButton>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FeatureOptionButton({
+  children,
+  label,
+  onClick,
+  selected,
+  title,
+}: {
+  children: React.ReactNode;
+  label: string;
+  onClick: () => void;
+  selected: boolean;
+  title: string;
+}) {
+  return (
+    <button
+      type="button"
+      className={cn(
+        featureOptionClass,
+        selected
+          ? 'border-indigo-500/40 bg-indigo-500/10 text-indigo-500'
+          : featureOptionInactiveClass,
+      )}
+      onClick={onClick}
+      title={title}
+    >
+      {children}
+      <span className="text-[9px] leading-tight">{label}</span>
+    </button>
+  );
+}
+
+function WallFeatureActions({
+  addWallFeature,
+  wallId,
+  wallLength,
+}: {
+  addWallFeature: RoomPlannerReturn['addWallFeature'];
+  wallId: string;
+  wallLength: number;
+}) {
+  return (
+    <div className="grid grid-cols-2 gap-1 pt-0.5">
+      <Button
+        variant="ghost"
+        size="sm"
+        className="h-6 justify-start gap-1 px-1.5 text-[10px] text-gray-400 hover:text-indigo-500 dark:text-white/30"
+        onClick={() =>
+          addWallFeature(wallId, {
+            type: 'door',
+            offset: wallLength * 0.3,
+            width: 36,
+            swingDirection: 'inward',
+            swingHand: 'left',
+          })
+        }
+      >
+        <DoorIcon className="h-3 w-3" />
+        <span>+ Door</span>
+      </Button>
+      <Button
+        variant="ghost"
+        size="sm"
+        className="h-6 justify-start gap-1 px-1.5 text-[10px] text-gray-400 hover:text-sky-500 dark:text-white/30"
+        onClick={() =>
+          addWallFeature(wallId, {
+            type: 'window',
+            offset: wallLength * 0.3,
+            width: 36,
+            sillHeight: 36,
+            height: 48,
+          })
+        }
+      >
+        <WindowIcon className="h-3 w-3" />
+        <span>+ Window</span>
+      </Button>
+      <Button
+        variant="ghost"
+        size="sm"
+        className="h-6 justify-start gap-1 px-1.5 text-[10px] text-gray-400 hover:text-emerald-500 dark:text-white/30"
+        onClick={() =>
+          addWallFeature(wallId, {
+            type: 'opening',
+            offset: wallLength * 0.3,
+            width: 42,
+          })
+        }
+      >
+        <OpeningIcon className="h-3 w-3" />
+        <span>+ Opening</span>
+      </Button>
+      <Button
+        variant="ghost"
+        size="sm"
+        className="h-6 justify-start gap-1 px-1.5 text-[10px] text-gray-400 hover:text-stone-500 dark:text-white/30"
+        onClick={() =>
+          addWallFeature(wallId, {
+            type: 'closet',
+            offset: wallLength * 0.2,
+            width: 48,
+            height: 96,
+          })
+        }
+      >
+        <ClosetIcon className="h-3 w-3" />
+        <span>+ Closet</span>
+      </Button>
+    </div>
+  );
+}
+
+function CustomFurnitureCreator({
+  addFurniture,
+  fromDisplay,
+  toDisplay,
+  unit,
+}: {
+  addFurniture: RoomPlannerReturn['addFurniture'];
+  fromDisplay: Parser;
+  toDisplay: Formatter;
+  unit: Unit;
+}) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [customName, setCustomName] = useState('Custom Piece');
+  const [customWidth, setCustomWidth] = useState(60);
+  const [customDepth, setCustomDepth] = useState(30);
+  const [customShape, setCustomShape] = useState<FurnitureShape>('rectangle');
+
+  const unitSuffix = getUnitSuffix(unit);
+  const trimmedName = customName.trim();
+
+  const customPreset: FurniturePreset = {
+    type: 'custom',
+    name: trimmedName || 'Custom Piece',
+    shape: customShape,
+    width: Math.max(1, customWidth),
+    depth: Math.max(1, customDepth),
+    color: customShape === 'circle' ? '#38bdf8' : '#94a3b8',
+  };
+
+  return (
+    <Collapsible
+      open={isExpanded}
+      onOpenChange={setIsExpanded}
+      className="rounded-xl border border-gray-200/70 bg-gray-50/80 dark:border-white/10 dark:bg-white/[0.04]"
+    >
+      <CollapsibleTrigger className="flex w-full items-center gap-3 px-3 py-3 text-left transition-colors hover:bg-gray-100/70 dark:hover:bg-white/[0.03]">
+        <div className="flex min-w-0 flex-1 flex-col">
+          <span className="text-sm font-semibold text-gray-800 dark:text-white/85">
+            Custom Piece
+          </span>
+          <span className="truncate text-[11px] text-gray-500 dark:text-white/35">
+            {customShape === 'circle' ? 'Circle' : 'Square'} •{' '}
+            {formatFurnitureFootprint(
+              customPreset.width,
+              customPreset.depth,
+              toDisplay,
+              unitSuffix,
+            )}
+          </span>
+        </div>
+        <span className="text-[10px] text-gray-400 dark:text-white/25">
+          {isExpanded ? 'Hide' : 'Build'}
+        </span>
+        <ChevronDown
+          className={cn(
+            'h-3.5 w-3.5 text-gray-400 transition-transform duration-200',
+            !isExpanded && '-rotate-90',
+          )}
+        />
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <div className="space-y-3 border-t border-gray-200/70 px-3 py-3 dark:border-white/10">
+          <div className="space-y-1">
+            <Label className="text-xs text-gray-500 dark:text-white/50">
+              Name
+            </Label>
+            <Input
+              value={customName}
+              onChange={(event) => setCustomName(event.target.value)}
+              className="h-8 text-xs"
+              placeholder="Custom Piece"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <NumberInput
+              label="Width"
+              value={toDisplay(customWidth)}
+              onChange={(value) => setCustomWidth(fromDisplay(value))}
+              suffix={unitSuffix}
+              min={1}
+            />
+            <NumberInput
+              label="Depth"
+              value={toDisplay(customDepth)}
+              onChange={(value) => setCustomDepth(fromDisplay(value))}
+              suffix={unitSuffix}
+              min={1}
+            />
+          </div>
+
+          <div className="space-y-1">
+            <Label className="text-xs text-gray-500 dark:text-white/50">
+              Shape
+            </Label>
+            <div className="grid grid-cols-2 gap-1.5">
+              <button
+                type="button"
+                className={cn(
+                  featureOptionClass,
+                  customShape === 'rectangle'
+                    ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                    : featureOptionInactiveClass,
+                )}
+                onClick={() => setCustomShape('rectangle')}
+              >
+                <div className="h-5 w-5 rounded-[4px] border-2 border-current" />
+                <span className="text-[10px] leading-tight">Square</span>
+              </button>
+              <button
+                type="button"
+                className={cn(
+                  featureOptionClass,
+                  customShape === 'circle'
+                    ? 'border-sky-500/40 bg-sky-500/10 text-sky-600 dark:text-sky-400'
+                    : featureOptionInactiveClass,
+                )}
+                onClick={() => setCustomShape('circle')}
+              >
+                <div className="h-5 w-5 rounded-full border-2 border-current" />
+                <span className="text-[10px] leading-tight">Circle</span>
+              </button>
+            </div>
+          </div>
+
+          <Button
+            size="sm"
+            className="h-8 w-full text-xs"
+            onClick={() => addFurniture(customPreset)}
+            disabled={customWidth <= 0 || customDepth <= 0}
+          >
+            Add Custom Piece
+          </Button>
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
+  );
+}
+
+function FurnitureCategoryPicker({
+  activeCategory,
+  onChange,
+}: {
+  activeCategory: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div className="grid grid-cols-3 gap-1 rounded-xl bg-gray-100/80 p-1 dark:bg-white/[0.04]">
+      {FURNITURE_CATEGORIES.map((category) => (
+        <button
+          key={category.label}
+          type="button"
+          className={cn(
+            'rounded-lg px-2 py-2 text-xs font-medium transition-colors',
+            activeCategory === category.label
+              ? 'bg-white text-gray-900 shadow-sm dark:bg-white/10 dark:text-white'
+              : 'text-gray-500 hover:bg-white/60 hover:text-gray-800 dark:text-white/45 dark:hover:bg-white/[0.06] dark:hover:text-white/80',
+          )}
+          onClick={() => onChange(category.label)}
+        >
+          {category.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function FurniturePresetGrid({
+  addFurniture,
+  categoryLabel,
+  toDisplay,
+  unitSuffix,
+}: {
+  addFurniture: RoomPlannerReturn['addFurniture'];
+  categoryLabel: string;
+  toDisplay: Formatter;
+  unitSuffix: string;
+}) {
+  const category = FURNITURE_CATEGORIES.find(
+    (entry) => entry.label === categoryLabel,
+  );
+  const presets = FURNITURE_PRESETS.filter((preset) =>
+    (category?.types as readonly string[] | undefined)?.includes(preset.type),
+  );
+
+  return (
+    <div className="grid grid-cols-2 gap-2">
+      {presets.map((preset) => (
+        <Button
+          key={preset.name}
+          variant="outline"
+          size="sm"
+          className="h-auto min-h-20 flex-col items-start justify-between rounded-xl border-gray-200/80 bg-white/70 px-3 py-3 text-left shadow-none hover:border-gray-300 hover:bg-white dark:border-white/10 dark:bg-white/[0.04] dark:hover:border-white/20 dark:hover:bg-white/[0.08]"
+          onClick={() => addFurniture(preset)}
+        >
+          <span className="line-clamp-2 text-sm font-semibold text-gray-800 dark:text-white/85">
+            {preset.name}
+          </span>
+          <span className="text-xs text-gray-400 dark:text-white/30">
+            {formatFurnitureFootprint(
+              preset.width,
+              preset.depth,
+              toDisplay,
+              unitSuffix,
+            )}
+          </span>
+        </Button>
+      ))}
+    </div>
+  );
+}
+
+function PulloutSofaInspector({
+  fromDisplay,
+  furniture,
+  setPulloutBedSize,
+  togglePulloutSofa,
+  toDisplay,
+  unit,
+  updatePulloutSofa,
+}: {
+  fromDisplay: Parser;
+  furniture: FurnitureItem & { pulloutSofa: PulloutSofaState };
+  setPulloutBedSize: RoomPlannerReturn['setPulloutBedSize'];
+  togglePulloutSofa: RoomPlannerReturn['togglePulloutSofa'];
+  toDisplay: Formatter;
+  unit: Unit;
+  updatePulloutSofa: RoomPlannerReturn['updatePulloutSofa'];
+}) {
+  const unitSuffix = getUnitSuffix(unit);
+
+  return (
+    <>
+      <div className="space-y-2 rounded-xl bg-violet-50/30 p-2 dark:bg-violet-500/[0.04]">
+        <div className="flex items-center justify-between">
+          <Label className="text-xs font-medium text-violet-700 dark:text-violet-300">
+            Pull-out Controls
+          </Label>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 px-2 text-[11px]"
+            onClick={() => togglePulloutSofa(furniture.id)}
+          >
+            {furniture.pulloutSofa.isOpen ? 'Close Sofa' : 'Open Bed'}
+          </Button>
+        </div>
+
+        <div className="grid grid-cols-2 gap-1.5">
+          <button
+            type="button"
+            className={cn(
+              featureOptionClass,
+              furniture.pulloutSofa.isOpen
+                ? 'border-violet-500/40 bg-violet-500/10 text-violet-600 dark:text-violet-300'
+                : featureOptionInactiveClass,
+            )}
+            onClick={() =>
+              !furniture.pulloutSofa.isOpen && togglePulloutSofa(furniture.id)
+            }
+          >
+            <div className="h-4 w-6 rounded-[4px] border-2 border-current" />
+            <span className="text-[10px] leading-tight">Open</span>
+          </button>
+          <button
+            type="button"
+            className={cn(
+              featureOptionClass,
+              !furniture.pulloutSofa.isOpen
+                ? 'border-violet-500/40 bg-violet-500/10 text-violet-600 dark:text-violet-300'
+                : featureOptionInactiveClass,
+            )}
+            onClick={() =>
+              furniture.pulloutSofa.isOpen && togglePulloutSofa(furniture.id)
+            }
+          >
+            <div className="h-4 w-6 rounded-[4px] border-2 border-current bg-current/20" />
+            <span className="text-[10px] leading-tight">Closed</span>
+          </button>
+        </div>
+
+        <div className="flex items-center justify-between">
+          <Label className="text-xs text-gray-500 dark:text-white/50">
+            Bed Size
+          </Label>
+          <Select
+            value={furniture.pulloutSofa.bedSize}
+            onValueChange={(value) =>
+              setPulloutBedSize(furniture.id, value as PulloutBedSize)
+            }
+          >
+            <SelectTrigger className="h-7 w-28 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {Object.keys(PULLOUT_SOFA_DEFAULTS).map((bedSize) => (
+                <SelectItem key={bedSize} value={bedSize}>
+                  {getPulloutBedSizeLabel(bedSize as PulloutBedSize)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2">
+        <div className="space-y-2 rounded-xl border border-gray-200/70 p-3 dark:border-white/10">
+          <Label className="text-xs font-medium text-gray-700 dark:text-white/70">
+            Closed Size
+          </Label>
+          <NumberInput
+            label="Width"
+            value={toDisplay(furniture.pulloutSofa.closedWidth)}
+            onChange={(value) =>
+              updatePulloutSofa(furniture.id, {
+                closedWidth: fromDisplay(value),
+              })
+            }
+            suffix={unitSuffix}
+            min={1}
+          />
+          <NumberInput
+            label="Depth"
+            value={toDisplay(furniture.pulloutSofa.closedDepth)}
+            onChange={(value) =>
+              updatePulloutSofa(furniture.id, {
+                closedDepth: fromDisplay(value),
+              })
+            }
+            suffix={unitSuffix}
+            min={1}
+          />
+        </div>
+
+        <div className="space-y-2 rounded-xl border border-gray-200/70 p-3 dark:border-white/10">
+          <Label className="text-xs font-medium text-gray-700 dark:text-white/70">
+            Open Size
+          </Label>
+          <NumberInput
+            label="Width"
+            value={toDisplay(furniture.pulloutSofa.openWidth)}
+            onChange={(value) =>
+              updatePulloutSofa(furniture.id, {
+                openWidth: fromDisplay(value),
+              })
+            }
+            suffix={unitSuffix}
+            min={1}
+          />
+          <NumberInput
+            label="Depth"
+            value={toDisplay(furniture.pulloutSofa.openDepth)}
+            onChange={(value) =>
+              updatePulloutSofa(furniture.id, {
+                openDepth: fromDisplay(value),
+              })
+            }
+            suffix={unitSuffix}
+            min={1}
+          />
+        </div>
+      </div>
+    </>
+  );
+}
+
+function FurnitureItemInspector({
+  duplicateFurniture,
+  fromDisplay,
+  furniture,
+  removeFurniture,
+  rotateFurniture,
+  setPulloutBedSize,
+  togglePulloutSofa,
+  toDisplay,
+  unit,
+  updateFurniture,
+  updatePulloutSofa,
+}: {
+  duplicateFurniture: RoomPlannerReturn['duplicateFurniture'];
+  fromDisplay: Parser;
+  furniture: FurnitureItem;
+  removeFurniture: RoomPlannerReturn['removeFurniture'];
+  rotateFurniture: RoomPlannerReturn['rotateFurniture'];
+  setPulloutBedSize: RoomPlannerReturn['setPulloutBedSize'];
+  togglePulloutSofa: RoomPlannerReturn['togglePulloutSofa'];
+  toDisplay: Formatter;
+  unit: Unit;
+  updateFurniture: RoomPlannerReturn['updateFurniture'];
+  updatePulloutSofa: RoomPlannerReturn['updatePulloutSofa'];
+}) {
+  const unitSuffix = getUnitSuffix(unit);
+
+  return (
+    <div
+      className="space-y-3 border-t border-indigo-400/15 pt-3 dark:border-indigo-500/15"
+      onClick={(event) => event.stopPropagation()}
+    >
+      {isPulloutSofa(furniture) ? (
+        <PulloutSofaInspector
+          fromDisplay={fromDisplay}
+          furniture={furniture}
+          setPulloutBedSize={setPulloutBedSize}
+          togglePulloutSofa={togglePulloutSofa}
+          toDisplay={toDisplay}
+          unit={unit}
+          updatePulloutSofa={updatePulloutSofa}
+        />
+      ) : (
+        <div className="grid grid-cols-2 gap-2">
+          <NumberInput
+            label="Width"
+            value={toDisplay(furniture.width)}
+            onChange={(value) =>
+              updateFurniture(furniture.id, {
+                width: fromDisplay(value),
+              })
+            }
+            suffix={unitSuffix}
+            min={1}
+          />
+          <NumberInput
+            label="Depth"
+            value={toDisplay(furniture.depth)}
+            onChange={(value) =>
+              updateFurniture(furniture.id, {
+                depth: fromDisplay(value),
+              })
+            }
+            suffix={unitSuffix}
+            min={1}
+          />
+        </div>
+      )}
+
+      <NumberInput
+        label="Rotation"
+        value={furniture.rotation}
+        onChange={(value) =>
+          rotateFurniture(furniture.id, ((value % 360) + 360) % 360)
+        }
+        suffix="deg"
+        min={0}
+        max={359}
+        step={1}
+      />
+
+      <div className="flex gap-1.5">
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-7 flex-1 text-xs"
+          onClick={() =>
+            rotateFurniture(furniture.id, (furniture.rotation + 15) % 360)
+          }
+        >
+          <RotateCw className="mr-1 h-3 w-3" />
+          +15°
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-7 flex-1 text-xs"
+          onClick={() => duplicateFurniture(furniture.id)}
+        >
+          <Copy className="mr-1 h-3 w-3" />
+          Duplicate
+        </Button>
+      </div>
+
+      <div className="flex gap-1.5">
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-7 flex-1 text-xs"
+          onClick={() =>
+            updateFurniture(furniture.id, {
+              locked: !furniture.locked,
+            })
+          }
+        >
+          {furniture.locked ? (
+            <Lock className="mr-1 h-3 w-3" />
+          ) : (
+            <Unlock className="mr-1 h-3 w-3" />
+          )}
+          {furniture.locked ? 'Unlock' : 'Lock'}
+        </Button>
+        <Button
+          variant="destructive"
+          size="sm"
+          className="h-7 flex-1 text-xs"
+          onClick={() => removeFurniture(furniture.id)}
+        >
+          <Trash2 className="mr-1 h-3 w-3" />
+          Remove
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function FurnitureSection({
+  open,
+  onToggle,
+  planner,
+}: {
+  onToggle: () => void;
+  open: boolean;
+  planner: FurnitureSectionPlanner;
+}) {
+  const {
+    addFurniture,
+    duplicateFurniture,
+    furniture,
+    fromDisplay,
+    removeFurniture,
+    rotateFurniture,
+    setPulloutBedSize,
+    selectedId,
+    selectedIds,
+    setSelectedId,
+    togglePulloutSofa,
+    toDisplay,
+    unit,
+    updateFurniture,
+    updatePulloutSofa,
+  } = planner;
+
+  const [activeCategory, setActiveCategory] = useState(
+    FURNITURE_CATEGORIES[0].label,
+  );
+  const unitSuffix = getUnitSuffix(unit);
+
+  return (
+    <Collapsible open={open}>
+      <SectionHeader
+        icon={Sofa}
+        label="Furniture"
+        iconColor="text-emerald-500"
+        onToggle={onToggle}
+      />
+      <CollapsibleContent>
+        <div className="space-y-3 pb-3">
+          <FurnitureCategoryPicker
+            activeCategory={activeCategory}
+            onChange={setActiveCategory}
+          />
+
+          <FurniturePresetGrid
+            addFurniture={addFurniture}
+            categoryLabel={activeCategory}
+            toDisplay={toDisplay}
+            unitSuffix={unitSuffix}
+          />
+
+          <CustomFurnitureCreator
+            addFurniture={addFurniture}
+            fromDisplay={fromDisplay}
+            toDisplay={toDisplay}
+            unit={unit}
+          />
+
+          {furniture.length > 0 ? (
+            <>
+              <Separator />
+              <Label className="text-xs text-gray-500 dark:text-white/50">
+                Placed Items ({furniture.length})
+              </Label>
+              {selectedIds.length > 1 ? (
+                <p className="text-[11px] text-gray-400 dark:text-white/35">
+                  {selectedIds.length} items selected on canvas
+                </p>
+              ) : null}
+              <div className="space-y-1">
+                {furniture.map((item) => (
+                  <div
+                    key={item.id}
+                    data-sidebar-furniture-id={item.id}
+                    className={cn(
+                      'cursor-pointer rounded-xl border px-2 py-2 text-xs transition-[border-color,box-shadow]',
+                      selectedIds.includes(item.id)
+                        ? 'border-2 border-cyan-400/80 shadow-[0_0_0_1px_rgba(34,211,238,0.22),0_0_18px_rgba(34,211,238,0.18)] dark:border-cyan-400/70 dark:shadow-[0_0_0_1px_rgba(56,189,248,0.2),0_0_20px_rgba(14,165,233,0.18)]'
+                        : 'border-transparent hover:bg-gray-100 dark:hover:bg-white/5',
+                    )}
+                    onClick={() => setSelectedId(item.id)}
+                  >
+                    <div className="flex items-center gap-2 px-0.5 py-0.5">
+                      <div
+                        className="h-3 w-3 flex-shrink-0 rounded-sm"
+                        style={{ backgroundColor: item.color }}
+                      />
+                      <span className="flex-1 truncate">{item.name}</span>
+                      <span className="text-gray-400 dark:text-white/30">
+                        {toDisplay(item.width).toFixed(0)}x
+                        {toDisplay(item.depth).toFixed(0)}
+                      </span>
+                    </div>
+                    {selectedIds.length === 1 && item.id === selectedId ? (
+                      <FurnitureItemInspector
+                        duplicateFurniture={duplicateFurniture}
+                        fromDisplay={fromDisplay}
+                        furniture={item}
+                        removeFurniture={removeFurniture}
+                        rotateFurniture={rotateFurniture}
+                        setPulloutBedSize={setPulloutBedSize}
+                        togglePulloutSofa={togglePulloutSofa}
+                        toDisplay={toDisplay}
+                        unit={unit}
+                        updateFurniture={updateFurniture}
+                        updatePulloutSofa={updatePulloutSofa}
+                      />
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : null}
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
+  );
+}
+
+function HistoryDebugSection({
+  open,
+  onToggle,
+  planner,
+}: {
+  open: boolean;
+  onToggle: () => void;
+  planner: HistoryDebugPlanner;
+}) {
+  const entries = [
+    ...planner.historyDebug.past.map((entry) => ({
+      ...entry,
+      tone: 'past' as const,
+    })),
+    { ...planner.historyDebug.present, tone: 'present' as const },
+    ...planner.historyDebug.future.map((entry) => ({
+      ...entry,
+      tone: 'future' as const,
+    })),
+  ];
+
+  return (
+    <Collapsible open={open}>
+      <SectionHeader
+        icon={History}
+        iconColor="text-amber-500"
+        label="History"
+        onToggle={onToggle}
+      />
+      <CollapsibleContent>
+        <div className="space-y-2 pb-3">
+          {planner.historyDebug.locked ? (
+            <div className="space-y-2 rounded-xl border border-amber-400/30 bg-amber-500/[0.08] px-3 py-3">
+              <div className="text-xs font-medium text-amber-700 dark:text-amber-200">
+                You are viewing an earlier version. To make changes, go back to
+                the latest version or start editing from this point.
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 flex-1"
+                  onClick={planner.returnToLatestHistory}
+                >
+                  Return To Latest
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 flex-1"
+                  onClick={() => {
+                    const futureCount = planner.historyDebug.futureCount;
+                    const message =
+                      futureCount === 1
+                        ? 'Editing from this point will discard 1 future change. Continue?'
+                        : `Editing from this point will discard ${futureCount} future changes. Continue?`;
+                    if (window.confirm(message)) {
+                      planner.discardFutureHistory();
+                    }
+                  }}
+                >
+                  Edit From Here
+                </Button>
+              </div>
+            </div>
+          ) : null}
+
+          <div className="grid grid-cols-3 gap-2">
+            <div className="rounded-xl border border-gray-200/70 bg-gray-50/80 px-2 py-2 dark:border-white/10 dark:bg-white/[0.03]">
+              <div className="text-[10px] uppercase tracking-[0.12em] text-gray-400 dark:text-white/35">
+                Undo
+              </div>
+              <div className="mt-1 text-lg font-semibold text-gray-900 dark:text-white">
+                {planner.historyDebug.pastCount}
+              </div>
+            </div>
+            <div className="rounded-xl border border-cyan-400/40 bg-cyan-500/[0.06] px-2 py-2">
+              <div className="text-[10px] uppercase tracking-[0.12em] text-cyan-600/80 dark:text-cyan-300/75">
+                Current
+              </div>
+              <div className="mt-1 text-sm font-semibold text-cyan-700 dark:text-cyan-100">
+                #{planner.historyDebug.currentPosition + 1} of{' '}
+                {planner.historyDebug.totalCount}
+              </div>
+            </div>
+            <div className="rounded-xl border border-gray-200/70 bg-gray-50/80 px-2 py-2 dark:border-white/10 dark:bg-white/[0.03]">
+              <div className="text-[10px] uppercase tracking-[0.12em] text-gray-400 dark:text-white/35">
+                Redo
+              </div>
+              <div className="mt-1 text-lg font-semibold text-gray-900 dark:text-white">
+                {planner.historyDebug.futureCount}
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-gray-200/70 bg-gray-50/80 px-3 py-2 dark:border-white/10 dark:bg-white/[0.03]">
+            <div className="text-[10px] uppercase tracking-[0.12em] text-gray-400 dark:text-white/35">
+              Snapshot Key
+            </div>
+            <div className="mt-1 break-all font-mono text-[11px] leading-5 text-gray-600 dark:text-white/65">
+              {planner.historyDebug.key ?? 'none'}
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            {entries.map((entry) => (
+              <button
+                key={entry.id}
+                type="button"
+                onClick={() => planner.jumpToHistory(entry.position)}
+                disabled={entry.tone === 'present'}
+                className={cn(
+                  'flex w-full items-center justify-between gap-3 rounded-xl border px-3 py-2 text-left text-xs transition-colors',
+                  entry.tone === 'present'
+                    ? 'cursor-default border-cyan-400/50 bg-cyan-500/[0.06] text-cyan-800 dark:text-cyan-100'
+                    : 'border-gray-200/70 bg-white/70 text-gray-600 hover:border-gray-300 hover:bg-gray-100/80 dark:border-white/10 dark:bg-white/[0.02] dark:text-white/65 dark:hover:border-white/20 dark:hover:bg-white/[0.05]',
+                )}
+              >
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={cn(
+                        'rounded-full px-2 py-0.5 text-[10px] uppercase tracking-[0.12em]',
+                        entry.tone === 'present'
+                          ? 'bg-cyan-500/15 text-cyan-700 dark:text-cyan-200'
+                          : 'bg-gray-200/70 text-gray-500 dark:bg-white/10 dark:text-white/45',
+                      )}
+                    >
+                      {entry.tone === 'present' ? 'current' : 'step'}
+                    </span>
+                    <span className="font-medium">
+                      Step {entry.position + 1}
+                    </span>
+                  </div>
+                  <div className="mt-1 text-[11px] opacity-65">
+                    {entry.endpointCount} endpoints, {entry.wallCount} walls,{' '}
+                    {entry.furnitureCount} furniture
+                  </div>
+                </div>
+                <span className="text-[11px] font-medium opacity-75">
+                  {entry.tone === 'present' ? 'Live' : 'Jump'}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
+  );
+}
+
+function InwardSwingIcon() {
+  return (
+    <svg viewBox="0 0 28 28" fill="none" className="h-6 w-6">
+      <rect
+        x="2"
+        y="2"
+        width="24"
+        height="24"
+        rx="1"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        opacity="0.2"
+      />
+      <line
+        x1="2"
+        y1="26"
+        x2="9"
+        y2="26"
+        stroke="currentColor"
+        strokeWidth="2"
+        opacity="0.5"
+      />
+      <line
+        x1="21"
+        y1="26"
+        x2="26"
+        y2="26"
+        stroke="currentColor"
+        strokeWidth="2"
+        opacity="0.5"
+      />
+      <path d="M 9 26 L 9 14" stroke="currentColor" strokeWidth="1.5" />
+      <path
+        d="M 9 14 A 12 12 0 0 1 21 26"
+        stroke="currentColor"
+        strokeWidth="1"
+        opacity="0.4"
+      />
+    </svg>
+  );
+}
+
+function OutwardSwingIcon() {
+  return (
+    <svg viewBox="0 0 28 28" fill="none" className="h-6 w-6">
+      <rect
+        x="2"
+        y="14"
+        width="24"
+        height="12"
+        rx="1"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        opacity="0.2"
+      />
+      <line
+        x1="2"
+        y1="14"
+        x2="9"
+        y2="14"
+        stroke="currentColor"
+        strokeWidth="2"
+        opacity="0.5"
+      />
+      <line
+        x1="21"
+        y1="14"
+        x2="26"
+        y2="14"
+        stroke="currentColor"
+        strokeWidth="2"
+        opacity="0.5"
+      />
+      <path d="M 9 14 L 9 2" stroke="currentColor" strokeWidth="1.5" />
+      <path
+        d="M 9 2 A 12 12 0 0 1 21 14"
+        stroke="currentColor"
+        strokeWidth="1"
+        opacity="0.4"
+      />
+    </svg>
+  );
+}
+
+function LeftHingeIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      className="h-5 w-5"
+    >
+      <circle cx="5" cy="12" r="2.5" fill="currentColor" strokeWidth="0" />
+      <line x1="7.5" y1="12" x2="20" y2="12" strokeWidth="2" />
+    </svg>
+  );
+}
+
+function RightHingeIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      className="h-5 w-5"
+    >
+      <line x1="4" y1="12" x2="16.5" y2="12" strokeWidth="2" />
+      <circle cx="19" cy="12" r="2.5" fill="currentColor" strokeWidth="0" />
+    </svg>
+  );
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function formatMeasurementValue(
+  value: number,
+  unit: Unit,
+  toDisplay: Formatter,
+) {
+  const displayValue = toDisplay(value);
+  return unit === 'cm'
+    ? Number.parseFloat(displayValue.toFixed(0))
+    : Number.parseFloat(displayValue.toFixed(3));
+}
+
+function getConnectionCount(walls: Wall[], endpointId: string, wallId: string) {
+  return walls.filter(
+    (wall) =>
+      wall.id !== wallId &&
+      (wall.startId === endpointId || wall.endId === endpointId),
+  ).length;
+}
+
+function getMeasurementStep(unit: Unit) {
+  return unit === 'cm' ? 1 : 0.125;
+}
+
+function getUnitSuffix(unit: Unit) {
+  return unit === 'cm' ? 'cm' : '"';
+}
+
+function formatFurnitureFootprint(
+  width: number,
+  depth: number,
+  toDisplay: Formatter,
+  unitSuffix: string,
+) {
+  return `${toDisplay(width).toFixed(0)} x ${toDisplay(depth).toFixed(0)}${unitSuffix}`;
+}
+
+function isPulloutSofa(
+  item: FurnitureItem,
+): item is FurnitureItem & { pulloutSofa: PulloutSofaState } {
+  return item.type === 'pullout-sofa' && Boolean(item.pulloutSofa);
+}
+
+function getPulloutBedSizeLabel(bedSize: PulloutBedSize) {
+  switch (bedSize) {
+    case 'twin':
+      return 'Twin';
+    case 'full':
+      return 'Full';
+    case 'queen':
+      return 'Queen';
+    case 'king':
+      return 'King';
+  }
+}
+
+function getWallLength(ax: number, ay: number, bx: number, by: number) {
+  return Math.sqrt((bx - ax) ** 2 + (by - ay) ** 2);
+}
+
+export function Sidebar({ planner, projects }: SidebarProps) {
+  const { theme, toggleTheme } = useTheme();
+  const panelRef = useRef<HTMLDivElement>(null);
+  const previousSelectedIdRef = useRef<string | null>(null);
+  const previousSelectedWallIdRef = useRef<string | null>(null);
+  const [isOpen, setIsOpen] = useState(true);
+  const [projectBrowserOpen, setProjectBrowserOpen] = useState(false);
+  const [roomOpen, setRoomOpen] = useState(true);
+  const [wallsOpen, setWallsOpen] = useState(false);
+  const [furnitureOpen, setFurnitureOpen] = useState(true);
+  const [historyDebugOpen, setHistoryDebugOpen] = useState(false);
+  const isHistoryEditingLocked = planner.isHistoryEditingLocked;
+
+  const { canRedo, canUndo, redo, selectedId, selectedWallId, undo } = planner;
+
+  const scrollSidebarItemIntoView = useCallback((selector: string) => {
+    const panel = panelRef.current;
+    if (!panel) return false;
+
+    const viewport = panel.querySelector<HTMLElement>(
+      '[data-slot="scroll-area-viewport"]',
+    );
+    const target = panel.querySelector<HTMLElement>(selector);
+    if (!viewport || !target) return false;
+
+    const viewportRect = viewport.getBoundingClientRect();
+    const targetRect = target.getBoundingClientRect();
+    const targetTop = targetRect.top - viewportRect.top + viewport.scrollTop;
+    const centeredTop =
+      targetTop - viewport.clientHeight / 2 + targetRect.height / 2;
+
+    viewport.scrollTo({
+      top: Math.max(0, centeredTop),
+      behavior: 'smooth',
+    });
+    return true;
+  }, []);
+
+  useEffect(() => {
+    if (
+      selectedWallId &&
+      selectedWallId !== previousSelectedWallIdRef.current &&
+      !wallsOpen
+    ) {
+      setWallsOpen(true);
+    }
+    previousSelectedWallIdRef.current = selectedWallId;
+  }, [selectedWallId, wallsOpen]);
+
+  useEffect(() => {
+    if (
+      selectedId &&
+      selectedId !== previousSelectedIdRef.current &&
+      !furnitureOpen
+    ) {
+      setFurnitureOpen(true);
+    }
+    previousSelectedIdRef.current = selectedId;
+  }, [selectedId, furnitureOpen]);
+
+  useEffect(() => {
+    if (!isOpen || !selectedWallId || !wallsOpen) return;
+
+    let frame = requestAnimationFrame(() => {
+      if (
+        !scrollSidebarItemIntoView(`[data-sidebar-wall-id="${selectedWallId}"]`)
+      ) {
+        frame = requestAnimationFrame(() => {
+          scrollSidebarItemIntoView(
+            `[data-sidebar-wall-id="${selectedWallId}"]`,
+          );
+        });
+      }
+    });
+
+    return () => cancelAnimationFrame(frame);
+  }, [isOpen, scrollSidebarItemIntoView, selectedWallId, wallsOpen]);
+
+  useEffect(() => {
+    if (!isOpen || !selectedId || !furnitureOpen) return;
+
+    let frame = requestAnimationFrame(() => {
+      if (
+        !scrollSidebarItemIntoView(
+          `[data-sidebar-furniture-id="${selectedId}"]`,
+        )
+      ) {
+        frame = requestAnimationFrame(() => {
+          scrollSidebarItemIntoView(
+            `[data-sidebar-furniture-id="${selectedId}"]`,
+          );
+        });
+      }
+    });
+
+    return () => cancelAnimationFrame(frame);
+  }, [furnitureOpen, isOpen, scrollSidebarItemIntoView, selectedId]);
+
+  return (
+    <>
+      <AnimatePresence>
+        {!isOpen ? (
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            className="fixed top-4 left-4 z-50"
+          >
+            <FloatingIconButton onClick={() => setIsOpen(true)}>
+              <PanelLeftOpen className="h-4 w-4" />
+            </FloatingIconButton>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {isOpen ? (
+          <motion.div
+            initial={{ x: -360, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: -360, opacity: 0 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            className="fixed top-4 bottom-4 left-4 z-50 w-[340px]"
+          >
+            <ToolPanel
+              ref={panelRef}
+              data-sidebar-panel="open"
+              className="flex h-full flex-col overflow-hidden"
+            >
+              <SidebarHeader
+                canRedo={canRedo}
+                canUndo={canUndo}
+                onClose={() => setIsOpen(false)}
+                redo={redo}
+                theme={theme}
+                toggleTheme={toggleTheme}
+                undo={undo}
+              />
+
+              <SidebarProjectActions
+                onBrowseProjects={() => setProjectBrowserOpen(true)}
+                onCreateProject={projects.createProject}
+              />
+
+              <ScrollArea className="min-h-0 flex-1 overflow-hidden">
+                <div className="max-w-full space-y-1 overflow-hidden p-4">
+                  <ProjectBrowserSection
+                    controls={projects}
+                    projectBrowserOpen={projectBrowserOpen}
+                    setProjectBrowserOpen={setProjectBrowserOpen}
+                  />
+
+                  <Separator />
+
+                  <div
+                    className={cn(
+                      isHistoryEditingLocked &&
+                        'pointer-events-none opacity-45 select-none',
+                    )}
+                  >
+                    <RoomShapeSection
+                      open={roomOpen}
+                      onToggle={() => setRoomOpen((current) => !current)}
+                      planner={planner}
+                    />
+                  </div>
+
+                  <Separator />
+
+                  <div
+                    className={cn(
+                      isHistoryEditingLocked &&
+                        'pointer-events-none opacity-45 select-none',
+                    )}
+                  >
+                    <WallsSection
+                      open={wallsOpen}
+                      onToggle={() => setWallsOpen((current) => !current)}
+                      planner={planner}
+                    />
+                  </div>
+
+                  <Separator />
+
+                  <div
+                    className={cn(
+                      isHistoryEditingLocked &&
+                        'pointer-events-none opacity-45 select-none',
+                    )}
+                  >
+                    <FurnitureSection
+                      open={furnitureOpen}
+                      onToggle={() => setFurnitureOpen((current) => !current)}
+                      planner={planner}
+                    />
+                  </div>
+
+                  <Separator />
+
+                  <HistoryDebugSection
+                    open={historyDebugOpen}
+                    onToggle={() => setHistoryDebugOpen((current) => !current)}
+                    planner={planner}
+                  />
+
+                  <Separator />
+                </div>
+              </ScrollArea>
+
+            </ToolPanel>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+    </>
+  );
+}
