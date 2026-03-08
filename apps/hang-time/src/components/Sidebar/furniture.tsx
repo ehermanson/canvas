@@ -255,15 +255,16 @@ export function Furniture({ calculator }: Props) {
   return (
     <Collapsible
       defaultOpen
-      className="pb-4 border-b border-gray-200 dark:border-white/10"
+      className="border-b border-gray-200 dark:border-white/10"
     >
       <InspectorSectionHeader
         icon={Sofa}
+        iconClassName="text-violet-500"
         label="Furniture"
-        iconBadgeClassName="bg-violet-100 text-violet-600 dark:bg-violet-500/20 dark:text-violet-400"
+        variant="inline"
       />
       <CollapsibleContent>
-        <div className="space-y-4 pt-3">
+        <div className="space-y-4 pt-2.5 pb-3">
           {/* Furniture Dimensions */}
           <FieldSet>
             <FieldLegend variant="label">Dimensions</FieldLegend>

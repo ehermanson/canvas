@@ -3,24 +3,30 @@ import {
   Check,
   Hammer,
   Link,
-  Moon,
   PanelLeftClose,
   PanelLeftOpen,
   Pencil,
-  RotateCcw,
+  Plus,
   Ruler,
   SlidersHorizontal,
-  Sun,
   X,
 } from "lucide-react";
 import {
   FloatingIconButton,
+  HangTimeAppIcon,
+  RoomPlanAppIcon,
+  ToolAppSwitcher,
   ToolPanel,
-  ToolPanelBrandMark,
+  ToolPanelActionBar,
+  ToolPanelActionButton,
   ToolPanelHeader,
   ToolPanelHeaderButton,
   ToolPanelTitle,
   ToolLinkButton,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
 } from "@canvas-tools/ui";
 import { motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
@@ -35,7 +41,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { UseCalculatorReturn } from "@/hooks/use-calculator";
 import { useSavedLayouts } from "@/hooks/use-saved-layouts";
-import { useTheme } from "@/hooks/use-theme";
 import { cn } from "@/lib/utils";
 import { Furniture } from "./furniture";
 import { GalleryFrames } from "./gallery-frames";
@@ -46,50 +51,23 @@ import { WallDimensions } from "./wall-dimensions";
 
 export const ROOM_PLAN_URL = "https://room-plan.app";
 
-export function OpenRoomPlanLink({ className }: { className?: string }) {
+export function OpenRoomPlanLink({
+  className,
+  iconOnly,
+  tooltipLabel,
+}: {
+  className?: string;
+  iconOnly?: boolean;
+  tooltipLabel?: string;
+}) {
   return (
     <ToolLinkButton
       className={className}
       href={ROOM_PLAN_URL}
+      iconOnly={iconOnly}
       label="Open Room Plan"
+      tooltipLabel={tooltipLabel}
     />
-  );
-}
-
-function Logo({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 20 20" fill="none" className={className}>
-      <rect
-        x="3.75"
-        y="6.25"
-        width="12.5"
-        height="10"
-        rx="1.15"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        fill="none"
-      />
-      <rect
-        x="6"
-        y="8.5"
-        width="8"
-        height="5.5"
-        rx="0.65"
-        stroke="currentColor"
-        strokeWidth="1"
-        opacity="0.55"
-        fill="none"
-      />
-      <path
-        d="M6.5 6L10 2.75L13.5 6"
-        stroke="currentColor"
-        strokeWidth="1.35"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        fill="none"
-      />
-      <circle cx="10" cy="2.75" r="1.35" fill="currentColor" />
-    </svg>
   );
 }
 
@@ -99,7 +77,6 @@ interface SidebarProps {
 
 export function Sidebar({ calculator }: SidebarProps) {
   const { state } = calculator;
-  const { theme, toggleTheme } = useTheme();
   const {
     layouts,
     save,
@@ -167,6 +144,25 @@ export function Sidebar({ calculator }: SidebarProps) {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleNewLayout = () => {
+    const hasActiveLayoutState = window.location.search.length > 0;
+    if (hasActiveLayoutState) {
+      const shouldStartFresh = window.confirm(
+        "Start a new layout? This will discard the current layout and any unsaved changes.",
+      );
+      if (!shouldStartFresh) {
+        return;
+      }
+    }
+
+    startFresh();
+
+    if (hasActiveLayoutState) {
+      window.history.pushState({}, "", window.location.pathname);
+      window.location.reload();
+    }
+  };
+
   useEffect(() => {
     const onResize = () => {
       setIsMobile(window.innerWidth < 1024);
@@ -229,32 +225,33 @@ export function Sidebar({ calculator }: SidebarProps) {
         <ToolPanel className="flex h-full flex-col overflow-hidden">
           <ToolPanelHeader>
             <ToolPanelTitle
-              leading={
-                <ToolPanelBrandMark className="bg-gradient-to-br from-fuchsia-500 via-violet-500 to-indigo-600">
-                  <Logo className="h-4.5 w-4.5" />
-                </ToolPanelBrandMark>
+              content={
+                <ToolAppSwitcher
+                  currentIcon={<HangTimeAppIcon className="h-4.5 w-4.5" />}
+                  currentIconClassName="bg-gradient-to-br from-fuchsia-500 via-violet-500 to-indigo-600"
+                  currentTitle="Hang Time"
+                  currentSubtitle="Pixel Perfect Picture Placement"
+                  items={[
+                    {
+                      href: ROOM_PLAN_URL,
+                      icon: <RoomPlanAppIcon className="h-4 w-4 text-white" />,
+                      iconClassName:
+                        "bg-gradient-to-br from-indigo-500 to-violet-600",
+                      title: "Room Plan",
+                      subtitle: "Room layout studio",
+                    },
+                  ]}
+                />
               }
               title="Hang Time"
               subtitle="Pixel Perfect Picture Placement"
               actions={
-                <>
-                  <ToolPanelHeaderButton
-                    onClick={toggleTheme}
-                    title="Toggle theme"
-                  >
-                    {theme === "dark" ? (
-                      <Sun className="h-3.5 w-3.5" />
-                    ) : (
-                      <Moon className="h-3.5 w-3.5" />
-                    )}
-                  </ToolPanelHeaderButton>
-                  <ToolPanelHeaderButton
-                    onClick={() => setIsMinimized(true)}
-                    title="Hide sidebar"
-                  >
-                    <PanelLeftClose className="h-4 w-4" />
-                  </ToolPanelHeaderButton>
-                </>
+                <ToolPanelHeaderButton
+                  onClick={() => setIsMinimized(true)}
+                  title="Hide sidebar"
+                >
+                  <PanelLeftClose className="h-4 w-4" />
+                </ToolPanelHeaderButton>
               }
             />
 
@@ -336,53 +333,70 @@ export function Sidebar({ calculator }: SidebarProps) {
                 )}
               </div>
             )}
-
-            <div className="mt-3 flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="flex-1 border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-white/70 dark:hover:bg-white/10 dark:hover:text-white"
-                onClick={handleCopyLink}
-                title={copied ? "Copied!" : "Copy link"}
-              >
-                {copied ? (
-                  <Check className="size-4" />
-                ) : (
-                  <Link className="size-4" />
-                )}
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="flex-1 border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-white/70 dark:hover:bg-white/10 dark:hover:text-white"
-                onClick={() => {
-                  window.history.pushState({}, "", window.location.pathname);
-                  window.location.reload();
-                }}
-                title="Reset all"
-              >
-                <RotateCcw className="size-4" />
-              </Button>
-              <GalleryExamples calculator={calculator} />
-              <SaveLayoutDialog
-                onSave={save}
-                onUpdate={update}
-                isNameTaken={isNameTaken}
-                existingLayoutForCurrentConfig={existingLayoutForCurrentConfig}
-                loadedLayout={loadedLayout}
-                hasUnsavedChanges={hasUnsavedChanges}
-              />
-              <SavedLayoutsDialog
-                layouts={layouts}
-                onLoad={load}
-                onDelete={remove}
-                onRename={rename}
-              />
-            </div>
-            <div className="mt-2">
-              <OpenRoomPlanLink className="w-full" />
-            </div>
           </ToolPanelHeader>
+
+          <ToolPanelActionBar>
+            <TooltipProvider delayDuration={200}>
+              <div className="flex flex-wrap gap-2">
+                <SavedLayoutsDialog
+                  layouts={layouts}
+                  onLoad={load}
+                  onDelete={remove}
+                  onRename={rename}
+                  iconOnly
+                  tooltipLabel="Browse layouts"
+                  buttonClassName="bg-white/80 dark:bg-slate-900/60"
+                />
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <ToolPanelActionButton
+                      onClick={handleNewLayout}
+                      aria-label="New layout"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </ToolPanelActionButton>
+                  </TooltipTrigger>
+                  <TooltipContent>New layout</TooltipContent>
+                </Tooltip>
+                <SaveLayoutDialog
+                  onSave={save}
+                  onUpdate={update}
+                  isNameTaken={isNameTaken}
+                  existingLayoutForCurrentConfig={
+                    existingLayoutForCurrentConfig
+                  }
+                  loadedLayout={loadedLayout}
+                  hasUnsavedChanges={hasUnsavedChanges}
+                  iconOnly
+                  tooltipLabel="Save layout"
+                  buttonClassName="bg-white/80 dark:bg-slate-900/60"
+                />
+                <GalleryExamples
+                  calculator={calculator}
+                  iconOnly
+                  tooltipLabel="Examples"
+                  buttonClassName="bg-white/80 dark:bg-slate-900/60"
+                />
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <ToolPanelActionButton
+                      onClick={handleCopyLink}
+                      aria-label={copied ? "Copied" : "Copy link"}
+                    >
+                      {copied ? (
+                        <Check className="h-4 w-4" />
+                      ) : (
+                        <Link className="h-4 w-4" />
+                      )}
+                    </ToolPanelActionButton>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {copied ? "Copied" : "Copy link"}
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+            </TooltipProvider>
+          </ToolPanelActionBar>
 
           <Tabs
             defaultValue="config"
@@ -414,7 +428,7 @@ export function Sidebar({ calculator }: SidebarProps) {
 
             <TabsContent value="config" className="mt-0 flex-1 overflow-hidden">
               <ScrollArea className="h-full">
-                <div className="space-y-4 p-4">
+                <div className="space-y-0 p-4">
                   <WallDimensions calculator={calculator} />
                   <GalleryFrames calculator={calculator} />
                   <HangingHardware calculator={calculator} />

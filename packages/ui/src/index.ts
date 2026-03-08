@@ -69,6 +69,7 @@ export {
   TooltipTrigger,
 } from "./components/ui/tooltip";
 export { SuiteDialogContent } from "./suite-dialog-content";
+export { HangTimeAppIcon, RoomPlanAppIcon } from "./app-marks";
 export {
   InspectorInset,
   InspectorListRow,
@@ -78,9 +79,12 @@ export {
 } from "./inspector-body";
 export { InspectorSectionHeader } from "./inspector-section";
 export { ToolLinkButton } from "./tool-link-button";
+export { ToolAppBrand, ToolAppSwitcher } from "./tool-app-switcher";
 export {
   FloatingIconButton,
   ToolPanel,
+  ToolPanelActionBar,
+  ToolPanelActionButton,
   ToolPanelBrandMark,
   ToolPanelHeader,
   ToolPanelHeaderButton,

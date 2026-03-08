@@ -1,4 +1,4 @@
-import { HelpCircle, Settings } from "lucide-react";
+import { HelpCircle, Moon, Settings, Sun } from "lucide-react";
 import {
   ViewportToolbar,
   ViewportToolbarButton,
@@ -102,6 +102,8 @@ function CanvasSettingsPopover({
   setUnit: (unit: Unit) => void;
   unit: Unit;
 }) {
+  const { theme, toggleTheme } = useTheme();
+
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -137,6 +139,27 @@ function CanvasSettingsPopover({
               <SelectItem value="cm">Centimeters</SelectItem>
             </SelectContent>
           </Select>
+        </div>
+
+        <div className="flex items-center justify-between gap-3">
+          <Label className="text-xs">Theme</Label>
+          <button
+            type="button"
+            onClick={toggleTheme}
+            className="inline-flex h-8 items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-2.5 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-white/70 dark:hover:bg-white/10 dark:hover:text-white"
+          >
+            {theme === "dark" ? (
+              <>
+                <Sun className="size-3.5" />
+                Light
+              </>
+            ) : (
+              <>
+                <Moon className="size-3.5" />
+                Dark
+              </>
+            )}
+          </button>
         </div>
       </PopoverContent>
     </Popover>

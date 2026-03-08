@@ -1,12 +1,9 @@
-import { Ruler } from 'lucide-react';
-import { InspectorSectionHeader } from '@canvas-tools/ui';
-import {
-  Collapsible,
-  CollapsibleContent,
-} from '@/components/ui/collapsible';
-import { Field, FieldLabel } from '@/components/ui/field';
-import { Input } from '@/components/ui/input';
-import type { UseCalculatorReturn } from '@/hooks/use-calculator';
+import { Ruler } from "lucide-react";
+import { InspectorSectionHeader } from "@canvas-tools/ui";
+import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
+import { Field, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import type { UseCalculatorReturn } from "@/hooks/use-calculator";
 
 interface Props {
   calculator: UseCalculatorReturn;
@@ -18,15 +15,16 @@ export function WallDimensions({ calculator }: Props) {
   return (
     <Collapsible
       defaultOpen={false}
-      className="pb-4 border-b border-gray-200 dark:border-white/10"
+      className="border-b border-gray-200 dark:border-white/10"
     >
       <InspectorSectionHeader
         icon={Ruler}
+        iconClassName="text-blue-500"
         label="Wall Dimensions"
-        iconBadgeClassName="bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400"
+        variant="inline"
       />
       <CollapsibleContent>
-        <div className="grid grid-cols-2 gap-3 pt-3">
+        <div className="grid grid-cols-2 gap-3 pt-2.5 pb-3">
           <Field>
             <FieldLabel htmlFor="wallWidth">Width ({state.unit})</FieldLabel>
             <Input

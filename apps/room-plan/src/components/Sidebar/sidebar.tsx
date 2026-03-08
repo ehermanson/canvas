@@ -1,11 +1,11 @@
 import {
   ChevronDown,
   Copy,
+  FolderOpen,
   History,
   Home,
   Layers,
   Lock,
-  Moon,
   MoreHorizontal,
   PanelLeftClose,
   PanelLeftOpen,
@@ -13,7 +13,6 @@ import {
   Redo2,
   RotateCw,
   Sofa,
-  Sun,
   Trash2,
   Undo2,
   Unlink,
@@ -21,21 +20,29 @@ import {
 } from "lucide-react";
 import {
   FloatingIconButton,
+  HangTimeAppIcon,
   InspectorInset,
   InspectorListRow,
   InspectorOptionCard,
   InspectorSectionHeader,
   InspectorSegmentedControl,
   InspectorSegmentedControlItem,
+  RoomPlanAppIcon,
   SuiteDialogContent,
+  ToolAppSwitcher,
   ToolLinkButton,
   ToolPanel,
-  ToolPanelBrandMark,
+  ToolPanelActionBar,
+  ToolPanelActionButton,
   ToolPanelHeader,
   ToolPanelHeaderButton,
   ToolPanelTitle,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
 } from "@canvas-tools/ui";
-import { AnimatePresence, motion } from "motion/react";
+import { motion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -73,7 +80,6 @@ import {
 import { ROOM_TEMPLATES } from "@/data/room-templates";
 import type { PlannerProjectsReturn } from "@/hooks/use-planner-projects";
 import type { RoomPlannerReturn } from "@/hooks/use-room-planner";
-import { useTheme } from "@/hooks/use-theme";
 import { cn } from "@/lib/utils";
 import type {
   FurnitureItem,
@@ -89,12 +95,22 @@ import { ROOM_SHAPE_ICONS } from "./room-shape-icons";
 
 export const HANG_TIME_URL = "https://hang-time.app";
 
-export function OpenHangTimeLink({ className }: { className?: string }) {
+export function OpenHangTimeLink({
+  className,
+  iconOnly,
+  tooltipLabel,
+}: {
+  className?: string;
+  iconOnly?: boolean;
+  tooltipLabel?: string;
+}) {
   return (
     <ToolLinkButton
       className={className}
       href={HANG_TIME_URL}
+      iconOnly={iconOnly}
       label="Open Hang Time"
+      tooltipLabel={tooltipLabel}
     />
   );
 }
@@ -106,7 +122,6 @@ interface SidebarProps {
 
 type Formatter = RoomPlannerReturn["toDisplay"];
 type Parser = RoomPlannerReturn["fromDisplay"];
-type Theme = ReturnType<typeof useTheme>["theme"];
 
 type RoomSectionPlanner = Pick<RoomPlannerReturn, "applyTemplate">;
 
@@ -145,10 +160,6 @@ type FurnitureSectionPlanner = Pick<
   | "updatePulloutSofa"
 >;
 
-type HeaderControls = Pick<
-  RoomPlannerReturn,
-  "canRedo" | "canUndo" | "redo" | "undo"
->;
 type HistoryDebugPlanner = Pick<
   RoomPlannerReturn,
   | "discardFutureHistory"
@@ -340,56 +351,34 @@ function NumberInput({
   );
 }
 
-function SidebarHeader({
-  canRedo,
-  canUndo,
-  onClose,
-  redo,
-  theme,
-  toggleTheme,
-  undo,
-}: HeaderControls & {
-  onClose: () => void;
-  theme: Theme;
-  toggleTheme: () => void;
-}) {
+function SidebarHeader({ onClose }: { onClose: () => void }) {
   return (
     <ToolPanelHeader>
       <ToolPanelTitle
-        leading={
-          <ToolPanelBrandMark className="bg-gradient-to-br from-indigo-500 to-violet-600">
-            <Home className="h-4 w-4 text-white" />
-          </ToolPanelBrandMark>
+        content={
+          <ToolAppSwitcher
+            currentIcon={<RoomPlanAppIcon className="h-4 w-4 text-white" />}
+            currentIconClassName="bg-gradient-to-br from-indigo-500 to-violet-600"
+            currentTitle="Room Plan"
+            currentSubtitle="Room layout studio"
+            items={[
+              {
+                href: HANG_TIME_URL,
+                icon: <HangTimeAppIcon className="h-4.5 w-4.5" />,
+                iconClassName:
+                  "bg-gradient-to-br from-fuchsia-500 via-violet-500 to-indigo-600",
+                title: "Hang Time",
+                subtitle: "Pixel Perfect Picture Placement",
+              },
+            ]}
+          />
         }
         title="Room Plan"
         subtitle="Room layout studio"
         actions={
-          <>
-            <ToolPanelHeaderButton
-              onClick={undo}
-              disabled={!canUndo}
-              title="Undo"
-            >
-              <Undo2 className="h-3.5 w-3.5" />
-            </ToolPanelHeaderButton>
-            <ToolPanelHeaderButton
-              onClick={redo}
-              disabled={!canRedo}
-              title="Redo"
-            >
-              <Redo2 className="h-3.5 w-3.5" />
-            </ToolPanelHeaderButton>
-            <ToolPanelHeaderButton onClick={toggleTheme} title="Toggle theme">
-              {theme === "dark" ? (
-                <Sun className="h-3.5 w-3.5" />
-              ) : (
-                <Moon className="h-3.5 w-3.5" />
-              )}
-            </ToolPanelHeaderButton>
-            <ToolPanelHeaderButton onClick={onClose} title="Hide sidebar">
-              <PanelLeftClose className="h-3.5 w-3.5" />
-            </ToolPanelHeaderButton>
-          </>
+          <ToolPanelHeaderButton onClick={onClose} title="Hide sidebar">
+            <PanelLeftClose className="h-3.5 w-3.5" />
+          </ToolPanelHeaderButton>
         }
       />
     </ToolPanelHeader>
@@ -496,36 +485,73 @@ function ProjectManagerDialog({
 }
 
 function SidebarProjectActions({
+  canRedo,
+  canUndo,
   onBrowseProjects,
   onCreateProject,
+  redo,
+  undo,
 }: {
+  canRedo: boolean;
+  canUndo: boolean;
   onBrowseProjects: () => void;
   onCreateProject: () => void;
+  redo: () => void;
+  undo: () => void;
 }) {
   return (
-    <div className="border-b border-gray-200/50 px-4 py-3 dark:border-white/10">
-      <div className="grid gap-2 sm:grid-cols-2">
-        <Button
-          variant="outline"
-          size="sm"
-          className="justify-start bg-white/80 dark:bg-slate-900/60"
-          onClick={onBrowseProjects}
-        >
-          <Layers className="mr-2 h-3.5 w-3.5" />
-          Browse Projects
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          className="justify-start bg-white/80 dark:bg-slate-900/60"
-          onClick={onCreateProject}
-        >
-          <Plus className="mr-2 h-3.5 w-3.5" />
-          New Project
-        </Button>
-      </div>
-      <OpenHangTimeLink className="mt-2 w-full" />
-    </div>
+    <ToolPanelActionBar>
+      <TooltipProvider delayDuration={200}>
+        <div className="flex flex-wrap gap-2">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <ToolPanelActionButton
+                onClick={onBrowseProjects}
+                aria-label="Browse projects"
+              >
+                <FolderOpen className="h-4 w-4" />
+              </ToolPanelActionButton>
+            </TooltipTrigger>
+            <TooltipContent>Browse projects</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <ToolPanelActionButton
+                onClick={onCreateProject}
+                aria-label="New project"
+              >
+                <Plus className="h-4 w-4" />
+              </ToolPanelActionButton>
+            </TooltipTrigger>
+            <TooltipContent>New project</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <ToolPanelActionButton
+                onClick={undo}
+                disabled={!canUndo}
+                aria-label="Undo"
+              >
+                <Undo2 className="h-4 w-4" />
+              </ToolPanelActionButton>
+            </TooltipTrigger>
+            <TooltipContent>Undo</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <ToolPanelActionButton
+                onClick={redo}
+                disabled={!canRedo}
+                aria-label="Redo"
+              >
+                <Redo2 className="h-4 w-4" />
+              </ToolPanelActionButton>
+            </TooltipTrigger>
+            <TooltipContent>Redo</TooltipContent>
+          </Tooltip>
+        </div>
+      </TooltipProvider>
+    </ToolPanelActionBar>
   );
 }
 
@@ -574,27 +600,21 @@ function ProjectBrowserSection({
         open={projectBrowserOpen}
         setOpen={setProjectBrowserOpen}
       />
-      <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+      <Collapsible
+        open={isOpen}
+        onOpenChange={setIsOpen}
+        className="border-b border-gray-200 dark:border-white/10"
+      >
         <div>
-          <CollapsibleTrigger className="flex w-full items-start gap-2 py-2 text-left transition-colors hover:text-gray-900 dark:hover:text-white">
-            <Layers className="mt-0.5 h-4 w-4 shrink-0 text-cyan-500" />
-            <div className="min-w-0 flex-1">
-              <h2 className="text-sm font-medium text-gray-700 dark:text-white/80">
-                Project
-              </h2>
-              <p className="mt-0.5 truncate text-xs text-gray-500 dark:text-white/40">
-                {activeProject.name} / {activeSnapshot.name}
-              </p>
-            </div>
-            <ChevronDown
-              className={cn(
-                "mt-0.5 h-3.5 w-3.5 shrink-0 text-gray-400 transition-transform duration-200",
-                !isOpen && "-rotate-90",
-              )}
-            />
-          </CollapsibleTrigger>
+          <InspectorSectionHeader
+            icon={Layers}
+            iconClassName="text-cyan-500"
+            label="Project"
+            description={`${activeProject.name} / ${activeSnapshot.name}`}
+            variant="inline"
+          />
 
-          <CollapsibleContent className="pt-2">
+          <CollapsibleContent className="pt-2.5 pb-3">
             <InspectorInset className="rounded-2xl border-gray-200/60 bg-gray-50/70 px-3 pt-3 pb-3">
               <div className="space-y-4">
                 <div className="grid gap-3">
@@ -771,7 +791,10 @@ function RoomShapeSection({
   const { applyTemplate } = planner;
 
   return (
-    <Collapsible open={open}>
+    <Collapsible
+      open={open}
+      className="border-b border-gray-200 dark:border-white/10"
+    >
       <SectionHeader
         icon={Home}
         label="Room Shape"
@@ -779,7 +802,7 @@ function RoomShapeSection({
         onToggle={onToggle}
       />
       <CollapsibleContent>
-        <div className="space-y-3 pb-3">
+        <div className="space-y-3 pt-2.5 pb-3">
           <div>
             <Label className="mb-1.5 text-xs text-gray-500 dark:text-white/50">
               Templates
@@ -830,7 +853,10 @@ function WallsSection({
   const { room, selectedWallId, setSelectedWallId } = planner;
 
   return (
-    <Collapsible open={open}>
+    <Collapsible
+      open={open}
+      className="border-b border-gray-200 dark:border-white/10"
+    >
       <SectionHeader
         icon={Layers}
         label={`Walls (${room.walls.length})`}
@@ -838,7 +864,7 @@ function WallsSection({
         onToggle={onToggle}
       />
       <CollapsibleContent>
-        <div className="space-y-3 pb-3">
+        <div className="space-y-3 pt-2.5 pb-3">
           <InspectorInset
             tone="cyan"
             className="rounded-md p-2 text-[10px] leading-relaxed text-cyan-700 dark:text-cyan-300"
@@ -1847,7 +1873,10 @@ function FurnitureSection({
   const unitSuffix = getUnitSuffix(unit);
 
   return (
-    <Collapsible open={open}>
+    <Collapsible
+      open={open}
+      className="border-b border-gray-200 dark:border-white/10"
+    >
       <SectionHeader
         icon={Sofa}
         label="Furniture"
@@ -1855,7 +1884,7 @@ function FurnitureSection({
         onToggle={onToggle}
       />
       <CollapsibleContent>
-        <div className="space-y-3 pb-3">
+        <div className="space-y-3 pt-2.5 pb-3">
           <FurnitureCategoryPicker
             activeCategory={activeCategory}
             onChange={setActiveCategory}
@@ -1959,7 +1988,10 @@ function HistoryDebugSection({
   ];
 
   return (
-    <Collapsible open={open}>
+    <Collapsible
+      open={open}
+      className="border-b border-gray-200 dark:border-white/10"
+    >
       <SectionHeader
         icon={History}
         iconColor="text-amber-500"
@@ -1967,7 +1999,7 @@ function HistoryDebugSection({
         onToggle={onToggle}
       />
       <CollapsibleContent>
-        <div className="space-y-2 pb-3">
+        <div className="space-y-2 pt-2.5 pb-3">
           {planner.historyDebug.locked ? (
             <InspectorInset tone="amber" className="space-y-2">
               <div className="text-xs font-medium text-amber-700 dark:text-amber-200">
@@ -2267,7 +2299,6 @@ function getWallLength(ax: number, ay: number, bx: number, by: number) {
 }
 
 export function Sidebar({ planner, projects }: SidebarProps) {
-  const { theme, toggleTheme } = useTheme();
   const panelRef = useRef<HTMLDivElement>(null);
   const previousSelectedIdRef = useRef<string | null>(null);
   const previousSelectedWallIdRef = useRef<string | null>(null);
@@ -2365,122 +2396,119 @@ export function Sidebar({ planner, projects }: SidebarProps) {
   }, [furnitureOpen, isOpen, scrollSidebarItemIntoView, selectedId]);
 
   return (
-    <>
-      <AnimatePresence>
-        {!isOpen ? (
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            className="fixed top-4 left-4 z-50"
-          >
-            <FloatingIconButton
-              onClick={() => setIsOpen(true)}
-              title="Show sidebar"
-            >
-              <PanelLeftOpen className="h-4 w-4" />
-            </FloatingIconButton>
-          </motion.div>
-        ) : null}
-      </AnimatePresence>
+    <div className="fixed top-4 bottom-4 left-4 z-50 w-[340px] pointer-events-none">
+      <motion.div
+        className="absolute top-0 left-0 z-10"
+        initial={false}
+        animate={{
+          opacity: isOpen ? 0 : 1,
+          scale: isOpen ? 0.82 : 1,
+          x: isOpen ? -18 : 0,
+        }}
+        transition={{
+          type: "spring",
+          stiffness: 360,
+          damping: 28,
+          opacity: { duration: 0.16 },
+        }}
+        style={{ pointerEvents: isOpen ? "none" : "auto" }}
+      >
+        <FloatingIconButton
+          onClick={() => setIsOpen(true)}
+          title="Show sidebar"
+        >
+          <PanelLeftOpen className="h-4 w-4" />
+        </FloatingIconButton>
+      </motion.div>
 
-      <AnimatePresence>
-        {isOpen ? (
-          <motion.div
-            initial={{ x: -360, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            exit={{ x: -360, opacity: 0 }}
-            transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="fixed top-4 bottom-4 left-4 z-50 w-[340px]"
-          >
-            <ToolPanel
-              ref={panelRef}
-              data-sidebar-panel="open"
-              className="flex h-full flex-col overflow-hidden"
-            >
-              <SidebarHeader
-                canRedo={canRedo}
-                canUndo={canUndo}
-                onClose={() => setIsOpen(false)}
-                redo={redo}
-                theme={theme}
-                toggleTheme={toggleTheme}
-                undo={undo}
+      <motion.div
+        className="h-full origin-top-left"
+        initial={false}
+        animate={{
+          opacity: isOpen ? 1 : 0,
+          scale: isOpen ? 1 : 0.9,
+          x: isOpen ? 0 : -42,
+        }}
+        transition={{
+          type: "spring",
+          stiffness: 340,
+          damping: 30,
+          opacity: { duration: 0.16 },
+        }}
+        style={{ pointerEvents: isOpen ? "auto" : "none" }}
+      >
+        <ToolPanel
+          ref={panelRef}
+          data-sidebar-panel="open"
+          className="flex h-full flex-col overflow-hidden"
+        >
+          <SidebarHeader onClose={() => setIsOpen(false)} />
+
+          <SidebarProjectActions
+            canRedo={canRedo}
+            canUndo={canUndo}
+            onBrowseProjects={() => setProjectBrowserOpen(true)}
+            onCreateProject={projects.createProject}
+            redo={redo}
+            undo={undo}
+          />
+
+          <ScrollArea className="min-h-0 flex-1 overflow-hidden">
+            <div className="max-w-full space-y-0 overflow-hidden p-4">
+              <ProjectBrowserSection
+                controls={projects}
+                projectBrowserOpen={projectBrowserOpen}
+                setProjectBrowserOpen={setProjectBrowserOpen}
               />
 
-              <SidebarProjectActions
-                onBrowseProjects={() => setProjectBrowserOpen(true)}
-                onCreateProject={projects.createProject}
+              <div
+                className={cn(
+                  isHistoryEditingLocked &&
+                    "pointer-events-none opacity-45 select-none",
+                )}
+              >
+                <RoomShapeSection
+                  open={roomOpen}
+                  onToggle={() => setRoomOpen((current) => !current)}
+                  planner={planner}
+                />
+              </div>
+
+              <div
+                className={cn(
+                  isHistoryEditingLocked &&
+                    "pointer-events-none opacity-45 select-none",
+                )}
+              >
+                <WallsSection
+                  open={wallsOpen}
+                  onToggle={() => setWallsOpen((current) => !current)}
+                  planner={planner}
+                />
+              </div>
+
+              <div
+                className={cn(
+                  isHistoryEditingLocked &&
+                    "pointer-events-none opacity-45 select-none",
+                )}
+              >
+                <FurnitureSection
+                  open={furnitureOpen}
+                  onToggle={() => setFurnitureOpen((current) => !current)}
+                  planner={planner}
+                />
+              </div>
+
+              <HistoryDebugSection
+                open={historyDebugOpen}
+                onToggle={() => setHistoryDebugOpen((current) => !current)}
+                planner={planner}
               />
-
-              <ScrollArea className="min-h-0 flex-1 overflow-hidden">
-                <div className="max-w-full space-y-1 overflow-hidden p-4">
-                  <ProjectBrowserSection
-                    controls={projects}
-                    projectBrowserOpen={projectBrowserOpen}
-                    setProjectBrowserOpen={setProjectBrowserOpen}
-                  />
-
-                  <Separator />
-
-                  <div
-                    className={cn(
-                      isHistoryEditingLocked &&
-                        "pointer-events-none opacity-45 select-none",
-                    )}
-                  >
-                    <RoomShapeSection
-                      open={roomOpen}
-                      onToggle={() => setRoomOpen((current) => !current)}
-                      planner={planner}
-                    />
-                  </div>
-
-                  <Separator />
-
-                  <div
-                    className={cn(
-                      isHistoryEditingLocked &&
-                        "pointer-events-none opacity-45 select-none",
-                    )}
-                  >
-                    <WallsSection
-                      open={wallsOpen}
-                      onToggle={() => setWallsOpen((current) => !current)}
-                      planner={planner}
-                    />
-                  </div>
-
-                  <Separator />
-
-                  <div
-                    className={cn(
-                      isHistoryEditingLocked &&
-                        "pointer-events-none opacity-45 select-none",
-                    )}
-                  >
-                    <FurnitureSection
-                      open={furnitureOpen}
-                      onToggle={() => setFurnitureOpen((current) => !current)}
-                      planner={planner}
-                    />
-                  </div>
-
-                  <Separator />
-
-                  <HistoryDebugSection
-                    open={historyDebugOpen}
-                    onToggle={() => setHistoryDebugOpen((current) => !current)}
-                    planner={planner}
-                  />
-
-                  <Separator />
-                </div>
-              </ScrollArea>
-            </ToolPanel>
-          </motion.div>
-        ) : null}
-      </AnimatePresence>
-    </>
+            </div>
+          </ScrollArea>
+        </ToolPanel>
+      </motion.div>
+    </div>
   );
 }

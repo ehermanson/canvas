@@ -34,11 +34,28 @@ const ToolPanelHeader = React.forwardRef<
 ));
 ToolPanelHeader.displayName = "ToolPanelHeader";
 
+const ToolPanelActionBar = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    data-slot="tool-panel-action-bar"
+    className={cn(
+      "border-b border-gray-200/50 px-4 py-3 dark:border-white/10",
+      className,
+    )}
+    {...props}
+  />
+));
+ToolPanelActionBar.displayName = "ToolPanelActionBar";
+
 interface ToolPanelTitleProps extends Omit<
   React.HTMLAttributes<HTMLDivElement>,
-  "title"
+  "content" | "title"
 > {
   actions?: React.ReactNode;
+  content?: React.ReactNode;
   leading?: React.ReactNode;
   subtitle?: React.ReactNode;
   subtitleClassName?: string;
@@ -51,6 +68,7 @@ const ToolPanelTitle = React.forwardRef<HTMLDivElement, ToolPanelTitleProps>(
     {
       actions,
       className,
+      content,
       leading,
       subtitle,
       subtitleClassName,
@@ -67,27 +85,33 @@ const ToolPanelTitle = React.forwardRef<HTMLDivElement, ToolPanelTitleProps>(
       {...props}
     >
       <div className="flex min-w-0 flex-1 items-center gap-2.5">
-        {leading ? <div className="shrink-0">{leading}</div> : null}
-        <div className="min-w-0">
-          <h1
-            className={cn(
-              "truncate text-base font-semibold tracking-tight text-gray-900 dark:text-white",
-              titleClassName,
-            )}
-          >
-            {title}
-          </h1>
-          {subtitle ? (
-            <p
-              className={cn(
-                "mt-0.5 truncate text-[11px] text-gray-500 dark:text-white/45",
-                subtitleClassName,
-              )}
-            >
-              {subtitle}
-            </p>
-          ) : null}
-        </div>
+        {content ? (
+          <div className="min-w-0 flex-1">{content}</div>
+        ) : (
+          <>
+            {leading ? <div className="shrink-0">{leading}</div> : null}
+            <div className="min-w-0">
+              <h1
+                className={cn(
+                  "truncate text-base font-semibold tracking-tight text-gray-900 dark:text-white",
+                  titleClassName,
+                )}
+              >
+                {title}
+              </h1>
+              {subtitle ? (
+                <p
+                  className={cn(
+                    "mt-0.5 truncate text-[11px] text-gray-500 dark:text-white/45",
+                    subtitleClassName,
+                  )}
+                >
+                  {subtitle}
+                </p>
+              ) : null}
+            </div>
+          </>
+        )}
       </div>
       {actions ? (
         <div className="flex items-center gap-1">{actions}</div>
@@ -129,6 +153,22 @@ const ToolPanelHeaderButton = React.forwardRef<HTMLButtonElement, ButtonProps>(
 );
 ToolPanelHeaderButton.displayName = "ToolPanelHeaderButton";
 
+const ToolPanelActionButton = React.forwardRef<HTMLButtonElement, ButtonProps>(
+  ({ className, size = "icon", variant = "outline", ...props }, ref) => (
+    <Button
+      ref={ref}
+      size={size}
+      variant={variant}
+      className={cn(
+        "h-9 w-9 rounded-xl bg-white/80 dark:bg-slate-900/60",
+        className,
+      )}
+      {...props}
+    />
+  ),
+);
+ToolPanelActionButton.displayName = "ToolPanelActionButton";
+
 const FloatingIconButton = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, size = "icon", variant = "outline", ...props }, ref) => (
     <Button
@@ -148,6 +188,8 @@ FloatingIconButton.displayName = "FloatingIconButton";
 export {
   FloatingIconButton,
   ToolPanel,
+  ToolPanelActionBar,
+  ToolPanelActionButton,
   ToolPanelBrandMark,
   ToolPanelHeader,
   ToolPanelHeaderButton,

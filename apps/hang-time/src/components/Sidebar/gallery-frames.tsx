@@ -690,20 +690,21 @@ export function GalleryFrames({ calculator }: Props) {
   return (
     <Collapsible
       defaultOpen
-      className="pb-4 border-b border-gray-200 dark:border-white/10"
+      className="border-b border-gray-200 dark:border-white/10"
     >
       <InspectorSectionHeader
         icon={Frame}
+        iconClassName="text-pink-500"
         label="Frames"
         labelTrailing={
           <span className="ml-1 text-xs font-normal text-gray-400 dark:text-white/40">
             ({state.frames.length})
           </span>
         }
-        iconBadgeClassName="bg-pink-100 text-pink-600 dark:bg-pink-500/20 dark:text-pink-400"
+        variant="inline"
       />
       <CollapsibleContent>
-        <div className="space-y-3 pt-3">
+        <div className="space-y-3 pt-2.5 pb-3">
           {/* Uniform Size Toggle */}
           <Field>
             <div className="flex items-center justify-between">

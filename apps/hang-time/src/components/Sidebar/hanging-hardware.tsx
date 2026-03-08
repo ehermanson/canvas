@@ -1,25 +1,38 @@
-import { CircleDot } from 'lucide-react';
-import { InspectorOptionCard, InspectorSectionHeader } from '@canvas-tools/ui';
-import {
-  Collapsible,
-  CollapsibleContent,
-} from '@/components/ui/collapsible';
-import { Field, FieldLabel } from '@/components/ui/field';
-import { Input } from '@/components/ui/input';
-import type { UseCalculatorReturn } from '@/hooks/use-calculator';
-import { cn } from '@/lib/utils';
-import type { HangingType } from '@/types';
+import { CircleDot } from "lucide-react";
+import { InspectorOptionCard, InspectorSectionHeader } from "@canvas-tools/ui";
+import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
+import { Field, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import type { UseCalculatorReturn } from "@/hooks/use-calculator";
+import { cn } from "@/lib/utils";
+import type { HangingType } from "@/types";
 
 // Custom icons for hook types
 function SingleHookIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 20" fill="none" className={className}>
       {/* Frame outline */}
-      <rect x="2" y="4" width="20" height="16" rx="1" stroke="currentColor" strokeWidth="1.5" fill="none" />
+      <rect
+        x="2"
+        y="4"
+        width="20"
+        height="16"
+        rx="1"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        fill="none"
+      />
       {/* Single hook at center */}
       <circle cx="12" cy="7" r="2" fill="currentColor" />
       {/* Hook line to top */}
-      <line x1="12" y1="4" x2="12" y2="5" stroke="currentColor" strokeWidth="1.5" />
+      <line
+        x1="12"
+        y1="4"
+        x2="12"
+        y2="5"
+        stroke="currentColor"
+        strokeWidth="1.5"
+      />
     </svg>
   );
 }
@@ -28,20 +41,47 @@ function DualHookIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 20" fill="none" className={className}>
       {/* Frame outline */}
-      <rect x="2" y="4" width="20" height="16" rx="1" stroke="currentColor" strokeWidth="1.5" fill="none" />
+      <rect
+        x="2"
+        y="4"
+        width="20"
+        height="16"
+        rx="1"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        fill="none"
+      />
       {/* Left hook */}
       <circle cx="7" cy="7" r="2" fill="currentColor" />
-      <line x1="7" y1="4" x2="7" y2="5" stroke="currentColor" strokeWidth="1.5" />
+      <line
+        x1="7"
+        y1="4"
+        x2="7"
+        y2="5"
+        stroke="currentColor"
+        strokeWidth="1.5"
+      />
       {/* Right hook */}
       <circle cx="17" cy="7" r="2" fill="currentColor" />
-      <line x1="17" y1="4" x2="17" y2="5" stroke="currentColor" strokeWidth="1.5" />
+      <line
+        x1="17"
+        y1="4"
+        x2="17"
+        y2="5"
+        stroke="currentColor"
+        strokeWidth="1.5"
+      />
     </svg>
   );
 }
 
-const HANGING_TYPE_OPTIONS: { value: HangingType; label: string; icon: typeof SingleHookIcon }[] = [
-  { value: 'center', label: 'Single', icon: SingleHookIcon },
-  { value: 'dual', label: 'Dual', icon: DualHookIcon },
+const HANGING_TYPE_OPTIONS: {
+  value: HangingType;
+  label: string;
+  icon: typeof SingleHookIcon;
+}[] = [
+  { value: "center", label: "Single", icon: SingleHookIcon },
+  { value: "dual", label: "Dual", icon: DualHookIcon },
 ];
 
 interface Props {
@@ -49,27 +89,22 @@ interface Props {
 }
 
 export function HangingHardware({ calculator }: Props) {
-  const {
-    state,
-    u,
-    fromU,
-    setHangingOffset,
-    setHangingType,
-    setHookInset,
-  } = calculator;
+  const { state, u, fromU, setHangingOffset, setHangingType, setHookInset } =
+    calculator;
 
   return (
     <Collapsible
       defaultOpen
-      className="pb-4 border-b border-gray-200 dark:border-white/10"
+      className="border-b border-gray-200 dark:border-white/10"
     >
       <InspectorSectionHeader
         icon={CircleDot}
+        iconClassName="text-cyan-500"
         label="Hanging Hardware"
-        iconBadgeClassName="bg-cyan-100 text-cyan-600 dark:bg-cyan-500/20 dark:text-cyan-400"
+        variant="inline"
       />
       <CollapsibleContent>
-        <div className="space-y-3 pt-3">
+        <div className="space-y-3 pt-2.5 pb-3">
           {/* Hook Type */}
           <Field>
             <FieldLabel>Hook Type</FieldLabel>
@@ -87,25 +122,25 @@ export function HangingHardware({ calculator }: Props) {
                     className="p-2"
                   >
                     <button
-                    onClick={() => setHangingType(option.value)}
-                    type="button"
-                  >
-                    <Icon
-                      className={cn(
-                        'h-6 w-8',
-                        isSelected
-                          ? 'text-cyan-600 dark:text-cyan-400'
-                          : 'text-gray-400 dark:text-white/40',
-                      )}
-                    />
-                    <span
-                      className={cn(
-                        'text-xs font-medium mt-1',
-                        isSelected
-                          ? 'text-cyan-600 dark:text-cyan-300'
-                          : 'text-gray-600 dark:text-white/60',
-                      )}
+                      onClick={() => setHangingType(option.value)}
+                      type="button"
                     >
+                      <Icon
+                        className={cn(
+                          "h-6 w-8",
+                          isSelected
+                            ? "text-cyan-600 dark:text-cyan-400"
+                            : "text-gray-400 dark:text-white/40",
+                        )}
+                      />
+                      <span
+                        className={cn(
+                          "text-xs font-medium mt-1",
+                          isSelected
+                            ? "text-cyan-600 dark:text-cyan-300"
+                            : "text-gray-600 dark:text-white/60",
+                        )}
+                      >
                         {option.label}
                       </span>
                     </button>
@@ -137,7 +172,7 @@ export function HangingHardware({ calculator }: Props) {
           </Field>
 
           {/* Hook Inset (only for dual) */}
-          {state.hangingType === 'dual' && (
+          {state.hangingType === "dual" && (
             <Field>
               <FieldLabel htmlFor="hook-inset">
                 Hook Inset ({state.unit})
