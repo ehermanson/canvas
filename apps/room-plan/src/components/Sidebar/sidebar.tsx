@@ -1,6 +1,7 @@
 import {
   ChevronDown,
   Copy,
+  Download,
   FolderOpen,
   History,
   Home,
@@ -17,6 +18,7 @@ import {
   Undo2,
   Unlink,
   Unlock,
+  Upload,
 } from "lucide-react";
 import {
   FloatingIconButton,
@@ -398,6 +400,8 @@ function formatProjectBrowserDate(timestamp: string) {
 
 function ProjectManagerDialog({
   activeProject,
+  exportProject,
+  importProject,
   open,
   projects,
   selectProject,
@@ -406,6 +410,51 @@ function ProjectManagerDialog({
   open: boolean;
   setOpen: (open: boolean) => void;
 }) {
+  const importInputRef = useRef<HTMLInputElement>(null);
+
+  const handleExportProject = useCallback(() => {
+    const exported = exportProject(activeProject.id);
+    if (!exported) {
+      return;
+    }
+
+    const blob = new Blob([exported], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    const safeName = activeProject.name
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+
+    link.href = url;
+    link.download = `${safeName || "room-plan-project"}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }, [activeProject.id, activeProject.name, exportProject]);
+
+  const handleImportFile = useCallback(
+    async (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (!file) {
+        return;
+      }
+
+      try {
+        const raw = await file.text();
+        importProject(raw);
+        setOpen(false);
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Import failed";
+        window.alert(`Unable to import project: ${message}`);
+      } finally {
+        event.target.value = "";
+      }
+    },
+    [importProject, setOpen],
+  );
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <SuiteDialogContent className="max-h-[min(80vh,760px)] w-[min(720px,calc(100vw-2rem))] max-w-none overflow-hidden p-0">
@@ -419,14 +468,41 @@ function ProjectManagerDialog({
         </DialogHeader>
 
         <div className="px-6 py-5">
+          <input
+            ref={importInputRef}
+            type="file"
+            accept="application/json,.json"
+            className="hidden"
+            onChange={handleImportFile}
+          />
           <div className="mb-3 flex items-center justify-between gap-3">
             <p className="text-xs text-gray-500 dark:text-white/45">
               {projects.length} available{" "}
               {projects.length === 1 ? "project" : "projects"}
             </p>
-            <span className="text-[11px] text-gray-400 dark:text-white/35">
-              Current: {activeProject.name}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] text-gray-400 dark:text-white/35">
+                Current: {activeProject.name}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 gap-1.5 text-[11px]"
+                onClick={() => importInputRef.current?.click()}
+              >
+                <Upload className="h-3.5 w-3.5" />
+                Import JSON
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 gap-1.5 text-[11px]"
+                onClick={handleExportProject}
+              >
+                <Download className="h-3.5 w-3.5" />
+                Export Current
+              </Button>
+            </div>
           </div>
 
           <ScrollArea className="h-[min(60vh,520px)] rounded-2xl border border-gray-200/70 bg-white/70 p-2 dark:border-white/10 dark:bg-slate-950/35">

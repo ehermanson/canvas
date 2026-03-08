@@ -428,34 +428,90 @@ export function Preview({ calculator }: PreviewProps) {
     const offsetY = pan.y;
 
     // Draw wall background
+    const wallWidthPx = state.wallWidth * scale;
+    const wallHeightPx = state.wallHeight * scale;
     ctx.fillStyle = isDark ? "#1e293b" : "#fff";
-    ctx.strokeStyle = isDark ? "#475569" : "#ccc";
+    ctx.strokeStyle = isDark ? "rgba(255,255,255,0.08)" : "rgba(15,23,42,0.12)";
     ctx.lineWidth = 2;
-    ctx.fillRect(
-      offsetX,
-      offsetY,
-      state.wallWidth * scale,
-      state.wallHeight * scale,
-    );
-    ctx.strokeRect(
-      offsetX,
-      offsetY,
-      state.wallWidth * scale,
-      state.wallHeight * scale,
-    );
+    ctx.fillRect(offsetX, offsetY, wallWidthPx, wallHeightPx);
+
+    const majorTickInterval = state.unit === "in" ? 12 : 30;
+    const minorTickInterval = state.unit === "in" ? 3 : 10;
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(offsetX, offsetY, wallWidthPx, wallHeightPx);
+    ctx.clip();
+
+    ctx.strokeStyle = isDark
+      ? "rgba(255,255,255,0.03)"
+      : "rgba(15,23,42,0.035)";
+    ctx.lineWidth = 1;
+    for (
+      let i = minorTickInterval;
+      i < state.wallWidth;
+      i += minorTickInterval
+    ) {
+      if (i % majorTickInterval === 0) continue;
+      const x = Math.round(offsetX + i * scale) + 0.5;
+      ctx.beginPath();
+      ctx.moveTo(x, offsetY);
+      ctx.lineTo(x, offsetY + wallHeightPx);
+      ctx.stroke();
+    }
+    for (
+      let i = minorTickInterval;
+      i < state.wallHeight;
+      i += minorTickInterval
+    ) {
+      if (i % majorTickInterval === 0) continue;
+      const y = Math.round(offsetY + i * scale) + 0.5;
+      ctx.beginPath();
+      ctx.moveTo(offsetX, y);
+      ctx.lineTo(offsetX + wallWidthPx, y);
+      ctx.stroke();
+    }
+
+    ctx.strokeStyle = isDark ? "rgba(255,255,255,0.06)" : "rgba(15,23,42,0.08)";
+    for (
+      let i = majorTickInterval;
+      i < state.wallWidth;
+      i += majorTickInterval
+    ) {
+      const x = Math.round(offsetX + i * scale) + 0.5;
+      ctx.beginPath();
+      ctx.moveTo(x, offsetY);
+      ctx.lineTo(x, offsetY + wallHeightPx);
+      ctx.stroke();
+    }
+    for (
+      let i = majorTickInterval;
+      i < state.wallHeight;
+      i += majorTickInterval
+    ) {
+      const y = Math.round(offsetY + i * scale) + 0.5;
+      ctx.beginPath();
+      ctx.moveTo(offsetX, y);
+      ctx.lineTo(offsetX + wallWidthPx, y);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    ctx.strokeRect(offsetX, offsetY, wallWidthPx, wallHeightPx);
 
     // Draw ruler marks on top
     ctx.fillStyle = isDark ? "#94a3b8" : "#666";
     ctx.font = "10px -apple-system, sans-serif";
     ctx.textAlign = "center";
 
-    const tickInterval = state.unit === "in" ? 12 : 30;
-    for (let i = 0; i <= state.wallWidth; i += tickInterval) {
+    for (let i = 0; i <= state.wallWidth; i += majorTickInterval) {
       const x = offsetX + i * scale;
       ctx.beginPath();
       ctx.moveTo(x, offsetY - 10);
       ctx.lineTo(x, offsetY);
-      ctx.strokeStyle = isDark ? "#64748b" : "#999";
+      ctx.strokeStyle = isDark
+        ? "rgba(148,163,184,0.7)"
+        : "rgba(71,85,105,0.65)";
       ctx.lineWidth = 1;
       ctx.stroke();
       ctx.fillText(fmtShort(i), x, offsetY - 14);
@@ -463,12 +519,14 @@ export function Preview({ calculator }: PreviewProps) {
 
     // Left ruler
     ctx.textAlign = "right";
-    for (let i = 0; i <= state.wallHeight; i += tickInterval) {
+    for (let i = 0; i <= state.wallHeight; i += majorTickInterval) {
       const y = offsetY + (state.wallHeight - i) * scale;
       ctx.beginPath();
       ctx.moveTo(offsetX - 10, y);
       ctx.lineTo(offsetX, y);
-      ctx.strokeStyle = isDark ? "#64748b" : "#999";
+      ctx.strokeStyle = isDark
+        ? "rgba(148,163,184,0.7)"
+        : "rgba(71,85,105,0.65)";
       ctx.lineWidth = 1;
       ctx.stroke();
       ctx.fillText(fmtShort(i), offsetX - 14, y + 4);
