@@ -18,56 +18,63 @@ import {
   Undo2,
   Unlink,
   Unlock,
-} from 'lucide-react';
+} from "lucide-react";
 import {
   FloatingIconButton,
+  InspectorInset,
+  InspectorListRow,
+  InspectorOptionCard,
   InspectorSectionHeader,
+  InspectorSegmentedControl,
+  InspectorSegmentedControlItem,
   SuiteDialogContent,
   ToolLinkButton,
   ToolPanel,
+  ToolPanelBrandMark,
   ToolPanelHeader,
+  ToolPanelHeaderButton,
   ToolPanelTitle,
-} from '@canvas-tools/ui';
-import { AnimatePresence, motion } from 'motion/react';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { Button } from '@/components/ui/button';
+} from "@canvas-tools/ui";
+import { AnimatePresence, motion } from "motion/react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from '@/components/ui/collapsible';
+} from "@/components/ui/collapsible";
 import {
   Dialog,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@/components/ui/popover';
-import { ScrollArea } from '@/components/ui/scroll-area';
+} from "@/components/ui/popover";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Separator } from '@/components/ui/separator';
+} from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
 import {
   FURNITURE_CATEGORIES,
   FURNITURE_PRESETS,
   PULLOUT_SOFA_DEFAULTS,
-} from '@/data/furniture-presets';
-import { ROOM_TEMPLATES } from '@/data/room-templates';
-import type { PlannerProjectsReturn } from '@/hooks/use-planner-projects';
-import type { RoomPlannerReturn } from '@/hooks/use-room-planner';
-import { useTheme } from '@/hooks/use-theme';
-import { cn } from '@/lib/utils';
+} from "@/data/furniture-presets";
+import { ROOM_TEMPLATES } from "@/data/room-templates";
+import type { PlannerProjectsReturn } from "@/hooks/use-planner-projects";
+import type { RoomPlannerReturn } from "@/hooks/use-room-planner";
+import { useTheme } from "@/hooks/use-theme";
+import { cn } from "@/lib/utils";
 import type {
   FurnitureItem,
   FurniturePreset,
@@ -77,10 +84,10 @@ import type {
   Unit,
   Wall,
   WallFeature,
-} from '@/types';
-import { ROOM_SHAPE_ICONS } from './room-shape-icons';
+} from "@/types";
+import { ROOM_SHAPE_ICONS } from "./room-shape-icons";
 
-export const HANG_TIME_URL = 'https://hang-time.app';
+export const HANG_TIME_URL = "https://hang-time.app";
 
 export function OpenHangTimeLink({ className }: { className?: string }) {
   return (
@@ -97,110 +104,104 @@ interface SidebarProps {
   projects: PlannerProjectsReturn;
 }
 
-type Formatter = RoomPlannerReturn['toDisplay'];
-type Parser = RoomPlannerReturn['fromDisplay'];
-type Theme = ReturnType<typeof useTheme>['theme'];
+type Formatter = RoomPlannerReturn["toDisplay"];
+type Parser = RoomPlannerReturn["fromDisplay"];
+type Theme = ReturnType<typeof useTheme>["theme"];
 
-type RoomSectionPlanner = Pick<RoomPlannerReturn, 'applyTemplate'>;
+type RoomSectionPlanner = Pick<RoomPlannerReturn, "applyTemplate">;
 
 type WallsSectionPlanner = Pick<
   RoomPlannerReturn,
-  | 'addWallFeature'
-  | 'disconnectEndpoint'
-  | 'fromDisplay'
-  | 'removeWall'
-  | 'removeWallFeature'
-  | 'room'
-  | 'selectedWallId'
-  | 'setSelectedWallId'
-  | 'setWallLength'
-  | 'toDisplay'
-  | 'unit'
-  | 'updateWallFeature'
+  | "addWallFeature"
+  | "disconnectEndpoint"
+  | "fromDisplay"
+  | "removeWall"
+  | "removeWallFeature"
+  | "room"
+  | "selectedWallId"
+  | "setSelectedWallId"
+  | "setWallLength"
+  | "toDisplay"
+  | "unit"
+  | "updateWallFeature"
 >;
 
 type FurnitureSectionPlanner = Pick<
   RoomPlannerReturn,
-  | 'addFurniture'
-  | 'duplicateFurniture'
-  | 'furniture'
-  | 'fromDisplay'
-  | 'removeFurniture'
-  | 'rotateFurniture'
-  | 'setPulloutBedSize'
-  | 'selectedId'
-  | 'selectedIds'
-  | 'setSelectedId'
-  | 'togglePulloutSofa'
-  | 'toDisplay'
-  | 'unit'
-  | 'updateFurniture'
-  | 'updatePulloutSofa'
+  | "addFurniture"
+  | "duplicateFurniture"
+  | "furniture"
+  | "fromDisplay"
+  | "removeFurniture"
+  | "rotateFurniture"
+  | "setPulloutBedSize"
+  | "selectedId"
+  | "selectedIds"
+  | "setSelectedId"
+  | "togglePulloutSofa"
+  | "toDisplay"
+  | "unit"
+  | "updateFurniture"
+  | "updatePulloutSofa"
 >;
 
 type HeaderControls = Pick<
   RoomPlannerReturn,
-  'canRedo' | 'canUndo' | 'redo' | 'undo'
+  "canRedo" | "canUndo" | "redo" | "undo"
 >;
 type HistoryDebugPlanner = Pick<
   RoomPlannerReturn,
-  | 'discardFutureHistory'
-  | 'historyDebug'
-  | 'jumpToHistory'
-  | 'returnToLatestHistory'
+  | "discardFutureHistory"
+  | "historyDebug"
+  | "jumpToHistory"
+  | "returnToLatestHistory"
 >;
 
 type ProjectControls = Pick<
   PlannerProjectsReturn,
-  | 'activeProject'
-  | 'activeSnapshot'
-  | 'createProject'
-  | 'createSnapshot'
-  | 'deleteProject'
-  | 'deleteSnapshot'
-  | 'duplicateProject'
-  | 'duplicateSnapshot'
-  | 'exportProject'
-  | 'importProject'
-  | 'projects'
-  | 'renameProject'
-  | 'renameSnapshot'
-  | 'selectProject'
-  | 'selectSnapshot'
+  | "activeProject"
+  | "activeSnapshot"
+  | "createProject"
+  | "createSnapshot"
+  | "deleteProject"
+  | "deleteSnapshot"
+  | "duplicateProject"
+  | "duplicateSnapshot"
+  | "exportProject"
+  | "importProject"
+  | "projects"
+  | "renameProject"
+  | "renameSnapshot"
+  | "selectProject"
+  | "selectSnapshot"
 >;
 
 const featureMeta = {
   closet: {
     Icon: ClosetIcon,
-    accentClass: 'text-stone-400',
-    cardClass: 'border-stone-400/20 bg-stone-400/[0.03]',
-    label: 'closet',
+    accentClass: "text-stone-400",
+    cardClass: "border-stone-400/20 bg-stone-400/[0.03]",
+    label: "closet",
   },
   door: {
     Icon: DoorIcon,
-    accentClass: 'text-indigo-500',
-    cardClass: 'border-indigo-500/20 bg-indigo-500/[0.03]',
-    label: 'door',
+    accentClass: "text-indigo-500",
+    cardClass: "border-indigo-500/20 bg-indigo-500/[0.03]",
+    label: "door",
   },
   opening: {
     Icon: OpeningIcon,
-    accentClass: 'text-emerald-500',
-    cardClass: 'border-emerald-500/20 bg-emerald-500/[0.03]',
-    label: 'opening',
+    accentClass: "text-emerald-500",
+    cardClass: "border-emerald-500/20 bg-emerald-500/[0.03]",
+    label: "opening",
   },
   window: {
     Icon: WindowIcon,
-    accentClass: 'text-sky-500',
-    cardClass: 'border-sky-500/20 bg-sky-500/[0.03]',
-    label: 'window',
+    accentClass: "text-sky-500",
+    cardClass: "border-sky-500/20 bg-sky-500/[0.03]",
+    label: "window",
   },
 } as const;
-
-const featureOptionClass =
-  'flex flex-col items-center gap-1 rounded-md border p-2 transition-colors';
-
-const featureOptionInactiveClass =
-  'border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 text-gray-400 dark:text-white/30 hover:border-gray-300 dark:hover:border-white/20 hover:bg-gray-50 dark:hover:bg-white/10';
 
 function DoorIcon({ className }: { className?: string }) {
   return (
@@ -353,55 +354,41 @@ function SidebarHeader({
   toggleTheme: () => void;
 }) {
   return (
-    <ToolPanelHeader className="py-3">
+    <ToolPanelHeader>
       <ToolPanelTitle
         leading={
-          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600">
+          <ToolPanelBrandMark className="bg-gradient-to-br from-indigo-500 to-violet-600">
             <Home className="h-4 w-4 text-white" />
-          </div>
+          </ToolPanelBrandMark>
         }
         title="Room Plan"
         subtitle="Room layout studio"
         actions={
           <>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
+            <ToolPanelHeaderButton
               onClick={undo}
               disabled={!canUndo}
+              title="Undo"
             >
               <Undo2 className="h-3.5 w-3.5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
+            </ToolPanelHeaderButton>
+            <ToolPanelHeaderButton
               onClick={redo}
               disabled={!canRedo}
+              title="Redo"
             >
               <Redo2 className="h-3.5 w-3.5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
-              onClick={toggleTheme}
-            >
-              {theme === 'dark' ? (
+            </ToolPanelHeaderButton>
+            <ToolPanelHeaderButton onClick={toggleTheme} title="Toggle theme">
+              {theme === "dark" ? (
                 <Sun className="h-3.5 w-3.5" />
               ) : (
                 <Moon className="h-3.5 w-3.5" />
               )}
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
-              onClick={onClose}
-            >
+            </ToolPanelHeaderButton>
+            <ToolPanelHeaderButton onClick={onClose} title="Hide sidebar">
               <PanelLeftClose className="h-3.5 w-3.5" />
-            </Button>
+            </ToolPanelHeaderButton>
           </>
         }
       />
@@ -412,11 +399,11 @@ function SidebarHeader({
 function formatProjectBrowserDate(timestamp: string) {
   try {
     return new Intl.DateTimeFormat(undefined, {
-      month: 'short',
-      day: 'numeric',
+      month: "short",
+      day: "numeric",
     }).format(new Date(timestamp));
   } catch {
-    return '';
+    return "";
   }
 }
 
@@ -445,8 +432,8 @@ function ProjectManagerDialog({
         <div className="px-6 py-5">
           <div className="mb-3 flex items-center justify-between gap-3">
             <p className="text-xs text-gray-500 dark:text-white/45">
-              {projects.length} available{' '}
-              {projects.length === 1 ? 'project' : 'projects'}
+              {projects.length} available{" "}
+              {projects.length === 1 ? "project" : "projects"}
             </p>
             <span className="text-[11px] text-gray-400 dark:text-white/35">
               Current: {activeProject.name}
@@ -463,40 +450,41 @@ function ProjectManagerDialog({
                   ) ?? project.snapshots[0];
 
                 return (
-                  <button
+                  <InspectorListRow
                     key={project.id}
-                    type="button"
-                    onClick={() => {
-                      selectProject(project.id);
-                      setOpen(false);
-                    }}
-                    className={cn(
-                      'flex w-full items-center justify-between rounded-xl border px-4 py-3 text-left transition-colors',
-                      isActive
-                        ? 'border-cyan-400/70 bg-cyan-500/[0.08] shadow-[0_0_0_1px_rgba(34,211,238,0.15),0_12px_30px_-22px_rgba(6,182,212,0.8)]'
-                        : 'border-gray-200/70 bg-white/70 hover:border-gray-300 dark:border-white/10 dark:bg-white/[0.02] dark:hover:border-white/20',
-                    )}
+                    asChild
+                    selected={isActive}
+                    tone="cyan"
                   >
-                    <div className="min-w-0">
-                      <p className="truncate text-base font-medium text-gray-900 dark:text-white">
-                        {project.name}
-                      </p>
-                      <p className="truncate text-sm text-gray-500 dark:text-white/45">
-                        {currentSnapshot?.name} · {project.snapshots.length}{' '}
-                        {project.snapshots.length === 1
-                          ? 'snapshot'
-                          : 'snapshots'}
-                      </p>
-                    </div>
-                    <div className="shrink-0 pl-4 text-right">
-                      <p className="text-[11px] text-gray-400 dark:text-white/35">
-                        {formatProjectBrowserDate(project.updatedAt)}
-                      </p>
-                      <p className="mt-1 text-[11px] text-gray-400 dark:text-white/35">
-                        {isActive ? 'Open now' : 'Open'}
-                      </p>
-                    </div>
-                  </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        selectProject(project.id);
+                        setOpen(false);
+                      }}
+                      className="flex w-full items-center justify-between px-1 py-1 text-left"
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate text-base font-medium text-gray-900 dark:text-white">
+                          {project.name}
+                        </p>
+                        <p className="truncate text-sm text-gray-500 dark:text-white/45">
+                          {currentSnapshot?.name} · {project.snapshots.length}{" "}
+                          {project.snapshots.length === 1
+                            ? "snapshot"
+                            : "snapshots"}
+                        </p>
+                      </div>
+                      <div className="shrink-0 pl-4 text-right">
+                        <p className="text-[11px] text-gray-400 dark:text-white/35">
+                          {formatProjectBrowserDate(project.updatedAt)}
+                        </p>
+                        <p className="mt-1 text-[11px] text-gray-400 dark:text-white/35">
+                          {isActive ? "Open now" : "Open"}
+                        </p>
+                      </div>
+                    </button>
+                  </InspectorListRow>
                 );
               })}
             </div>
@@ -600,14 +588,14 @@ function ProjectBrowserSection({
             </div>
             <ChevronDown
               className={cn(
-                'mt-0.5 h-3.5 w-3.5 shrink-0 text-gray-400 transition-transform duration-200',
-                !isOpen && '-rotate-90',
+                "mt-0.5 h-3.5 w-3.5 shrink-0 text-gray-400 transition-transform duration-200",
+                !isOpen && "-rotate-90",
               )}
             />
           </CollapsibleTrigger>
 
           <CollapsibleContent className="pt-2">
-            <div className="rounded-2xl border border-gray-200/60 bg-gray-50/70 px-3 pt-3 pb-3 dark:border-white/10 dark:bg-white/[0.03]">
+            <InspectorInset className="rounded-2xl border-gray-200/60 bg-gray-50/70 px-3 pt-3 pb-3">
               <div className="space-y-4">
                 <div className="grid gap-3">
                   <div className="space-y-1">
@@ -621,7 +609,7 @@ function ProjectBrowserSection({
                       }
                       onBlur={commitProjectRename}
                       onKeyDown={(event) => {
-                        if (event.key === 'Enter') {
+                        if (event.key === "Enter") {
                           event.currentTarget.blur();
                         }
                       }}
@@ -639,7 +627,7 @@ function ProjectBrowserSection({
                       }
                       onBlur={commitSnapshotRename}
                       onKeyDown={(event) => {
-                        if (event.key === 'Enter') {
+                        if (event.key === "Enter") {
                           event.currentTarget.blur();
                         }
                       }}
@@ -666,14 +654,11 @@ function ProjectBrowserSection({
                       const isActive = snapshot.id === activeSnapshot.id;
 
                       return (
-                        <div
+                        <InspectorListRow
                           key={snapshot.id}
-                          className={cn(
-                            'flex items-center gap-2 rounded-xl border px-3 py-2 transition-colors',
-                            isActive
-                              ? 'border-violet-400/70 bg-violet-500/[0.08] shadow-[0_0_0_1px_rgba(167,139,250,0.12),0_10px_28px_-22px_rgba(139,92,246,0.8)]'
-                              : 'border-gray-200/70 bg-white/70 hover:border-gray-300 dark:border-white/10 dark:bg-white/[0.02] dark:hover:border-white/20',
-                          )}
+                          selected={isActive}
+                          tone="violet"
+                          className="flex items-center gap-2"
                         >
                           <button
                             type="button"
@@ -687,12 +672,12 @@ function ProjectBrowserSection({
                                 {snapshot.name}
                               </p>
                               <p className="truncate text-xs text-gray-500 dark:text-white/45">
-                                Updated{' '}
+                                Updated{" "}
                                 {formatProjectBrowserDate(snapshot.updatedAt)}
                               </p>
                             </div>
                             <span className="shrink-0 pl-3 text-[11px] text-gray-400 dark:text-white/35">
-                              {isActive ? 'Live' : 'Open'}
+                              {isActive ? "Live" : "Open"}
                             </span>
                           </button>
 
@@ -750,7 +735,7 @@ function ProjectBrowserSection({
                               </div>
                             </PopoverContent>
                           </Popover>
-                        </div>
+                        </InspectorListRow>
                       );
                     })}
                   </div>
@@ -766,7 +751,7 @@ function ProjectBrowserSection({
                   </Button>
                 </div>
               </div>
-            </div>
+            </InspectorInset>
           </CollapsibleContent>
         </div>
       </Collapsible>
@@ -804,19 +789,25 @@ function RoomShapeSection({
                 const ShapeIcon = ROOM_SHAPE_ICONS[template.name];
 
                 return (
-                  <button
+                  <InspectorOptionCard
                     key={template.name}
-                    type="button"
-                    className="flex flex-col items-center gap-1 rounded-md border border-gray-200 bg-white p-2 transition-colors hover:border-gray-300 hover:bg-gray-50 dark:border-white/10 dark:bg-white/5 dark:hover:border-white/20 dark:hover:bg-white/10"
-                    onClick={() => applyTemplate(template.vertices)}
+                    asChild
+                    layout="column"
+                    tone="blue"
+                    className="gap-1 rounded-md bg-white p-2"
                   >
-                    {ShapeIcon ? (
-                      <ShapeIcon className="h-6 w-6 text-gray-500 dark:text-white/60" />
-                    ) : null}
-                    <span className="text-center text-[10px] leading-tight text-gray-600 dark:text-white/50">
-                      {template.name}
-                    </span>
-                  </button>
+                    <button
+                      type="button"
+                      onClick={() => applyTemplate(template.vertices)}
+                    >
+                      {ShapeIcon ? (
+                        <ShapeIcon className="h-6 w-6 text-gray-500 dark:text-white/60" />
+                      ) : null}
+                      <span className="text-center text-[10px] leading-tight text-gray-600 dark:text-white/50">
+                        {template.name}
+                      </span>
+                    </button>
+                  </InspectorOptionCard>
                 );
               })}
             </div>
@@ -848,11 +839,14 @@ function WallsSection({
       />
       <CollapsibleContent>
         <div className="space-y-3 pb-3">
-          <div className="rounded-md bg-cyan-50/70 p-2 text-[10px] leading-relaxed text-cyan-700 dark:bg-cyan-950/30 dark:text-cyan-300">
+          <InspectorInset
+            tone="cyan"
+            className="rounded-md p-2 text-[10px] leading-relaxed text-cyan-700 dark:text-cyan-300"
+          >
             Click an endpoint handle on the canvas to draw new wall segments.
             Drag endpoints to reshape. Drag one endpoint onto another to connect
             them.
-          </div>
+          </InspectorInset>
 
           {room.walls.map((wall, wallIndex) => (
             <WallCard
@@ -917,105 +911,103 @@ function WallCard({
   const measurementStep = getMeasurementStep(unit);
 
   return (
-    <div
-      data-sidebar-wall-id={wall.id}
-      className={cn(
-        'cursor-pointer space-y-2 rounded-md border p-2 transition-[border-color,box-shadow]',
-        isSelected
-          ? 'border-2 border-cyan-400/80 shadow-[0_0_0_1px_rgba(34,211,238,0.22),0_0_18px_rgba(34,211,238,0.18)] dark:border-cyan-400/70 dark:shadow-[0_0_0_1px_rgba(56,189,248,0.2),0_0_20px_rgba(14,165,233,0.18)]'
-          : 'border-gray-200/50 hover:border-gray-300/50 dark:border-white/5 dark:hover:border-white/10',
-      )}
-      onClick={onSelect}
+    <InspectorListRow
+      asChild
+      selected={isSelected}
+      tone="cyan"
+      className="cursor-pointer space-y-2 rounded-md p-2"
     >
-      <div className="flex items-center gap-2">
-        <span className="inline-flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-indigo-500/80 text-[10px] font-bold text-white">
-          {wallIndex + 1}
-        </span>
-        <div className="relative flex-1">
-          <Input
-            type="number"
-            value={formatMeasurementValue(wallLength, unit, toDisplay)}
-            onChange={(event) => {
-              const nextValue = Number.parseFloat(event.target.value);
-              if (!Number.isNaN(nextValue) && nextValue > 0) {
-                setWallLength(wall.id, fromDisplay(nextValue));
-              }
-            }}
-            className="h-7 pr-8 text-xs"
-            min={1}
-            step={measurementStep}
-          />
-          <span className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-[10px] text-gray-400 dark:text-white/30">
-            {unitSuffix}
+      <div data-sidebar-wall-id={wall.id} onClick={onSelect}>
+        <div className="flex items-center gap-2">
+          <span className="inline-flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-indigo-500/80 text-[10px] font-bold text-white">
+            {wallIndex + 1}
           </span>
-        </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-6 w-6 flex-shrink-0 p-0"
-          title="Remove wall"
-          onClick={() => removeWall(wall.id)}
-        >
-          <Trash2 className="h-3 w-3 text-red-400" />
-        </Button>
-      </div>
-
-      {startConnections > 0 || endConnections > 0 ? (
-        <div className="flex gap-1 text-[10px]">
-          {startConnections > 0 ? (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-5 px-1.5 text-[10px] text-amber-500"
-              title="Disconnect start endpoint"
-              onClick={() => disconnectEndpoint(wall.startId, wall.id)}
-            >
-              <Unlink className="mr-0.5 h-2.5 w-2.5" />
-              Start
-            </Button>
-          ) : null}
-          {endConnections > 0 ? (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-5 px-1.5 text-[10px] text-amber-500"
-              title="Disconnect end endpoint"
-              onClick={() => disconnectEndpoint(wall.endId, wall.id)}
-            >
-              <Unlink className="mr-0.5 h-2.5 w-2.5" />
-              End
-            </Button>
-          ) : null}
-        </div>
-      ) : null}
-
-      {wall.features.length > 0 ? (
-        <div className="space-y-1.5 pt-1">
-          <span className="text-[10px] font-medium tracking-wider text-gray-400 uppercase dark:text-white/30">
-            Features
-          </span>
-          {wall.features.map((feature) => (
-            <WallFeatureCard
-              key={feature.id}
-              feature={feature}
-              fromDisplay={fromDisplay}
-              removeWallFeature={removeWallFeature}
-              toDisplay={toDisplay}
-              unit={unit}
-              updateWallFeature={updateWallFeature}
-              wallId={wall.id}
-              wallLength={wallLength}
+          <div className="relative flex-1">
+            <Input
+              type="number"
+              value={formatMeasurementValue(wallLength, unit, toDisplay)}
+              onChange={(event) => {
+                const nextValue = Number.parseFloat(event.target.value);
+                if (!Number.isNaN(nextValue) && nextValue > 0) {
+                  setWallLength(wall.id, fromDisplay(nextValue));
+                }
+              }}
+              className="h-7 pr-8 text-xs"
+              min={1}
+              step={measurementStep}
             />
-          ))}
+            <span className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-[10px] text-gray-400 dark:text-white/30">
+              {unitSuffix}
+            </span>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 w-6 flex-shrink-0 p-0"
+            title="Remove wall"
+            onClick={() => removeWall(wall.id)}
+          >
+            <Trash2 className="h-3 w-3 text-red-400" />
+          </Button>
         </div>
-      ) : null}
 
-      <WallFeatureActions
-        wallId={wall.id}
-        wallLength={wallLength}
-        addWallFeature={addWallFeature}
-      />
-    </div>
+        {startConnections > 0 || endConnections > 0 ? (
+          <div className="flex gap-1 text-[10px]">
+            {startConnections > 0 ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-5 px-1.5 text-[10px] text-amber-500"
+                title="Disconnect start endpoint"
+                onClick={() => disconnectEndpoint(wall.startId, wall.id)}
+              >
+                <Unlink className="mr-0.5 h-2.5 w-2.5" />
+                Start
+              </Button>
+            ) : null}
+            {endConnections > 0 ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-5 px-1.5 text-[10px] text-amber-500"
+                title="Disconnect end endpoint"
+                onClick={() => disconnectEndpoint(wall.endId, wall.id)}
+              >
+                <Unlink className="mr-0.5 h-2.5 w-2.5" />
+                End
+              </Button>
+            ) : null}
+          </div>
+        ) : null}
+
+        {wall.features.length > 0 ? (
+          <div className="space-y-1.5 pt-1">
+            <span className="text-[10px] font-medium tracking-wider text-gray-400 uppercase dark:text-white/30">
+              Features
+            </span>
+            {wall.features.map((feature) => (
+              <WallFeatureCard
+                key={feature.id}
+                feature={feature}
+                fromDisplay={fromDisplay}
+                removeWallFeature={removeWallFeature}
+                toDisplay={toDisplay}
+                unit={unit}
+                updateWallFeature={updateWallFeature}
+                wallId={wall.id}
+                wallLength={wallLength}
+              />
+            ))}
+          </div>
+        ) : null}
+
+        <WallFeatureActions
+          wallId={wall.id}
+          wallLength={wallLength}
+          addWallFeature={addWallFeature}
+        />
+      </div>
+    </InspectorListRow>
   );
 }
 
@@ -1031,10 +1023,10 @@ function WallFeatureCard({
 }: {
   feature: WallFeature;
   fromDisplay: Parser;
-  removeWallFeature: RoomPlannerReturn['removeWallFeature'];
+  removeWallFeature: RoomPlannerReturn["removeWallFeature"];
   toDisplay: Formatter;
   unit: Unit;
-  updateWallFeature: RoomPlannerReturn['updateWallFeature'];
+  updateWallFeature: RoomPlannerReturn["updateWallFeature"];
   wallId: string;
   wallLength: number;
 }) {
@@ -1043,10 +1035,10 @@ function WallFeatureCard({
   const measurementStep = getMeasurementStep(unit);
 
   return (
-    <div className={cn('space-y-2 rounded-md border p-2', cardClass)}>
+    <div className={cn("space-y-2 rounded-md border p-2", cardClass)}>
       <div className="flex items-center gap-1.5">
-        <Icon className={cn('h-3.5 w-3.5', accentClass)} />
-        <span className={cn('text-[11px] font-medium capitalize', accentClass)}>
+        <Icon className={cn("h-3.5 w-3.5", accentClass)} />
+        <span className={cn("text-[11px] font-medium capitalize", accentClass)}>
           {label}
         </span>
         <Button
@@ -1098,10 +1090,10 @@ function WallFeatureCard({
         />
       </div>
 
-      {feature.type === 'door' ? (
+      {feature.type === "door" ? (
         <DoorFeatureControls
-          swingDirection={feature.swingDirection ?? 'inward'}
-          swingHand={feature.swingHand ?? 'left'}
+          swingDirection={feature.swingDirection ?? "inward"}
+          swingHand={feature.swingHand ?? "left"}
           onChange={(patch) => updateWallFeature(wallId, feature.id, patch)}
         />
       ) : null}
@@ -1154,8 +1146,8 @@ function DoorFeatureControls({
   swingHand,
 }: {
   onChange: (patch: Partial<WallFeature>) => void;
-  swingDirection: NonNullable<WallFeature['swingDirection']>;
-  swingHand: NonNullable<WallFeature['swingHand']>;
+  swingDirection: NonNullable<WallFeature["swingDirection"]>;
+  swingHand: NonNullable<WallFeature["swingHand"]>;
 }) {
   return (
     <div className="grid grid-cols-2 gap-1.5">
@@ -1165,18 +1157,18 @@ function DoorFeatureControls({
         </span>
         <div className="grid grid-cols-2 gap-1">
           <FeatureOptionButton
-            selected={swingDirection === 'inward'}
+            selected={swingDirection === "inward"}
             title="Swing inward (into room)"
             label="Inward"
-            onClick={() => onChange({ swingDirection: 'inward' })}
+            onClick={() => onChange({ swingDirection: "inward" })}
           >
             <InwardSwingIcon />
           </FeatureOptionButton>
           <FeatureOptionButton
-            selected={swingDirection === 'outward'}
+            selected={swingDirection === "outward"}
             title="Swing outward (away from room)"
             label="Outward"
-            onClick={() => onChange({ swingDirection: 'outward' })}
+            onClick={() => onChange({ swingDirection: "outward" })}
           >
             <OutwardSwingIcon />
           </FeatureOptionButton>
@@ -1189,18 +1181,18 @@ function DoorFeatureControls({
         </span>
         <div className="grid grid-cols-2 gap-1">
           <FeatureOptionButton
-            selected={swingHand === 'left'}
+            selected={swingHand === "left"}
             title="Hinge on left (start) side"
             label="Left"
-            onClick={() => onChange({ swingHand: 'left' })}
+            onClick={() => onChange({ swingHand: "left" })}
           >
             <LeftHingeIcon />
           </FeatureOptionButton>
           <FeatureOptionButton
-            selected={swingHand === 'right'}
+            selected={swingHand === "right"}
             title="Hinge on right (end) side"
             label="Right"
-            onClick={() => onChange({ swingHand: 'right' })}
+            onClick={() => onChange({ swingHand: "right" })}
           >
             <RightHingeIcon />
           </FeatureOptionButton>
@@ -1224,20 +1216,18 @@ function FeatureOptionButton({
   title: string;
 }) {
   return (
-    <button
-      type="button"
-      className={cn(
-        featureOptionClass,
-        selected
-          ? 'border-indigo-500/40 bg-indigo-500/10 text-indigo-500'
-          : featureOptionInactiveClass,
-      )}
-      onClick={onClick}
-      title={title}
+    <InspectorOptionCard
+      asChild
+      layout="column"
+      selected={selected}
+      tone="indigo"
+      className="gap-1 rounded-md p-2"
     >
-      {children}
-      <span className="text-[9px] leading-tight">{label}</span>
-    </button>
+      <button type="button" onClick={onClick} title={title}>
+        {children}
+        <span className="text-[9px] leading-tight">{label}</span>
+      </button>
+    </InspectorOptionCard>
   );
 }
 
@@ -1246,7 +1236,7 @@ function WallFeatureActions({
   wallId,
   wallLength,
 }: {
-  addWallFeature: RoomPlannerReturn['addWallFeature'];
+  addWallFeature: RoomPlannerReturn["addWallFeature"];
   wallId: string;
   wallLength: number;
 }) {
@@ -1258,11 +1248,11 @@ function WallFeatureActions({
         className="h-6 justify-start gap-1 px-1.5 text-[10px] text-gray-400 hover:text-indigo-500 dark:text-white/30"
         onClick={() =>
           addWallFeature(wallId, {
-            type: 'door',
+            type: "door",
             offset: wallLength * 0.3,
             width: 36,
-            swingDirection: 'inward',
-            swingHand: 'left',
+            swingDirection: "inward",
+            swingHand: "left",
           })
         }
       >
@@ -1275,7 +1265,7 @@ function WallFeatureActions({
         className="h-6 justify-start gap-1 px-1.5 text-[10px] text-gray-400 hover:text-sky-500 dark:text-white/30"
         onClick={() =>
           addWallFeature(wallId, {
-            type: 'window',
+            type: "window",
             offset: wallLength * 0.3,
             width: 36,
             sillHeight: 36,
@@ -1292,7 +1282,7 @@ function WallFeatureActions({
         className="h-6 justify-start gap-1 px-1.5 text-[10px] text-gray-400 hover:text-emerald-500 dark:text-white/30"
         onClick={() =>
           addWallFeature(wallId, {
-            type: 'opening',
+            type: "opening",
             offset: wallLength * 0.3,
             width: 42,
           })
@@ -1307,7 +1297,7 @@ function WallFeatureActions({
         className="h-6 justify-start gap-1 px-1.5 text-[10px] text-gray-400 hover:text-stone-500 dark:text-white/30"
         onClick={() =>
           addWallFeature(wallId, {
-            type: 'closet',
+            type: "closet",
             offset: wallLength * 0.2,
             width: 48,
             height: 96,
@@ -1327,27 +1317,27 @@ function CustomFurnitureCreator({
   toDisplay,
   unit,
 }: {
-  addFurniture: RoomPlannerReturn['addFurniture'];
+  addFurniture: RoomPlannerReturn["addFurniture"];
   fromDisplay: Parser;
   toDisplay: Formatter;
   unit: Unit;
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [customName, setCustomName] = useState('Custom Piece');
+  const [customName, setCustomName] = useState("Custom Piece");
   const [customWidth, setCustomWidth] = useState(60);
   const [customDepth, setCustomDepth] = useState(30);
-  const [customShape, setCustomShape] = useState<FurnitureShape>('rectangle');
+  const [customShape, setCustomShape] = useState<FurnitureShape>("rectangle");
 
   const unitSuffix = getUnitSuffix(unit);
   const trimmedName = customName.trim();
 
   const customPreset: FurniturePreset = {
-    type: 'custom',
-    name: trimmedName || 'Custom Piece',
+    type: "custom",
+    name: trimmedName || "Custom Piece",
     shape: customShape,
     width: Math.max(1, customWidth),
     depth: Math.max(1, customDepth),
-    color: customShape === 'circle' ? '#38bdf8' : '#94a3b8',
+    color: customShape === "circle" ? "#38bdf8" : "#94a3b8",
   };
 
   return (
@@ -1362,7 +1352,7 @@ function CustomFurnitureCreator({
             Custom Piece
           </span>
           <span className="truncate text-[11px] text-gray-500 dark:text-white/35">
-            {customShape === 'circle' ? 'Circle' : 'Square'} •{' '}
+            {customShape === "circle" ? "Circle" : "Square"} •{" "}
             {formatFurnitureFootprint(
               customPreset.width,
               customPreset.depth,
@@ -1372,12 +1362,12 @@ function CustomFurnitureCreator({
           </span>
         </div>
         <span className="text-[10px] text-gray-400 dark:text-white/25">
-          {isExpanded ? 'Hide' : 'Build'}
+          {isExpanded ? "Hide" : "Build"}
         </span>
         <ChevronDown
           className={cn(
-            'h-3.5 w-3.5 text-gray-400 transition-transform duration-200',
-            !isExpanded && '-rotate-90',
+            "h-3.5 w-3.5 text-gray-400 transition-transform duration-200",
+            !isExpanded && "-rotate-90",
           )}
         />
       </CollapsibleTrigger>
@@ -1417,32 +1407,33 @@ function CustomFurnitureCreator({
               Shape
             </Label>
             <div className="grid grid-cols-2 gap-1.5">
-              <button
-                type="button"
-                className={cn(
-                  featureOptionClass,
-                  customShape === 'rectangle'
-                    ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-                    : featureOptionInactiveClass,
-                )}
-                onClick={() => setCustomShape('rectangle')}
+              <InspectorOptionCard
+                asChild
+                layout="column"
+                selected={customShape === "rectangle"}
+                tone="emerald"
+                className="gap-1 rounded-md p-2"
               >
-                <div className="h-5 w-5 rounded-[4px] border-2 border-current" />
-                <span className="text-[10px] leading-tight">Square</span>
-              </button>
-              <button
-                type="button"
-                className={cn(
-                  featureOptionClass,
-                  customShape === 'circle'
-                    ? 'border-sky-500/40 bg-sky-500/10 text-sky-600 dark:text-sky-400'
-                    : featureOptionInactiveClass,
-                )}
-                onClick={() => setCustomShape('circle')}
+                <button
+                  type="button"
+                  onClick={() => setCustomShape("rectangle")}
+                >
+                  <div className="h-5 w-5 rounded-[4px] border-2 border-current" />
+                  <span className="text-[10px] leading-tight">Square</span>
+                </button>
+              </InspectorOptionCard>
+              <InspectorOptionCard
+                asChild
+                layout="column"
+                selected={customShape === "circle"}
+                tone="cyan"
+                className="gap-1 rounded-md p-2"
               >
-                <div className="h-5 w-5 rounded-full border-2 border-current" />
-                <span className="text-[10px] leading-tight">Circle</span>
-              </button>
+                <button type="button" onClick={() => setCustomShape("circle")}>
+                  <div className="h-5 w-5 rounded-full border-2 border-current" />
+                  <span className="text-[10px] leading-tight">Circle</span>
+                </button>
+              </InspectorOptionCard>
             </div>
           </div>
 
@@ -1468,23 +1459,20 @@ function FurnitureCategoryPicker({
   onChange: (value: string) => void;
 }) {
   return (
-    <div className="grid grid-cols-3 gap-1 rounded-xl bg-gray-100/80 p-1 dark:bg-white/[0.04]">
+    <InspectorSegmentedControl className="grid-cols-3">
       {FURNITURE_CATEGORIES.map((category) => (
-        <button
+        <InspectorSegmentedControlItem
           key={category.label}
-          type="button"
-          className={cn(
-            'rounded-lg px-2 py-2 text-xs font-medium transition-colors',
-            activeCategory === category.label
-              ? 'bg-white text-gray-900 shadow-sm dark:bg-white/10 dark:text-white'
-              : 'text-gray-500 hover:bg-white/60 hover:text-gray-800 dark:text-white/45 dark:hover:bg-white/[0.06] dark:hover:text-white/80',
-          )}
-          onClick={() => onChange(category.label)}
+          asChild
+          selected={activeCategory === category.label}
+          tone="neutral"
         >
-          {category.label}
-        </button>
+          <button type="button" onClick={() => onChange(category.label)}>
+            {category.label}
+          </button>
+        </InspectorSegmentedControlItem>
       ))}
-    </div>
+    </InspectorSegmentedControl>
   );
 }
 
@@ -1494,7 +1482,7 @@ function FurniturePresetGrid({
   toDisplay,
   unitSuffix,
 }: {
-  addFurniture: RoomPlannerReturn['addFurniture'];
+  addFurniture: RoomPlannerReturn["addFurniture"];
   categoryLabel: string;
   toDisplay: Formatter;
   unitSuffix: string;
@@ -1509,25 +1497,26 @@ function FurniturePresetGrid({
   return (
     <div className="grid grid-cols-2 gap-2">
       {presets.map((preset) => (
-        <Button
+        <InspectorOptionCard
           key={preset.name}
-          variant="outline"
-          size="sm"
-          className="h-auto min-h-20 flex-col items-start justify-between rounded-xl border-gray-200/80 bg-white/70 px-3 py-3 text-left shadow-none hover:border-gray-300 hover:bg-white dark:border-white/10 dark:bg-white/[0.04] dark:hover:border-white/20 dark:hover:bg-white/[0.08]"
-          onClick={() => addFurniture(preset)}
+          asChild
+          layout="column"
+          className="min-h-20 items-start justify-between rounded-xl bg-white/70 px-3 py-3 text-left"
         >
-          <span className="line-clamp-2 text-sm font-semibold text-gray-800 dark:text-white/85">
-            {preset.name}
-          </span>
-          <span className="text-xs text-gray-400 dark:text-white/30">
-            {formatFurnitureFootprint(
-              preset.width,
-              preset.depth,
-              toDisplay,
-              unitSuffix,
-            )}
-          </span>
-        </Button>
+          <button type="button" onClick={() => addFurniture(preset)}>
+            <span className="line-clamp-2 text-sm font-semibold text-gray-800 dark:text-white/85">
+              {preset.name}
+            </span>
+            <span className="text-xs text-gray-400 dark:text-white/30">
+              {formatFurnitureFootprint(
+                preset.width,
+                preset.depth,
+                toDisplay,
+                unitSuffix,
+              )}
+            </span>
+          </button>
+        </InspectorOptionCard>
       ))}
     </div>
   );
@@ -1544,17 +1533,17 @@ function PulloutSofaInspector({
 }: {
   fromDisplay: Parser;
   furniture: FurnitureItem & { pulloutSofa: PulloutSofaState };
-  setPulloutBedSize: RoomPlannerReturn['setPulloutBedSize'];
-  togglePulloutSofa: RoomPlannerReturn['togglePulloutSofa'];
+  setPulloutBedSize: RoomPlannerReturn["setPulloutBedSize"];
+  togglePulloutSofa: RoomPlannerReturn["togglePulloutSofa"];
   toDisplay: Formatter;
   unit: Unit;
-  updatePulloutSofa: RoomPlannerReturn['updatePulloutSofa'];
+  updatePulloutSofa: RoomPlannerReturn["updatePulloutSofa"];
 }) {
   const unitSuffix = getUnitSuffix(unit);
 
   return (
     <>
-      <div className="space-y-2 rounded-xl bg-violet-50/30 p-2 dark:bg-violet-500/[0.04]">
+      <InspectorInset tone="violet" className="space-y-2">
         <div className="flex items-center justify-between">
           <Label className="text-xs font-medium text-violet-700 dark:text-violet-300">
             Pull-out Controls
@@ -1565,42 +1554,44 @@ function PulloutSofaInspector({
             className="h-7 px-2 text-[11px]"
             onClick={() => togglePulloutSofa(furniture.id)}
           >
-            {furniture.pulloutSofa.isOpen ? 'Close Sofa' : 'Open Bed'}
+            {furniture.pulloutSofa.isOpen ? "Close Sofa" : "Open Bed"}
           </Button>
         </div>
 
-        <div className="grid grid-cols-2 gap-1.5">
-          <button
-            type="button"
-            className={cn(
-              featureOptionClass,
-              furniture.pulloutSofa.isOpen
-                ? 'border-violet-500/40 bg-violet-500/10 text-violet-600 dark:text-violet-300'
-                : featureOptionInactiveClass,
-            )}
-            onClick={() =>
-              !furniture.pulloutSofa.isOpen && togglePulloutSofa(furniture.id)
-            }
+        <InspectorSegmentedControl className="grid-cols-2">
+          <InspectorSegmentedControlItem
+            asChild
+            selected={furniture.pulloutSofa.isOpen}
+            tone="violet"
+            className="flex flex-col items-center gap-1"
           >
-            <div className="h-4 w-6 rounded-[4px] border-2 border-current" />
-            <span className="text-[10px] leading-tight">Open</span>
-          </button>
-          <button
-            type="button"
-            className={cn(
-              featureOptionClass,
-              !furniture.pulloutSofa.isOpen
-                ? 'border-violet-500/40 bg-violet-500/10 text-violet-600 dark:text-violet-300'
-                : featureOptionInactiveClass,
-            )}
-            onClick={() =>
-              furniture.pulloutSofa.isOpen && togglePulloutSofa(furniture.id)
-            }
+            <button
+              type="button"
+              onClick={() =>
+                !furniture.pulloutSofa.isOpen && togglePulloutSofa(furniture.id)
+              }
+            >
+              <div className="h-4 w-6 rounded-[4px] border-2 border-current" />
+              <span className="text-[10px] leading-tight">Open</span>
+            </button>
+          </InspectorSegmentedControlItem>
+          <InspectorSegmentedControlItem
+            asChild
+            selected={!furniture.pulloutSofa.isOpen}
+            tone="violet"
+            className="flex flex-col items-center gap-1"
           >
-            <div className="h-4 w-6 rounded-[4px] border-2 border-current bg-current/20" />
-            <span className="text-[10px] leading-tight">Closed</span>
-          </button>
-        </div>
+            <button
+              type="button"
+              onClick={() =>
+                furniture.pulloutSofa.isOpen && togglePulloutSofa(furniture.id)
+              }
+            >
+              <div className="h-4 w-6 rounded-[4px] border-2 border-current bg-current/20" />
+              <span className="text-[10px] leading-tight">Closed</span>
+            </button>
+          </InspectorSegmentedControlItem>
+        </InspectorSegmentedControl>
 
         <div className="flex items-center justify-between">
           <Label className="text-xs text-gray-500 dark:text-white/50">
@@ -1624,10 +1615,10 @@ function PulloutSofaInspector({
             </SelectContent>
           </Select>
         </div>
-      </div>
+      </InspectorInset>
 
       <div className="grid grid-cols-2 gap-2">
-        <div className="space-y-2 rounded-xl border border-gray-200/70 p-3 dark:border-white/10">
+        <InspectorInset className="space-y-2">
           <Label className="text-xs font-medium text-gray-700 dark:text-white/70">
             Closed Size
           </Label>
@@ -1653,9 +1644,9 @@ function PulloutSofaInspector({
             suffix={unitSuffix}
             min={1}
           />
-        </div>
+        </InspectorInset>
 
-        <div className="space-y-2 rounded-xl border border-gray-200/70 p-3 dark:border-white/10">
+        <InspectorInset className="space-y-2">
           <Label className="text-xs font-medium text-gray-700 dark:text-white/70">
             Open Size
           </Label>
@@ -1681,7 +1672,7 @@ function PulloutSofaInspector({
             suffix={unitSuffix}
             min={1}
           />
-        </div>
+        </InspectorInset>
       </div>
     </>
   );
@@ -1700,17 +1691,17 @@ function FurnitureItemInspector({
   updateFurniture,
   updatePulloutSofa,
 }: {
-  duplicateFurniture: RoomPlannerReturn['duplicateFurniture'];
+  duplicateFurniture: RoomPlannerReturn["duplicateFurniture"];
   fromDisplay: Parser;
   furniture: FurnitureItem;
-  removeFurniture: RoomPlannerReturn['removeFurniture'];
-  rotateFurniture: RoomPlannerReturn['rotateFurniture'];
-  setPulloutBedSize: RoomPlannerReturn['setPulloutBedSize'];
-  togglePulloutSofa: RoomPlannerReturn['togglePulloutSofa'];
+  removeFurniture: RoomPlannerReturn["removeFurniture"];
+  rotateFurniture: RoomPlannerReturn["rotateFurniture"];
+  setPulloutBedSize: RoomPlannerReturn["setPulloutBedSize"];
+  togglePulloutSofa: RoomPlannerReturn["togglePulloutSofa"];
   toDisplay: Formatter;
   unit: Unit;
-  updateFurniture: RoomPlannerReturn['updateFurniture'];
-  updatePulloutSofa: RoomPlannerReturn['updatePulloutSofa'];
+  updateFurniture: RoomPlannerReturn["updateFurniture"];
+  updatePulloutSofa: RoomPlannerReturn["updatePulloutSofa"];
 }) {
   const unitSuffix = getUnitSuffix(unit);
 
@@ -1807,7 +1798,7 @@ function FurnitureItemInspector({
           ) : (
             <Unlock className="mr-1 h-3 w-3" />
           )}
-          {furniture.locked ? 'Unlock' : 'Lock'}
+          {furniture.locked ? "Unlock" : "Lock"}
         </Button>
         <Button
           variant="destructive"
@@ -1897,44 +1888,45 @@ function FurnitureSection({
               ) : null}
               <div className="space-y-1">
                 {furniture.map((item) => (
-                  <div
+                  <InspectorListRow
                     key={item.id}
-                    data-sidebar-furniture-id={item.id}
-                    className={cn(
-                      'cursor-pointer rounded-xl border px-2 py-2 text-xs transition-[border-color,box-shadow]',
-                      selectedIds.includes(item.id)
-                        ? 'border-2 border-cyan-400/80 shadow-[0_0_0_1px_rgba(34,211,238,0.22),0_0_18px_rgba(34,211,238,0.18)] dark:border-cyan-400/70 dark:shadow-[0_0_0_1px_rgba(56,189,248,0.2),0_0_20px_rgba(14,165,233,0.18)]'
-                        : 'border-transparent hover:bg-gray-100 dark:hover:bg-white/5',
-                    )}
-                    onClick={() => setSelectedId(item.id)}
+                    asChild
+                    selected={selectedIds.includes(item.id)}
+                    tone="cyan"
+                    className="cursor-pointer px-2 py-2 text-xs"
                   >
-                    <div className="flex items-center gap-2 px-0.5 py-0.5">
-                      <div
-                        className="h-3 w-3 flex-shrink-0 rounded-sm"
-                        style={{ backgroundColor: item.color }}
-                      />
-                      <span className="flex-1 truncate">{item.name}</span>
-                      <span className="text-gray-400 dark:text-white/30">
-                        {toDisplay(item.width).toFixed(0)}x
-                        {toDisplay(item.depth).toFixed(0)}
-                      </span>
+                    <div
+                      data-sidebar-furniture-id={item.id}
+                      onClick={() => setSelectedId(item.id)}
+                    >
+                      <div className="flex items-center gap-2 px-0.5 py-0.5">
+                        <div
+                          className="h-3 w-3 flex-shrink-0 rounded-sm"
+                          style={{ backgroundColor: item.color }}
+                        />
+                        <span className="flex-1 truncate">{item.name}</span>
+                        <span className="text-gray-400 dark:text-white/30">
+                          {toDisplay(item.width).toFixed(0)}x
+                          {toDisplay(item.depth).toFixed(0)}
+                        </span>
+                      </div>
+                      {selectedIds.length === 1 && item.id === selectedId ? (
+                        <FurnitureItemInspector
+                          duplicateFurniture={duplicateFurniture}
+                          fromDisplay={fromDisplay}
+                          furniture={item}
+                          removeFurniture={removeFurniture}
+                          rotateFurniture={rotateFurniture}
+                          setPulloutBedSize={setPulloutBedSize}
+                          togglePulloutSofa={togglePulloutSofa}
+                          toDisplay={toDisplay}
+                          unit={unit}
+                          updateFurniture={updateFurniture}
+                          updatePulloutSofa={updatePulloutSofa}
+                        />
+                      ) : null}
                     </div>
-                    {selectedIds.length === 1 && item.id === selectedId ? (
-                      <FurnitureItemInspector
-                        duplicateFurniture={duplicateFurniture}
-                        fromDisplay={fromDisplay}
-                        furniture={item}
-                        removeFurniture={removeFurniture}
-                        rotateFurniture={rotateFurniture}
-                        setPulloutBedSize={setPulloutBedSize}
-                        togglePulloutSofa={togglePulloutSofa}
-                        toDisplay={toDisplay}
-                        unit={unit}
-                        updateFurniture={updateFurniture}
-                        updatePulloutSofa={updatePulloutSofa}
-                      />
-                    ) : null}
-                  </div>
+                  </InspectorListRow>
                 ))}
               </div>
             </>
@@ -1957,12 +1949,12 @@ function HistoryDebugSection({
   const entries = [
     ...planner.historyDebug.past.map((entry) => ({
       ...entry,
-      tone: 'past' as const,
+      tone: "past" as const,
     })),
-    { ...planner.historyDebug.present, tone: 'present' as const },
+    { ...planner.historyDebug.present, tone: "present" as const },
     ...planner.historyDebug.future.map((entry) => ({
       ...entry,
-      tone: 'future' as const,
+      tone: "future" as const,
     })),
   ];
 
@@ -1977,7 +1969,7 @@ function HistoryDebugSection({
       <CollapsibleContent>
         <div className="space-y-2 pb-3">
           {planner.historyDebug.locked ? (
-            <div className="space-y-2 rounded-xl border border-amber-400/30 bg-amber-500/[0.08] px-3 py-3">
+            <InspectorInset tone="amber" className="space-y-2">
               <div className="text-xs font-medium text-amber-700 dark:text-amber-200">
                 You are viewing an earlier version. To make changes, go back to
                 the latest version or start editing from this point.
@@ -1999,7 +1991,7 @@ function HistoryDebugSection({
                     const futureCount = planner.historyDebug.futureCount;
                     const message =
                       futureCount === 1
-                        ? 'Editing from this point will discard 1 future change. Continue?'
+                        ? "Editing from this point will discard 1 future change. Continue?"
                         : `Editing from this point will discard ${futureCount} future changes. Continue?`;
                     if (window.confirm(message)) {
                       planner.discardFutureHistory();
@@ -2009,85 +2001,86 @@ function HistoryDebugSection({
                   Edit From Here
                 </Button>
               </div>
-            </div>
+            </InspectorInset>
           ) : null}
 
           <div className="grid grid-cols-3 gap-2">
-            <div className="rounded-xl border border-gray-200/70 bg-gray-50/80 px-2 py-2 dark:border-white/10 dark:bg-white/[0.03]">
+            <InspectorInset className="px-2 py-2">
               <div className="text-[10px] uppercase tracking-[0.12em] text-gray-400 dark:text-white/35">
                 Undo
               </div>
               <div className="mt-1 text-lg font-semibold text-gray-900 dark:text-white">
                 {planner.historyDebug.pastCount}
               </div>
-            </div>
-            <div className="rounded-xl border border-cyan-400/40 bg-cyan-500/[0.06] px-2 py-2">
+            </InspectorInset>
+            <InspectorInset tone="cyan" className="px-2 py-2">
               <div className="text-[10px] uppercase tracking-[0.12em] text-cyan-600/80 dark:text-cyan-300/75">
                 Current
               </div>
               <div className="mt-1 text-sm font-semibold text-cyan-700 dark:text-cyan-100">
-                #{planner.historyDebug.currentPosition + 1} of{' '}
+                #{planner.historyDebug.currentPosition + 1} of{" "}
                 {planner.historyDebug.totalCount}
               </div>
-            </div>
-            <div className="rounded-xl border border-gray-200/70 bg-gray-50/80 px-2 py-2 dark:border-white/10 dark:bg-white/[0.03]">
+            </InspectorInset>
+            <InspectorInset className="px-2 py-2">
               <div className="text-[10px] uppercase tracking-[0.12em] text-gray-400 dark:text-white/35">
                 Redo
               </div>
               <div className="mt-1 text-lg font-semibold text-gray-900 dark:text-white">
                 {planner.historyDebug.futureCount}
               </div>
-            </div>
+            </InspectorInset>
           </div>
 
-          <div className="rounded-xl border border-gray-200/70 bg-gray-50/80 px-3 py-2 dark:border-white/10 dark:bg-white/[0.03]">
+          <InspectorInset className="px-3 py-2">
             <div className="text-[10px] uppercase tracking-[0.12em] text-gray-400 dark:text-white/35">
               Snapshot Key
             </div>
             <div className="mt-1 break-all font-mono text-[11px] leading-5 text-gray-600 dark:text-white/65">
-              {planner.historyDebug.key ?? 'none'}
+              {planner.historyDebug.key ?? "none"}
             </div>
-          </div>
+          </InspectorInset>
 
           <div className="space-y-1.5">
             {entries.map((entry) => (
-              <button
+              <InspectorListRow
                 key={entry.id}
-                type="button"
-                onClick={() => planner.jumpToHistory(entry.position)}
-                disabled={entry.tone === 'present'}
-                className={cn(
-                  'flex w-full items-center justify-between gap-3 rounded-xl border px-3 py-2 text-left text-xs transition-colors',
-                  entry.tone === 'present'
-                    ? 'cursor-default border-cyan-400/50 bg-cyan-500/[0.06] text-cyan-800 dark:text-cyan-100'
-                    : 'border-gray-200/70 bg-white/70 text-gray-600 hover:border-gray-300 hover:bg-gray-100/80 dark:border-white/10 dark:bg-white/[0.02] dark:text-white/65 dark:hover:border-white/20 dark:hover:bg-white/[0.05]',
-                )}
+                asChild
+                selected={entry.tone === "present"}
+                tone="cyan"
+                className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-xs"
               >
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={cn(
-                        'rounded-full px-2 py-0.5 text-[10px] uppercase tracking-[0.12em]',
-                        entry.tone === 'present'
-                          ? 'bg-cyan-500/15 text-cyan-700 dark:text-cyan-200'
-                          : 'bg-gray-200/70 text-gray-500 dark:bg-white/10 dark:text-white/45',
-                      )}
-                    >
-                      {entry.tone === 'present' ? 'current' : 'step'}
-                    </span>
-                    <span className="font-medium">
-                      Step {entry.position + 1}
-                    </span>
+                <button
+                  type="button"
+                  onClick={() => planner.jumpToHistory(entry.position)}
+                  disabled={entry.tone === "present"}
+                >
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={cn(
+                          "rounded-full px-2 py-0.5 text-[10px] uppercase tracking-[0.12em]",
+                          entry.tone === "present"
+                            ? "bg-cyan-500/15 text-cyan-700 dark:text-cyan-200"
+                            : "bg-gray-200/70 text-gray-500 dark:bg-white/10 dark:text-white/45",
+                        )}
+                      >
+                        {entry.tone === "present" ? "current" : "step"}
+                      </span>
+                      <span className="font-medium">
+                        Step {entry.position + 1}
+                      </span>
+                    </div>
+                    <div className="mt-1 text-[11px] opacity-65">
+                      {entry.endpointCount} endpoints, {entry.wallCount} walls,{" "}
+                      {entry.furnitureCount} furniture
+                    </div>
                   </div>
-                  <div className="mt-1 text-[11px] opacity-65">
-                    {entry.endpointCount} endpoints, {entry.wallCount} walls,{' '}
-                    {entry.furnitureCount} furniture
-                  </div>
-                </div>
-                <span className="text-[11px] font-medium opacity-75">
-                  {entry.tone === 'present' ? 'Live' : 'Jump'}
-                </span>
-              </button>
+                  <span className="text-[11px] font-medium opacity-75">
+                    {entry.tone === "present" ? "Live" : "Jump"}
+                  </span>
+                </button>
+              </InspectorListRow>
             ))}
           </div>
         </div>
@@ -2220,7 +2213,7 @@ function formatMeasurementValue(
   toDisplay: Formatter,
 ) {
   const displayValue = toDisplay(value);
-  return unit === 'cm'
+  return unit === "cm"
     ? Number.parseFloat(displayValue.toFixed(0))
     : Number.parseFloat(displayValue.toFixed(3));
 }
@@ -2234,11 +2227,11 @@ function getConnectionCount(walls: Wall[], endpointId: string, wallId: string) {
 }
 
 function getMeasurementStep(unit: Unit) {
-  return unit === 'cm' ? 1 : 0.125;
+  return unit === "cm" ? 1 : 0.125;
 }
 
 function getUnitSuffix(unit: Unit) {
-  return unit === 'cm' ? 'cm' : '"';
+  return unit === "cm" ? "cm" : '"';
 }
 
 function formatFurnitureFootprint(
@@ -2253,19 +2246,19 @@ function formatFurnitureFootprint(
 function isPulloutSofa(
   item: FurnitureItem,
 ): item is FurnitureItem & { pulloutSofa: PulloutSofaState } {
-  return item.type === 'pullout-sofa' && Boolean(item.pulloutSofa);
+  return item.type === "pullout-sofa" && Boolean(item.pulloutSofa);
 }
 
 function getPulloutBedSizeLabel(bedSize: PulloutBedSize) {
   switch (bedSize) {
-    case 'twin':
-      return 'Twin';
-    case 'full':
-      return 'Full';
-    case 'queen':
-      return 'Queen';
-    case 'king':
-      return 'King';
+    case "twin":
+      return "Twin";
+    case "full":
+      return "Full";
+    case "queen":
+      return "Queen";
+    case "king":
+      return "King";
   }
 }
 
@@ -2306,7 +2299,7 @@ export function Sidebar({ planner, projects }: SidebarProps) {
 
     viewport.scrollTo({
       top: Math.max(0, centeredTop),
-      behavior: 'smooth',
+      behavior: "smooth",
     });
     return true;
   }, []);
@@ -2381,7 +2374,10 @@ export function Sidebar({ planner, projects }: SidebarProps) {
             exit={{ opacity: 0, x: -20 }}
             className="fixed top-4 left-4 z-50"
           >
-            <FloatingIconButton onClick={() => setIsOpen(true)}>
+            <FloatingIconButton
+              onClick={() => setIsOpen(true)}
+              title="Show sidebar"
+            >
               <PanelLeftOpen className="h-4 w-4" />
             </FloatingIconButton>
           </motion.div>
@@ -2394,7 +2390,7 @@ export function Sidebar({ planner, projects }: SidebarProps) {
             initial={{ x: -360, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: -360, opacity: 0 }}
-            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            transition={{ type: "spring", damping: 25, stiffness: 300 }}
             className="fixed top-4 bottom-4 left-4 z-50 w-[340px]"
           >
             <ToolPanel
@@ -2430,7 +2426,7 @@ export function Sidebar({ planner, projects }: SidebarProps) {
                   <div
                     className={cn(
                       isHistoryEditingLocked &&
-                        'pointer-events-none opacity-45 select-none',
+                        "pointer-events-none opacity-45 select-none",
                     )}
                   >
                     <RoomShapeSection
@@ -2445,7 +2441,7 @@ export function Sidebar({ planner, projects }: SidebarProps) {
                   <div
                     className={cn(
                       isHistoryEditingLocked &&
-                        'pointer-events-none opacity-45 select-none',
+                        "pointer-events-none opacity-45 select-none",
                     )}
                   >
                     <WallsSection
@@ -2460,7 +2456,7 @@ export function Sidebar({ planner, projects }: SidebarProps) {
                   <div
                     className={cn(
                       isHistoryEditingLocked &&
-                        'pointer-events-none opacity-45 select-none',
+                        "pointer-events-none opacity-45 select-none",
                     )}
                   >
                     <FurnitureSection
@@ -2481,7 +2477,6 @@ export function Sidebar({ planner, projects }: SidebarProps) {
                   <Separator />
                 </div>
               </ScrollArea>
-
             </ToolPanel>
           </motion.div>
         ) : null}

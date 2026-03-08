@@ -1,24 +1,33 @@
-import { HelpCircle } from 'lucide-react';
+import { HelpCircle, Settings } from "lucide-react";
 import {
   ViewportToolbar,
   ViewportToolbarButton,
   ViewportToolbarValue,
-} from '@canvas-tools/ui';
-import type { ViewportBounds } from '@canvas-tools/viewport';
-import { useElementSize, useViewportController } from '@canvas-tools/viewport';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+} from "@canvas-tools/ui";
+import type { ViewportBounds } from "@canvas-tools/viewport";
+import { useElementSize, useViewportController } from "@canvas-tools/viewport";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@/components/ui/popover';
-import type { UseCalculatorReturn } from '@/hooks/use-calculator';
-import { useTheme } from '@/hooks/use-theme';
+} from "@/components/ui/popover";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import type { UseCalculatorReturn } from "@/hooks/use-calculator";
+import { useTheme } from "@/hooks/use-theme";
+import type { Unit } from "@/types";
 import {
   formatMeasurement,
   formatShort,
   toDisplayUnit,
-} from '@/utils/calculations';
+} from "@/utils/calculations";
 
 interface PreviewProps {
   calculator: UseCalculatorReturn;
@@ -86,10 +95,58 @@ function CanvasLegendPopover({
   );
 }
 
+function CanvasSettingsPopover({
+  setUnit,
+  unit,
+}: {
+  setUnit: (unit: Unit) => void;
+  unit: Unit;
+}) {
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <ViewportToolbarButton
+          kind="icon"
+          aria-label="Canvas settings"
+          title="Canvas settings"
+        >
+          <Settings className="size-4" />
+        </ViewportToolbarButton>
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-64 space-y-4">
+        <div className="space-y-1">
+          <p className="text-[11px] font-semibold tracking-[0.18em] text-gray-500 uppercase dark:text-white/45">
+            Canvas Settings
+          </p>
+          <p className="text-xs text-gray-500 dark:text-white/45">
+            Measurement preferences
+          </p>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label className="text-xs">Units</Label>
+          <Select
+            value={unit}
+            onValueChange={(value) => setUnit(value as Unit)}
+          >
+            <SelectTrigger className="h-8 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="in">Inches</SelectItem>
+              <SelectItem value="cm">Centimeters</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 export function Preview({ calculator }: PreviewProps) {
-  const { state, layoutPositions } = calculator;
+  const { state, layoutPositions, setUnit } = calculator;
   const { theme } = useTheme();
-  const isDark = theme === 'dark';
+  const isDark = theme === "dark";
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -290,8 +347,8 @@ export function Preview({ calculator }: PreviewProps) {
     const container = containerRef.current;
     if (!container) return;
 
-    container.addEventListener('wheel', handleWheel, { passive: false });
-    return () => container.removeEventListener('wheel', handleWheel);
+    container.addEventListener("wheel", handleWheel, { passive: false });
+    return () => container.removeEventListener("wheel", handleWheel);
   }, [handleWheel]);
 
   // Pan handlers
@@ -335,7 +392,7 @@ export function Preview({ calculator }: PreviewProps) {
     canvas.style.width = `${canvasWidth}px`;
     canvas.style.height = `${canvasHeight}px`;
 
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -348,8 +405,8 @@ export function Preview({ calculator }: PreviewProps) {
     const offsetY = pan.y;
 
     // Draw wall background
-    ctx.fillStyle = isDark ? '#1e293b' : '#fff';
-    ctx.strokeStyle = isDark ? '#475569' : '#ccc';
+    ctx.fillStyle = isDark ? "#1e293b" : "#fff";
+    ctx.strokeStyle = isDark ? "#475569" : "#ccc";
     ctx.lineWidth = 2;
     ctx.fillRect(
       offsetX,
@@ -365,71 +422,71 @@ export function Preview({ calculator }: PreviewProps) {
     );
 
     // Draw ruler marks on top
-    ctx.fillStyle = isDark ? '#94a3b8' : '#666';
-    ctx.font = '10px -apple-system, sans-serif';
-    ctx.textAlign = 'center';
+    ctx.fillStyle = isDark ? "#94a3b8" : "#666";
+    ctx.font = "10px -apple-system, sans-serif";
+    ctx.textAlign = "center";
 
-    const tickInterval = state.unit === 'in' ? 12 : 30;
+    const tickInterval = state.unit === "in" ? 12 : 30;
     for (let i = 0; i <= state.wallWidth; i += tickInterval) {
       const x = offsetX + i * scale;
       ctx.beginPath();
       ctx.moveTo(x, offsetY - 10);
       ctx.lineTo(x, offsetY);
-      ctx.strokeStyle = isDark ? '#64748b' : '#999';
+      ctx.strokeStyle = isDark ? "#64748b" : "#999";
       ctx.lineWidth = 1;
       ctx.stroke();
       ctx.fillText(fmtShort(i), x, offsetY - 14);
     }
 
     // Left ruler
-    ctx.textAlign = 'right';
+    ctx.textAlign = "right";
     for (let i = 0; i <= state.wallHeight; i += tickInterval) {
       const y = offsetY + (state.wallHeight - i) * scale;
       ctx.beginPath();
       ctx.moveTo(offsetX - 10, y);
       ctx.lineTo(offsetX, y);
-      ctx.strokeStyle = isDark ? '#64748b' : '#999';
+      ctx.strokeStyle = isDark ? "#64748b" : "#999";
       ctx.lineWidth = 1;
       ctx.stroke();
       ctx.fillText(fmtShort(i), offsetX - 14, y + 4);
     }
 
     // Draw floor label
-    ctx.fillStyle = isDark ? '#94a3b8' : '#666';
-    ctx.font = '11px -apple-system, sans-serif';
-    ctx.textAlign = 'center';
+    ctx.fillStyle = isDark ? "#94a3b8" : "#666";
+    ctx.font = "11px -apple-system, sans-serif";
+    ctx.textAlign = "center";
     ctx.fillText(
-      'FLOOR',
+      "FLOOR",
       offsetX + (state.wallWidth * scale) / 2,
       offsetY + state.wallHeight * scale + 16,
     );
 
     // Draw ceiling indicator
-    ctx.fillStyle = isDark ? '#94a3b8' : '#666';
+    ctx.fillStyle = isDark ? "#94a3b8" : "#666";
     ctx.fillText(
-      'CEILING',
+      "CEILING",
       offsetX + (state.wallWidth * scale) / 2,
       offsetY - 30,
     );
 
     // Draw anchor reference line
     ctx.setLineDash([5, 5]);
-    ctx.strokeStyle = '#4f46e5';
+    ctx.strokeStyle = "#4f46e5";
     ctx.lineWidth = 1;
 
-    if (state.anchorType === 'center') {
+    if (state.anchorType === "center") {
       const centerY = offsetY + (state.wallHeight / 2) * scale;
       ctx.beginPath();
       ctx.moveTo(offsetX, centerY);
       ctx.lineTo(offsetX + state.wallWidth * scale, centerY);
       ctx.stroke();
-    } else if (state.anchorType === 'ceiling') {
+    } else if (state.anchorType === "ceiling") {
       const lineY = offsetY + state.anchorValue * scale;
       ctx.beginPath();
       ctx.moveTo(offsetX, lineY);
       ctx.lineTo(offsetX + state.wallWidth * scale, lineY);
       ctx.stroke();
-    } else if (state.anchorType === 'furniture') {
+    } else if (state.anchorType === "furniture") {
       const furnitureTop = state.wallHeight - state.furnitureHeight;
       const lineY = offsetY + (furnitureTop - state.anchorValue) * scale;
       ctx.beginPath();
@@ -446,12 +503,12 @@ export function Preview({ calculator }: PreviewProps) {
     ctx.setLineDash([]);
 
     // Draw furniture
-    if (state.anchorType === 'furniture') {
+    if (state.anchorType === "furniture") {
       // Calculate furniture left edge based on anchor
       let furnitureLeft: number;
-      if (state.furnitureAnchor === 'center') {
+      if (state.furnitureAnchor === "center") {
         furnitureLeft = (state.wallWidth - state.furnitureWidth) / 2;
-      } else if (state.furnitureAnchor === 'left') {
+      } else if (state.furnitureAnchor === "left") {
         furnitureLeft = state.furnitureOffset;
       } else {
         furnitureLeft =
@@ -464,18 +521,18 @@ export function Preview({ calculator }: PreviewProps) {
       const fw = state.furnitureWidth * scale;
       const fh = state.furnitureHeight * scale;
 
-      ctx.fillStyle = isDark ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.08)';
+      ctx.fillStyle = isDark ? "rgba(0,0,0,0.3)" : "rgba(0,0,0,0.08)";
       ctx.fillRect(fx + 2, fy + 2, fw, fh);
-      ctx.fillStyle = isDark ? '#475569' : '#e5e7eb';
+      ctx.fillStyle = isDark ? "#475569" : "#e5e7eb";
       ctx.fillRect(fx, fy, fw, fh);
-      ctx.strokeStyle = isDark ? '#64748b' : '#9ca3af';
+      ctx.strokeStyle = isDark ? "#64748b" : "#9ca3af";
       ctx.lineWidth = 2;
       ctx.strokeRect(fx, fy, fw, fh);
-      ctx.fillStyle = isDark ? '#94a3b8' : '#6b7280';
-      ctx.font = 'bold 11px -apple-system, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('FURNITURE', fx + fw / 2, fy + fh / 2 + 4);
-      ctx.font = '10px -apple-system, sans-serif';
+      ctx.fillStyle = isDark ? "#94a3b8" : "#6b7280";
+      ctx.font = "bold 11px -apple-system, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText("FURNITURE", fx + fw / 2, fy + fh / 2 + 4);
+      ctx.font = "10px -apple-system, sans-serif";
       ctx.fillText(fmtShort(state.furnitureWidth), fx + fw / 2, fy - 6);
     }
 
@@ -486,26 +543,26 @@ export function Preview({ calculator }: PreviewProps) {
       const fw = frame.width * scale;
       const fh = frame.height * scale;
 
-      ctx.fillStyle = isDark ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.1)';
+      ctx.fillStyle = isDark ? "rgba(0,0,0,0.3)" : "rgba(0,0,0,0.1)";
       ctx.fillRect(fx + 3, fy + 3, fw, fh);
       ctx.fillStyle = frame.isOutOfBounds
         ? isDark
-          ? '#450a0a'
-          : '#fef2f2'
+          ? "#450a0a"
+          : "#fef2f2"
         : isDark
-          ? '#334155'
-          : '#f8f8f8';
+          ? "#334155"
+          : "#f8f8f8";
       ctx.fillRect(fx, fy, fw, fh);
       ctx.strokeStyle = frame.isOutOfBounds
-        ? '#ef4444'
+        ? "#ef4444"
         : isDark
-          ? '#64748b'
-          : '#333';
+          ? "#64748b"
+          : "#333";
       ctx.lineWidth = frame.isOutOfBounds ? 3 : 2;
       ctx.strokeRect(fx, fy, fw, fh);
 
       const matInset = Math.min(fw, fh) * 0.1;
-      ctx.strokeStyle = isDark ? '#475569' : '#ddd';
+      ctx.strokeStyle = isDark ? "#475569" : "#ddd";
       ctx.lineWidth = 1;
       ctx.strokeRect(
         fx + matInset,
@@ -521,9 +578,9 @@ export function Preview({ calculator }: PreviewProps) {
       // Draw first (or only) hook
       ctx.beginPath();
       ctx.arc(hookX1, hookY, 6, 0, Math.PI * 2);
-      ctx.fillStyle = '#ef4444';
+      ctx.fillStyle = "#ef4444";
       ctx.fill();
-      ctx.strokeStyle = '#fff';
+      ctx.strokeStyle = "#fff";
       ctx.lineWidth = 1;
       ctx.stroke();
 
@@ -532,20 +589,20 @@ export function Preview({ calculator }: PreviewProps) {
         const hookX2 = offsetX + frame.hookX2 * scale;
         ctx.beginPath();
         ctx.arc(hookX2, hookY, 6, 0, Math.PI * 2);
-        ctx.fillStyle = '#ef4444';
+        ctx.fillStyle = "#ef4444";
         ctx.fill();
-        ctx.strokeStyle = '#fff';
+        ctx.strokeStyle = "#fff";
         ctx.lineWidth = 1;
         ctx.stroke();
       }
 
-      ctx.fillStyle = isDark ? '#94a3b8' : '#666';
-      ctx.font = 'bold 11px -apple-system, sans-serif';
-      ctx.textAlign = 'center';
+      ctx.fillStyle = isDark ? "#94a3b8" : "#666";
+      ctx.font = "bold 11px -apple-system, sans-serif";
+      ctx.textAlign = "center";
       ctx.fillText(frame.name, fx + fw / 2, fy + fh / 2 + 4);
 
-      ctx.font = '10px -apple-system, sans-serif';
-      ctx.fillStyle = isDark ? '#818cf8' : '#4f46e5';
+      ctx.font = "10px -apple-system, sans-serif";
+      ctx.fillStyle = isDark ? "#818cf8" : "#4f46e5";
       ctx.fillText(fmtShort(frame.width), fx + fw / 2, fy - 6);
 
       ctx.save();
@@ -565,7 +622,7 @@ export function Preview({ calculator }: PreviewProps) {
       const hookY = offsetY + f.hookY * scale;
       const fromLeft = hookIndex === 1 && f.hookX2 ? f.hookX2 : f.fromLeft;
 
-      ctx.strokeStyle = '#22c55e';
+      ctx.strokeStyle = "#22c55e";
       ctx.lineWidth = 1;
       ctx.setLineDash([3, 3]);
 
@@ -582,41 +639,41 @@ export function Preview({ calculator }: PreviewProps) {
       ctx.stroke();
 
       ctx.setLineDash([]);
-      ctx.font = 'bold 10px -apple-system, sans-serif';
-      ctx.textAlign = 'center';
+      ctx.font = "bold 10px -apple-system, sans-serif";
+      ctx.textAlign = "center";
 
       // "From left" label with background
       const fromLeftText = fmt(fromLeft);
       const fromLeftX = offsetX + (fromLeft * scale) / 2;
       const fromLeftWidth = ctx.measureText(fromLeftText).width;
-      ctx.fillStyle = isDark ? '#1e293b' : '#fff';
+      ctx.fillStyle = isDark ? "#1e293b" : "#fff";
       ctx.fillRect(
         fromLeftX - fromLeftWidth / 2 - 2,
         hookY - 14,
         fromLeftWidth + 4,
         12,
       );
-      ctx.fillStyle = '#22c55e';
+      ctx.fillStyle = "#22c55e";
       ctx.fillText(fromLeftText, fromLeftX, hookY - 5);
 
       // "From floor" label (rotated)
       ctx.save();
-      ctx.font = 'bold 10px -apple-system, sans-serif';
+      ctx.font = "bold 10px -apple-system, sans-serif";
       const fromFloorText = fmt(f.fromFloor);
       const fromFloorY =
         offsetY + state.wallHeight * scale - (f.fromFloor * scale) / 2;
       ctx.translate(hookX + 10, fromFloorY);
       ctx.rotate(-Math.PI / 2);
       const floorTextWidth = ctx.measureText(fromFloorText).width;
-      ctx.fillStyle = isDark ? '#1e293b' : '#fff';
+      ctx.fillStyle = isDark ? "#1e293b" : "#fff";
       ctx.fillRect(-floorTextWidth / 2 - 2, -9, floorTextWidth + 4, 12);
-      ctx.fillStyle = '#22c55e';
+      ctx.fillStyle = "#22c55e";
       ctx.fillText(fromFloorText, 0, 0);
       ctx.restore();
 
       // When "from ceiling" mode: also draw line and label from ceiling to hook
-      if (state.anchorType === 'ceiling') {
-        ctx.strokeStyle = '#22c55e';
+      if (state.anchorType === "ceiling") {
+        ctx.strokeStyle = "#22c55e";
         ctx.lineWidth = 1;
         ctx.setLineDash([3, 3]);
 
@@ -629,15 +686,15 @@ export function Preview({ calculator }: PreviewProps) {
 
         // "From ceiling" label (rotated, on left side of line)
         ctx.save();
-        ctx.font = 'bold 10px -apple-system, sans-serif';
+        ctx.font = "bold 10px -apple-system, sans-serif";
         const fromCeilingText = fmt(f.fromCeiling);
         const fromCeilingY = offsetY + (f.fromCeiling * scale) / 2;
         ctx.translate(hookX - 10, fromCeilingY);
         ctx.rotate(-Math.PI / 2);
         const ceilingTextWidth = ctx.measureText(fromCeilingText).width;
-        ctx.fillStyle = isDark ? '#1e293b' : '#fff';
+        ctx.fillStyle = isDark ? "#1e293b" : "#fff";
         ctx.fillRect(-ceilingTextWidth / 2 - 2, -9, ceilingTextWidth + 4, 12);
-        ctx.fillStyle = '#22c55e';
+        ctx.fillStyle = "#22c55e";
         ctx.fillText(fromCeilingText, 0, 0);
         ctx.restore();
       }
@@ -650,7 +707,7 @@ export function Preview({ calculator }: PreviewProps) {
         const hookX2 = offsetX + f.hookX2 * scale;
         const hookY = offsetY + f.hookY * scale;
 
-        ctx.strokeStyle = '#f59e0b'; // Amber for gap
+        ctx.strokeStyle = "#f59e0b"; // Amber for gap
         ctx.lineWidth = 1;
         ctx.setLineDash([3, 3]);
         ctx.beginPath();
@@ -662,9 +719,9 @@ export function Preview({ calculator }: PreviewProps) {
         // Hook gap measurement label
         const gapText = fmt(f.hookGap);
         const textX = (hookX + hookX2) / 2;
-        ctx.font = 'bold 10px -apple-system, sans-serif';
+        ctx.font = "bold 10px -apple-system, sans-serif";
         const textWidth = ctx.measureText(gapText).width;
-        ctx.fillStyle = isDark ? '#1e293b' : '#fff';
+        ctx.fillStyle = isDark ? "#1e293b" : "#fff";
         ctx.beginPath();
         ctx.roundRect(
           textX - textWidth / 2 - 4,
@@ -674,8 +731,8 @@ export function Preview({ calculator }: PreviewProps) {
           3,
         );
         ctx.fill();
-        ctx.fillStyle = '#f59e0b';
-        ctx.textAlign = 'center';
+        ctx.fillStyle = "#f59e0b";
+        ctx.textAlign = "center";
         ctx.fillText(gapText, textX, hookY + 4);
       }
     });
@@ -696,8 +753,8 @@ export function Preview({ calculator }: PreviewProps) {
               scale;
           const hookY = offsetY + frame.hookY * scale;
 
-          const tooltipText = 'Shift+click another hook to compare';
-          ctx.font = '11px -apple-system, sans-serif';
+          const tooltipText = "Shift+click another hook to compare";
+          ctx.font = "11px -apple-system, sans-serif";
           const textWidth = ctx.measureText(tooltipText).width;
 
           // Position tooltip above the hook
@@ -705,7 +762,7 @@ export function Preview({ calculator }: PreviewProps) {
           const tooltipY = hookY - 25;
 
           // Draw tooltip background
-          ctx.fillStyle = isDark ? '#f1f5f9' : '#1f2937';
+          ctx.fillStyle = isDark ? "#f1f5f9" : "#1f2937";
           ctx.beginPath();
           ctx.roundRect(
             tooltipX - textWidth / 2 - 8,
@@ -725,8 +782,8 @@ export function Preview({ calculator }: PreviewProps) {
           ctx.fill();
 
           // Draw text
-          ctx.fillStyle = isDark ? '#1e293b' : '#fff';
-          ctx.textAlign = 'center';
+          ctx.fillStyle = isDark ? "#1e293b" : "#fff";
+          ctx.textAlign = "center";
           ctx.fillText(tooltipText, tooltipX, tooltipY + 2);
         }
       }
@@ -768,7 +825,7 @@ export function Preview({ calculator }: PreviewProps) {
         const deltaY = cmpY - refY;
 
         // Draw connecting line (cyan/teal for comparison)
-        ctx.strokeStyle = '#06b6d4';
+        ctx.strokeStyle = "#06b6d4";
         ctx.lineWidth = 2;
         ctx.setLineDash([5, 3]);
         ctx.beginPath();
@@ -778,14 +835,14 @@ export function Preview({ calculator }: PreviewProps) {
         ctx.setLineDash([]);
 
         // Draw reference hook highlight (ring)
-        ctx.strokeStyle = '#06b6d4';
+        ctx.strokeStyle = "#06b6d4";
         ctx.lineWidth = 3;
         ctx.beginPath();
         ctx.arc(refScreenX, refScreenY, 10, 0, Math.PI * 2);
         ctx.stroke();
 
         // Draw compare hook highlight (filled ring)
-        ctx.strokeStyle = '#06b6d4';
+        ctx.strokeStyle = "#06b6d4";
         ctx.lineWidth = 3;
         ctx.beginPath();
         ctx.arc(cmpScreenX, cmpScreenY, 10, 0, Math.PI * 2);
@@ -793,26 +850,26 @@ export function Preview({ calculator }: PreviewProps) {
 
         // Format distance labels
         const hText =
-          Math.abs(deltaX) > 0.1 ? `${fmt(Math.abs(deltaX))} horizontal` : '';
+          Math.abs(deltaX) > 0.1 ? `${fmt(Math.abs(deltaX))} horizontal` : "";
         const vText =
-          Math.abs(deltaY) > 0.1 ? `${fmt(Math.abs(deltaY))} vertical` : '';
+          Math.abs(deltaY) > 0.1 ? `${fmt(Math.abs(deltaY))} vertical` : "";
 
         // Draw label at midpoint
         const midX = (refScreenX + cmpScreenX) / 2;
         const midY = (refScreenY + cmpScreenY) / 2;
 
-        ctx.font = 'bold 11px -apple-system, sans-serif';
-        ctx.textAlign = 'center';
+        ctx.font = "bold 11px -apple-system, sans-serif";
+        ctx.textAlign = "center";
 
         // Build label text
         const labels = [hText, vText].filter(Boolean);
-        const labelText = labels.join(', ');
+        const labelText = labels.join(", ");
 
         if (labelText) {
           const textWidth = ctx.measureText(labelText).width;
 
           // Draw background pill
-          ctx.fillStyle = '#06b6d4';
+          ctx.fillStyle = "#06b6d4";
           ctx.beginPath();
           ctx.roundRect(
             midX - textWidth / 2 - 8,
@@ -824,7 +881,7 @@ export function Preview({ calculator }: PreviewProps) {
           ctx.fill();
 
           // Draw text
-          ctx.fillStyle = '#fff';
+          ctx.fillStyle = "#fff";
           ctx.fillText(labelText, midX, midY + 4);
         }
       }
@@ -851,7 +908,7 @@ export function Preview({ calculator }: PreviewProps) {
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseLeave}
-      style={{ cursor: isPanning ? 'grabbing' : 'grab' }}
+      style={{ cursor: isPanning ? "grabbing" : "grab" }}
     >
       <div
         className="relative"
@@ -860,7 +917,7 @@ export function Preview({ calculator }: PreviewProps) {
         <canvas
           ref={canvasRef}
           className="absolute inset-0"
-          style={{ cursor: isPanning ? 'grabbing' : 'grab' }}
+          style={{ cursor: isPanning ? "grabbing" : "grab" }}
           onClick={handleCanvasClick}
         />
       </div>
@@ -868,7 +925,7 @@ export function Preview({ calculator }: PreviewProps) {
       <ViewportToolbar className="absolute top-4 right-4">
         <ViewportToolbarButton
           kind="step"
-          onClick={() => stepZoom('out')}
+          onClick={() => stepZoom("out")}
           aria-label="Zoom out"
         >
           -
@@ -876,17 +933,16 @@ export function Preview({ calculator }: PreviewProps) {
         <ViewportToolbarValue>{zoomPercent}%</ViewportToolbarValue>
         <ViewportToolbarButton
           kind="step"
-          onClick={() => stepZoom('in')}
+          onClick={() => stepZoom("in")}
           aria-label="Zoom in"
         >
           +
         </ViewportToolbarButton>
-        <ViewportToolbarButton onClick={fitToView}>
-          Fit
-        </ViewportToolbarButton>
+        <ViewportToolbarButton onClick={fitToView}>Fit</ViewportToolbarButton>
         <CanvasLegendPopover
           hasOutOfBoundsItems={layoutPositions.some((f) => f.isOutOfBounds)}
         />
+        <CanvasSettingsPopover setUnit={setUnit} unit={state.unit} />
       </ViewportToolbar>
     </div>
   );

@@ -1,5 +1,5 @@
 import { MoveVertical } from 'lucide-react';
-import { InspectorSectionHeader } from '@canvas-tools/ui';
+import { InspectorOptionCard, InspectorSectionHeader } from '@canvas-tools/ui';
 import {
   Collapsible,
   CollapsibleContent,
@@ -7,7 +7,6 @@ import {
 import { Field, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import type { UseCalculatorReturn } from '@/hooks/use-calculator';
-import { cn } from '@/lib/utils';
 import type { AnchorType } from '@/types';
 
 interface Props {
@@ -69,24 +68,23 @@ export function VerticalPosition({ calculator }: Props) {
         <div className="space-y-3 pt-3">
           <div className="flex flex-col gap-2">
             {options.map((opt) => (
-              <label
+              <InspectorOptionCard
                 key={opt.value}
-                className={cn(
-                  'flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors',
-                  state.anchorType === opt.value
-                    ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-500/20'
-                    : 'border-gray-200 bg-gray-50 hover:border-gray-300 hover:bg-gray-100 dark:border-white/10 dark:bg-white/5 dark:hover:border-white/20 dark:hover:bg-white/10',
-                )}
+                asChild
+                selected={state.anchorType === opt.value}
+                tone="emerald"
+                className="cursor-pointer p-3"
                 onClick={() => {
                   setAnchorType(opt.value);
                   if (opt.value !== 'center')
                     setAnchorValue(opt.defaultValue);
                 }}
               >
+                <label>
                 <input
                   type="radio"
                   checked={state.anchorType === opt.value}
-                  onChange={() => { }}
+                  onChange={() => {}}
                   className="mt-1 accent-emerald-600 dark:accent-emerald-500"
                 />
                 <div>
@@ -97,7 +95,8 @@ export function VerticalPosition({ calculator }: Props) {
                     {opt.desc}
                   </div>
                 </div>
-              </label>
+                </label>
+              </InspectorOptionCard>
             ))}
           </div>
 

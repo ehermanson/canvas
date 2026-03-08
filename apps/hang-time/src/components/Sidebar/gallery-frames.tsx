@@ -10,14 +10,14 @@ import {
   useDroppable,
   useSensor,
   useSensors,
-} from '@dnd-kit/core';
+} from "@dnd-kit/core";
 import {
   SortableContext,
   sortableKeyboardCoordinates,
   useSortable,
   verticalListSortingStrategy,
-} from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import {
   AlignHorizontalDistributeCenter,
   AlignHorizontalJustifyStart,
@@ -28,8 +28,12 @@ import {
   Plus,
   Trash2,
   X,
-} from 'lucide-react';
-import { InspectorSectionHeader } from '@canvas-tools/ui';
+} from "lucide-react";
+import {
+  InspectorOptionCard,
+  InspectorSectionHeader,
+  InspectorSegmentedControlItem,
+} from "@canvas-tools/ui";
 
 // Custom icons for row vertical alignment (showing different-height frames)
 function AlignTopIcon({ className }: { className?: string }) {
@@ -110,34 +114,31 @@ function AlignBottomIcon({ className }: { className?: string }) {
   );
 }
 
-import { useRef, useState } from 'react';
-import { Button } from '@/components/ui/button';
-import {
-  Collapsible,
-  CollapsibleContent,
-} from '@/components/ui/collapsible';
-import { Field, FieldLabel } from '@/components/ui/field';
-import { Input } from '@/components/ui/input';
-import { Switch } from '@/components/ui/switch';
+import { useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
+import { Field, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '@/components/ui/tooltip';
-import type { UseCalculatorReturn } from '@/hooks/use-calculator';
-import { createId } from '@/lib/id';
-import { cn } from '@/lib/utils';
-import type { Distribution, GalleryFrame, GalleryVAlign } from '@/types';
+} from "@/components/ui/tooltip";
+import type { UseCalculatorReturn } from "@/hooks/use-calculator";
+import { createId } from "@/lib/id";
+import { cn } from "@/lib/utils";
+import type { Distribution, GalleryFrame, GalleryVAlign } from "@/types";
 
 const VALIGN_OPTIONS: {
   value: GalleryVAlign;
   label: string;
   icon: typeof AlignTopIcon;
 }[] = [
-  { value: 'top', label: 'Top', icon: AlignTopIcon },
-  { value: 'center', label: 'Center', icon: AlignCenterIcon },
-  { value: 'bottom', label: 'Bottom', icon: AlignBottomIcon },
+  { value: "top", label: "Top", icon: AlignTopIcon },
+  { value: "center", label: "Center", icon: AlignCenterIcon },
+  { value: "bottom", label: "Bottom", icon: AlignBottomIcon },
 ];
 
 const DISTRIBUTION_OPTIONS: {
@@ -145,18 +146,18 @@ const DISTRIBUTION_OPTIONS: {
   label: string;
   icon: typeof AlignHorizontalDistributeCenter;
 }[] = [
-  { value: 'fixed', label: 'Fixed', icon: AlignHorizontalJustifyStart },
+  { value: "fixed", label: "Fixed", icon: AlignHorizontalJustifyStart },
   {
-    value: 'space-between',
-    label: 'Between',
+    value: "space-between",
+    label: "Between",
     icon: AlignHorizontalSpaceBetween,
   },
   {
-    value: 'space-evenly',
-    label: 'Evenly',
+    value: "space-evenly",
+    label: "Evenly",
     icon: AlignHorizontalDistributeCenter,
   },
-  { value: 'space-around', label: 'Around', icon: AlignHorizontalSpaceAround },
+  { value: "space-around", label: "Around", icon: AlignHorizontalSpaceAround },
 ];
 
 const FRAME_PRESETS = [
@@ -177,7 +178,7 @@ const isPresetSize = (width: number, height: number) =>
 interface DraggableFrameCardProps {
   frame: GalleryFrame;
   index: number;
-  unit: 'in' | 'cm';
+  unit: "in" | "cm";
   u: (val: number) => number;
   fromU: (val: number) => number;
   uniformSize: boolean;
@@ -216,12 +217,12 @@ function DraggableFrameCard({
   const content = (
     <div
       className={cn(
-        'rounded-lg border transition-all',
+        "rounded-lg border transition-all",
         isOverlay
-          ? 'border-pink-400 bg-white shadow-xl dark:bg-slate-800'
+          ? "border-pink-400 bg-white shadow-xl dark:bg-slate-800"
           : isDragging
-            ? 'opacity-30 border-pink-300 bg-pink-50/50 dark:border-pink-500/50 dark:bg-pink-500/10'
-            : 'border-gray-200 bg-white dark:border-white/10 dark:bg-white/5',
+            ? "opacity-30 border-pink-300 bg-pink-50/50 dark:border-pink-500/50 dark:bg-pink-500/10"
+            : "border-gray-200 bg-white dark:border-white/10 dark:bg-white/5",
       )}
     >
       {/* Header with drag handle and remove button */}
@@ -259,40 +260,45 @@ function DraggableFrameCard({
           <>
             <div className="flex flex-wrap gap-1">
               {FRAME_PRESETS.map((p) => (
-                <button
+                <InspectorSegmentedControlItem
                   key={p.label}
-                  onClick={() =>
-                    onUpdate(frame.id, { width: p.width, height: p.height })
-                  }
-                  className={cn(
-                    'px-1.5 py-0.5 text-[10px] rounded border transition-colors',
+                  asChild
+                  selected={
                     p.width === frame.width && p.height === frame.height
-                      ? 'border-pink-500 bg-pink-50 text-pink-600 dark:bg-pink-500/20 dark:text-pink-300'
-                      : 'border-gray-200 bg-gray-50 text-gray-500 hover:border-gray-300 dark:border-white/10 dark:bg-white/5 dark:text-white/50',
-                  )}
-                >
-                  {p.label}
-                </button>
-              ))}
-              <button
-                onClick={() => {
-                  // Set to a non-preset size to reveal custom inputs
-                  if (isPresetSize(frame.width, frame.height)) {
-                    onUpdate(frame.id, {
-                      width: frame.width + 0.1,
-                      height: frame.height + 0.1,
-                    });
                   }
-                }}
-                className={cn(
-                  'px-1.5 py-0.5 text-[10px] rounded border transition-colors',
-                  !isPresetSize(frame.width, frame.height)
-                    ? 'border-pink-500 bg-pink-50 text-pink-600 dark:bg-pink-500/20 dark:text-pink-300'
-                    : 'border-gray-200 bg-gray-50 text-gray-500 hover:border-gray-300 dark:border-white/10 dark:bg-white/5 dark:text-white/50',
-                )}
+                  tone="pink"
+                  className="px-1.5 py-0.5 text-[10px]"
+                >
+                  <button
+                    type="button"
+                    onClick={() =>
+                      onUpdate(frame.id, { width: p.width, height: p.height })
+                    }
+                  >
+                    {p.label}
+                  </button>
+                </InspectorSegmentedControlItem>
+              ))}
+              <InspectorSegmentedControlItem
+                asChild
+                selected={!isPresetSize(frame.width, frame.height)}
+                tone="pink"
+                className="px-1.5 py-0.5 text-[10px]"
               >
-                Custom
-              </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (isPresetSize(frame.width, frame.height)) {
+                      onUpdate(frame.id, {
+                        width: frame.width + 0.1,
+                        height: frame.height + 0.1,
+                      });
+                    }
+                  }}
+                >
+                  Custom
+                </button>
+              </InspectorSegmentedControlItem>
             </div>
             {!isPresetSize(frame.width, frame.height) && (
               <div className="grid grid-cols-2 gap-2">
@@ -373,7 +379,7 @@ interface RowContainerProps {
   rowIndex: number;
   frames: GalleryFrame[];
   allFrames: GalleryFrame[];
-  unit: 'in' | 'cm';
+  unit: "in" | "cm";
   u: (val: number) => number;
   fromU: (val: number) => number;
   uniformSize: boolean;
@@ -411,10 +417,10 @@ function RowContainer({
     <div
       ref={setNodeRef}
       className={cn(
-        'rounded-xl border-2 border-dashed p-3 transition-colors',
+        "rounded-xl border-2 border-dashed p-3 transition-colors",
         isOver
-          ? 'border-pink-400 bg-pink-50/50 dark:border-pink-500 dark:bg-pink-500/10'
-          : 'border-gray-200 bg-gray-50/50 dark:border-white/10 dark:bg-white/5',
+          ? "border-pink-400 bg-pink-50/50 dark:border-pink-500 dark:bg-pink-500/10"
+          : "border-gray-200 bg-gray-50/50 dark:border-white/10 dark:bg-white/5",
       )}
     >
       <div className="flex items-center gap-2 mb-2">
@@ -422,7 +428,7 @@ function RowContainer({
           Row {rowIndex + 1}
         </span>
         <span className="text-[10px] text-gray-400 dark:text-white/30">
-          ({frames.length} {frames.length === 1 ? 'frame' : 'frames'})
+          ({frames.length} {frames.length === 1 ? "frame" : "frames"})
         </span>
         {/* Per-row vertical alignment (only shown when frames have different heights) */}
         {showVAlignControls && (
@@ -437,10 +443,10 @@ function RowContainer({
                       <button
                         onClick={() => onVAlignChange(option.value)}
                         className={cn(
-                          'p-1 rounded transition-colors',
+                          "p-1 rounded transition-colors",
                           isSelected
-                            ? 'bg-pink-100 text-pink-600 dark:bg-pink-500/20 dark:text-pink-400'
-                            : 'text-gray-300 hover:text-gray-500 hover:bg-gray-100 dark:text-white/30 dark:hover:text-white/50 dark:hover:bg-white/10',
+                            ? "bg-pink-100 text-pink-600 dark:bg-pink-500/20 dark:text-pink-400"
+                            : "text-gray-300 hover:text-gray-500 hover:bg-gray-100 dark:text-white/30 dark:hover:text-white/50 dark:hover:bg-white/10",
                         )}
                       >
                         <Icon className="h-3.5 w-3.5" />
@@ -459,8 +465,8 @@ function RowContainer({
           <button
             onClick={onRemoveRow}
             className={cn(
-              'p-1 text-gray-300 hover:text-red-500 dark:text-white/30 dark:hover:text-red-400 rounded hover:bg-red-50 dark:hover:bg-red-500/10',
-              !showVAlignControls && 'ml-auto',
+              "p-1 text-gray-300 hover:text-red-500 dark:text-white/30 dark:hover:text-red-400 rounded hover:bg-red-50 dark:hover:bg-red-500/10",
+              !showVAlignControls && "ml-auto",
             )}
             title="Remove empty row"
           >
@@ -574,8 +580,8 @@ export function GalleryFrames({ calculator }: Props) {
     const currentOverId = over.id as string;
     let targetRow: number | null = null;
 
-    if (currentOverId.startsWith('row-')) {
-      targetRow = parseInt(currentOverId.replace('row-', ''), 10);
+    if (currentOverId.startsWith("row-")) {
+      targetRow = parseInt(currentOverId.replace("row-", ""), 10);
     } else {
       const overFrame = state.frames.find((f) => f.id === over.id);
       if (overFrame && activeFrame.row !== overFrame.row) {
@@ -714,40 +720,45 @@ export function GalleryFrames({ calculator }: Props) {
             <div className="space-y-2">
               <div className="flex flex-wrap gap-1">
                 {FRAME_PRESETS.map((p) => (
-                  <button
+                  <InspectorSegmentedControlItem
                     key={p.label}
-                    onClick={() => {
-                      setFrameWidth(p.width);
-                      setFrameHeight(p.height);
-                    }}
-                    className={cn(
-                      'px-2 py-0.5 text-xs rounded border transition-colors',
+                    asChild
+                    selected={
                       p.width === state.frameWidth &&
-                        p.height === state.frameHeight
-                        ? 'border-pink-500 bg-pink-50 text-pink-600 dark:bg-pink-500/20 dark:text-pink-300'
-                        : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 dark:border-white/10 dark:bg-white/5 dark:text-white/60 dark:hover:border-white/20',
-                    )}
-                  >
-                    {p.label}
-                  </button>
-                ))}
-                <button
-                  onClick={() => {
-                    // Set to a non-preset size to reveal custom inputs
-                    if (isPresetSize(state.frameWidth, state.frameHeight)) {
-                      setFrameWidth(state.frameWidth + 0.1);
-                      setFrameHeight(state.frameHeight + 0.1);
+                      p.height === state.frameHeight
                     }
-                  }}
-                  className={cn(
-                    'px-2 py-0.5 text-xs rounded border transition-colors',
-                    !isPresetSize(state.frameWidth, state.frameHeight)
-                      ? 'border-pink-500 bg-pink-50 text-pink-600 dark:bg-pink-500/20 dark:text-pink-300'
-                      : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 dark:border-white/10 dark:bg-white/5 dark:text-white/60 dark:hover:border-white/20',
-                  )}
+                    tone="pink"
+                    className="px-2 py-0.5 text-xs"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFrameWidth(p.width);
+                        setFrameHeight(p.height);
+                      }}
+                    >
+                      {p.label}
+                    </button>
+                  </InspectorSegmentedControlItem>
+                ))}
+                <InspectorSegmentedControlItem
+                  asChild
+                  selected={!isPresetSize(state.frameWidth, state.frameHeight)}
+                  tone="pink"
+                  className="px-2 py-0.5 text-xs"
                 >
-                  Custom
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (isPresetSize(state.frameWidth, state.frameHeight)) {
+                        setFrameWidth(state.frameWidth + 0.1);
+                        setFrameHeight(state.frameHeight + 0.1);
+                      }
+                    }}
+                  >
+                    Custom
+                  </button>
+                </InspectorSegmentedControlItem>
               </div>
               {!isPresetSize(state.frameWidth, state.frameHeight) && (
                 <div className="grid grid-cols-2 gap-2">
@@ -862,42 +873,45 @@ export function GalleryFrames({ calculator }: Props) {
                 const Icon = option.icon;
                 const isSelected = state.hDistribution === option.value;
                 return (
-                  <button
+                  <InspectorOptionCard
                     key={option.value}
-                    onClick={() => setHDistribution(option.value)}
-                    className={cn(
-                      'flex flex-col items-center p-1.5 rounded-lg border transition-all',
-                      isSelected
-                        ? 'border-pink-500 bg-pink-50 dark:bg-pink-500/20'
-                        : 'border-gray-200 bg-white hover:border-gray-300 dark:border-white/10 dark:bg-white/5 dark:hover:border-white/20',
-                    )}
+                    asChild
+                    layout="column"
+                    selected={isSelected}
+                    tone="pink"
+                    className="p-1.5"
                   >
-                    <Icon
-                      className={cn(
-                        'h-4 w-4',
-                        isSelected
-                          ? 'text-pink-500 dark:text-pink-400'
-                          : 'text-gray-400 dark:text-white/40',
-                      )}
-                    />
-                    <span
-                      className={cn(
-                        'text-[10px] font-medium mt-0.5',
-                        isSelected
-                          ? 'text-pink-600 dark:text-pink-300'
-                          : 'text-gray-600 dark:text-white/60',
-                      )}
+                    <button
+                      type="button"
+                      onClick={() => setHDistribution(option.value)}
                     >
-                      {option.label}
-                    </span>
-                  </button>
+                      <Icon
+                        className={cn(
+                          "h-4 w-4",
+                          isSelected
+                            ? "text-pink-500 dark:text-pink-400"
+                            : "text-gray-400 dark:text-white/40",
+                        )}
+                      />
+                      <span
+                        className={cn(
+                          "mt-0.5 text-[10px] font-medium",
+                          isSelected
+                            ? "text-pink-600 dark:text-pink-300"
+                            : "text-gray-600 dark:text-white/60",
+                        )}
+                      >
+                        {option.label}
+                      </span>
+                    </button>
+                  </InspectorOptionCard>
                 );
               })}
             </div>
           </Field>
 
           {/* Spacing (only for fixed distribution) */}
-          {state.hDistribution === 'fixed' && (
+          {state.hDistribution === "fixed" && (
             <Field>
               <FieldLabel htmlFor="h-spacing">
                 Spacing ({state.unit})

@@ -1,5 +1,5 @@
 import { MoveHorizontal } from 'lucide-react';
-import { InspectorSectionHeader } from '@canvas-tools/ui';
+import { InspectorOptionCard, InspectorSectionHeader } from '@canvas-tools/ui';
 import {
   Collapsible,
   CollapsibleContent,
@@ -7,7 +7,6 @@ import {
 import { Field, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import type { UseCalculatorReturn } from '@/hooks/use-calculator';
-import { cn } from '@/lib/utils';
 import type { HorizontalAnchorType } from '@/types';
 
 interface Props {
@@ -62,20 +61,19 @@ export function HorizontalPosition({ calculator }: Props) {
             <>
               <div className="flex flex-col gap-2">
                 {options.map((opt) => (
-                  <label
+                  <InspectorOptionCard
                     key={opt.value}
-                    className={cn(
-                      'flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors',
-                      state.hAnchorType === opt.value
-                        ? 'border-amber-500 bg-amber-50 dark:bg-amber-500/20'
-                        : 'border-gray-200 bg-gray-50 hover:border-gray-300 hover:bg-gray-100 dark:border-white/10 dark:bg-white/5 dark:hover:border-white/20 dark:hover:bg-white/10',
-                    )}
+                    asChild
+                    selected={state.hAnchorType === opt.value}
+                    tone="amber"
+                    className="cursor-pointer p-3"
                     onClick={() => {
                       setHAnchorType(opt.value);
                       if (opt.value !== 'center')
                         setHAnchorValue(opt.defaultValue);
                     }}
                   >
+                    <label>
                     <input
                       type="radio"
                       checked={state.hAnchorType === opt.value}
@@ -90,7 +88,8 @@ export function HorizontalPosition({ calculator }: Props) {
                         {opt.desc}
                       </div>
                     </div>
-                  </label>
+                    </label>
+                  </InspectorOptionCard>
                 ))}
               </div>
 

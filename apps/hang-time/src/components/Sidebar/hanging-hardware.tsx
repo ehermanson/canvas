@@ -1,5 +1,5 @@
 import { CircleDot } from 'lucide-react';
-import { InspectorSectionHeader } from '@canvas-tools/ui';
+import { InspectorOptionCard, InspectorSectionHeader } from '@canvas-tools/ui';
 import {
   Collapsible,
   CollapsibleContent,
@@ -78,15 +78,17 @@ export function HangingHardware({ calculator }: Props) {
                 const Icon = option.icon;
                 const isSelected = state.hangingType === option.value;
                 return (
-                  <button
+                  <InspectorOptionCard
                     key={option.value}
+                    asChild
+                    layout="column"
+                    selected={isSelected}
+                    tone="cyan"
+                    className="p-2"
+                  >
+                    <button
                     onClick={() => setHangingType(option.value)}
-                    className={cn(
-                      'flex flex-col items-center p-2 rounded-lg border transition-all',
-                      isSelected
-                        ? 'border-cyan-500 bg-cyan-50 dark:bg-cyan-500/20'
-                        : 'border-gray-200 bg-white hover:border-gray-300 dark:border-white/10 dark:bg-white/5 dark:hover:border-white/20',
-                    )}
+                    type="button"
                   >
                     <Icon
                       className={cn(
@@ -104,9 +106,10 @@ export function HangingHardware({ calculator }: Props) {
                           : 'text-gray-600 dark:text-white/60',
                       )}
                     >
-                      {option.label}
-                    </span>
-                  </button>
+                        {option.label}
+                      </span>
+                    </button>
+                  </InspectorOptionCard>
                 );
               })}
             </div>

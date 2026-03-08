@@ -3,44 +3,48 @@ import {
   Check,
   Hammer,
   Link,
-  PanelLeft,
+  Moon,
   PanelLeftClose,
+  PanelLeftOpen,
   Pencil,
   RotateCcw,
   Ruler,
   SlidersHorizontal,
+  Sun,
   X,
-} from 'lucide-react';
+} from "lucide-react";
 import {
   FloatingIconButton,
   ToolPanel,
+  ToolPanelBrandMark,
   ToolPanelHeader,
+  ToolPanelHeaderButton,
   ToolPanelTitle,
   ToolLinkButton,
-} from '@canvas-tools/ui';
-import { motion } from 'motion/react';
-import { useEffect, useRef, useState } from 'react';
-import { GalleryExamples } from '@/components/gallery-examples';
-import { HowToHang } from '@/components/how-to-hang';
-import { Measurements } from '@/components/measurements';
-import { SaveLayoutDialog } from '@/components/save-layout-dialog';
-import { SavedLayoutsDialog } from '@/components/saved-layouts-dialog';
-import { SettingsDialog } from '@/components/settings-dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import type { UseCalculatorReturn } from '@/hooks/use-calculator';
-import { useSavedLayouts } from '@/hooks/use-saved-layouts';
-import { cn } from '@/lib/utils';
-import { Furniture } from './furniture';
-import { GalleryFrames } from './gallery-frames';
-import { HangingHardware } from './hanging-hardware';
-import { HorizontalPosition } from './horizontal-position';
-import { VerticalPosition } from './vertical-position';
-import { WallDimensions } from './wall-dimensions';
+} from "@canvas-tools/ui";
+import { motion } from "motion/react";
+import { useEffect, useRef, useState } from "react";
+import { GalleryExamples } from "@/components/gallery-examples";
+import { HowToHang } from "@/components/how-to-hang";
+import { Measurements } from "@/components/measurements";
+import { SaveLayoutDialog } from "@/components/save-layout-dialog";
+import { SavedLayoutsDialog } from "@/components/saved-layouts-dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import type { UseCalculatorReturn } from "@/hooks/use-calculator";
+import { useSavedLayouts } from "@/hooks/use-saved-layouts";
+import { useTheme } from "@/hooks/use-theme";
+import { cn } from "@/lib/utils";
+import { Furniture } from "./furniture";
+import { GalleryFrames } from "./gallery-frames";
+import { HangingHardware } from "./hanging-hardware";
+import { HorizontalPosition } from "./horizontal-position";
+import { VerticalPosition } from "./vertical-position";
+import { WallDimensions } from "./wall-dimensions";
 
-export const ROOM_PLAN_URL = 'https://room-plan.app';
+export const ROOM_PLAN_URL = "https://room-plan.app";
 
 export function OpenRoomPlanLink({ className }: { className?: string }) {
   return (
@@ -54,51 +58,37 @@ export function OpenRoomPlanLink({ className }: { className?: string }) {
 
 function Logo({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 32 32" fill="none" className={className}>
-      <rect width="32" height="32" rx="8" fill="url(#logo-gradient)" />
+    <svg viewBox="0 0 20 20" fill="none" className={className}>
       <rect
-        x="7"
-        y="9"
-        width="18"
-        height="16"
-        rx="1.5"
-        stroke="white"
-        strokeWidth="2"
+        x="3.75"
+        y="6.25"
+        width="12.5"
+        height="10"
+        rx="1.15"
+        stroke="currentColor"
+        strokeWidth="1.6"
         fill="none"
       />
       <rect
-        x="10"
-        y="12"
-        width="12"
-        height="10"
-        rx="0.5"
-        stroke="white"
+        x="6"
+        y="8.5"
+        width="8"
+        height="5.5"
+        rx="0.65"
+        stroke="currentColor"
         strokeWidth="1"
-        opacity="0.5"
+        opacity="0.55"
         fill="none"
       />
       <path
-        d="M11 9 L16 4 L21 9"
-        stroke="white"
-        strokeWidth="1.5"
+        d="M6.5 6L10 2.75L13.5 6"
+        stroke="currentColor"
+        strokeWidth="1.35"
         strokeLinecap="round"
         strokeLinejoin="round"
         fill="none"
       />
-      <circle cx="16" cy="4" r="2" fill="white" />
-      <defs>
-        <linearGradient
-          id="logo-gradient"
-          x1="0"
-          y1="0"
-          x2="32"
-          y2="32"
-          gradientUnits="userSpaceOnUse"
-        >
-          <stop stopColor="#6366f1" />
-          <stop offset="1" stopColor="#8b5cf6" />
-        </linearGradient>
-      </defs>
+      <circle cx="10" cy="2.75" r="1.35" fill="currentColor" />
     </svg>
   );
 }
@@ -109,6 +99,7 @@ interface SidebarProps {
 
 export function Sidebar({ calculator }: SidebarProps) {
   const { state } = calculator;
+  const { theme, toggleTheme } = useTheme();
   const {
     layouts,
     save,
@@ -124,7 +115,7 @@ export function Sidebar({ calculator }: SidebarProps) {
   } = useSavedLayouts();
   const [copied, setCopied] = useState(false);
   const [editingBookmark, setEditingBookmark] = useState(false);
-  const [bookmarkEditValue, setBookmarkEditValue] = useState('');
+  const [bookmarkEditValue, setBookmarkEditValue] = useState("");
   const [bookmarkEditError, setBookmarkEditError] = useState<string | null>(
     null,
   );
@@ -146,7 +137,7 @@ export function Sidebar({ calculator }: SidebarProps) {
 
   const cancelBookmarkEdit = () => {
     setEditingBookmark(false);
-    setBookmarkEditValue('');
+    setBookmarkEditValue("");
     setBookmarkEditError(null);
   };
 
@@ -155,17 +146,17 @@ export function Sidebar({ calculator }: SidebarProps) {
     const result = rename(currentLayout.id, bookmarkEditValue);
     if (result.success) {
       setEditingBookmark(false);
-      setBookmarkEditValue('');
+      setBookmarkEditValue("");
       setBookmarkEditError(null);
     } else {
-      setBookmarkEditError(result.error || 'Failed to rename');
+      setBookmarkEditError(result.error || "Failed to rename");
     }
   };
 
   const handleBookmarkKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       saveBookmarkEdit();
-    } else if (e.key === 'Escape') {
+    } else if (e.key === "Escape") {
       cancelBookmarkEdit();
     }
   };
@@ -180,8 +171,8 @@ export function Sidebar({ calculator }: SidebarProps) {
     const onResize = () => {
       setIsMobile(window.innerWidth < 1024);
     };
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
   }, []);
 
   useEffect(() => {
@@ -193,10 +184,10 @@ export function Sidebar({ calculator }: SidebarProps) {
   return (
     <div
       className={cn(
-        'fixed z-50 pointer-events-none',
+        "fixed z-50 pointer-events-none",
         isMobile
-          ? 'top-2 right-2 bottom-2 left-2'
-          : 'top-4 left-4 bottom-4 w-[340px]',
+          ? "top-2 right-2 bottom-2 left-2"
+          : "top-4 left-4 bottom-4 w-[340px]",
       )}
     >
       {/* Minimized toggle button - always in DOM, fades in/out */}
@@ -208,13 +199,13 @@ export function Sidebar({ calculator }: SidebarProps) {
           scale: isMinimized ? 1 : 0.8,
         }}
         transition={{ duration: 0.2 }}
-        style={{ pointerEvents: isMinimized ? 'auto' : 'none' }}
+        style={{ pointerEvents: isMinimized ? "auto" : "none" }}
       >
         <FloatingIconButton
           onClick={() => setIsMinimized(false)}
           title="Show controls"
         >
-          <PanelLeft className="h-5 w-5 text-gray-700 dark:text-white" />
+          <PanelLeftOpen className="h-4 w-4" />
         </FloatingIconButton>
       </motion.div>
 
@@ -228,47 +219,58 @@ export function Sidebar({ calculator }: SidebarProps) {
           y: isMinimized && isMobile ? 40 : 0,
         }}
         transition={{
-          type: 'spring',
+          type: "spring",
           stiffness: 500,
           damping: 35,
           opacity: { duration: 0.15 },
         }}
-        style={{ pointerEvents: isMinimized ? 'none' : 'auto' }}
+        style={{ pointerEvents: isMinimized ? "none" : "auto" }}
       >
         <ToolPanel className="flex h-full flex-col overflow-hidden">
           <ToolPanelHeader>
             <ToolPanelTitle
-              leading={<Logo className="h-8 w-8" />}
+              leading={
+                <ToolPanelBrandMark className="bg-gradient-to-br from-fuchsia-500 via-violet-500 to-indigo-600">
+                  <Logo className="h-4.5 w-4.5" />
+                </ToolPanelBrandMark>
+              }
               title="Hang Time"
-              titleClassName="text-lg font-bold"
               subtitle="Pixel Perfect Picture Placement"
-              subtitleClassName="-mt-0.5 italic"
               actions={
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setIsMinimized(true)}
-                  className="h-8 w-8 p-0 text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:text-white/50 dark:hover:text-white dark:hover:bg-white/10"
-                  title="Minimize"
-                >
-                  <PanelLeftClose className="h-4 w-4" />
-                </Button>
+                <>
+                  <ToolPanelHeaderButton
+                    onClick={toggleTheme}
+                    title="Toggle theme"
+                  >
+                    {theme === "dark" ? (
+                      <Sun className="h-3.5 w-3.5" />
+                    ) : (
+                      <Moon className="h-3.5 w-3.5" />
+                    )}
+                  </ToolPanelHeaderButton>
+                  <ToolPanelHeaderButton
+                    onClick={() => setIsMinimized(true)}
+                    title="Hide sidebar"
+                  >
+                    <PanelLeftClose className="h-4 w-4" />
+                  </ToolPanelHeaderButton>
+                </>
               }
             />
 
             {currentLayout && (
               <div
                 className={cn(
-                  'mt-3 flex items-center gap-2 rounded-xl px-3 py-2 text-sm',
+                  "mt-3 flex items-center gap-2 rounded-xl px-3 py-2 text-sm",
                   hasUnsavedChanges
-                    ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300'
-                    : 'bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300',
+                    ? "bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300"
+                    : "bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300",
                 )}
               >
                 <Bookmark
                   className={cn(
-                    'size-3.5 flex-shrink-0',
-                    hasUnsavedChanges ? '' : 'fill-current',
+                    "size-3.5 flex-shrink-0",
+                    hasUnsavedChanges ? "" : "fill-current",
                   )}
                 />
                 {editingBookmark ? (
@@ -282,8 +284,8 @@ export function Sidebar({ calculator }: SidebarProps) {
                       }}
                       onKeyDown={handleBookmarkKeyDown}
                       className={cn(
-                        'h-6 min-w-0 flex-1 border-gray-300 bg-white text-sm text-gray-900 dark:border-white/20 dark:bg-white/10 dark:text-white',
-                        bookmarkEditError && 'border-red-500',
+                        "h-6 min-w-0 flex-1 border-gray-300 bg-white text-sm text-gray-900 dark:border-white/20 dark:bg-white/10 dark:text-white",
+                        bookmarkEditError && "border-red-500",
                       )}
                     />
                     <Button
@@ -309,7 +311,7 @@ export function Sidebar({ calculator }: SidebarProps) {
                       {currentLayout.title}
                       {hasUnsavedChanges && (
                         <span className="text-amber-600 dark:text-amber-400">
-                          {' '}
+                          {" "}
                           *
                         </span>
                       )}
@@ -341,7 +343,7 @@ export function Sidebar({ calculator }: SidebarProps) {
                 size="sm"
                 className="flex-1 border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-white/70 dark:hover:bg-white/10 dark:hover:text-white"
                 onClick={handleCopyLink}
-                title={copied ? 'Copied!' : 'Copy link'}
+                title={copied ? "Copied!" : "Copy link"}
               >
                 {copied ? (
                   <Check className="size-4" />
@@ -354,7 +356,7 @@ export function Sidebar({ calculator }: SidebarProps) {
                 size="sm"
                 className="flex-1 border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-white/70 dark:hover:bg-white/10 dark:hover:text-white"
                 onClick={() => {
-                  window.history.pushState({}, '', window.location.pathname);
+                  window.history.pushState({}, "", window.location.pathname);
                   window.location.reload();
                 }}
                 title="Reset all"
@@ -375,10 +377,6 @@ export function Sidebar({ calculator }: SidebarProps) {
                 onLoad={load}
                 onDelete={remove}
                 onRename={rename}
-              />
-              <SettingsDialog
-                unit={state.unit}
-                onUnitChange={calculator.setUnit}
               />
             </div>
             <div className="mt-2">
@@ -421,10 +419,10 @@ export function Sidebar({ calculator }: SidebarProps) {
                   <GalleryFrames calculator={calculator} />
                   <HangingHardware calculator={calculator} />
                   <VerticalPosition calculator={calculator} />
-                  {state.anchorType === 'furniture' && (
+                  {state.anchorType === "furniture" && (
                     <Furniture calculator={calculator} />
                   )}
-                  {state.anchorType !== 'furniture' && (
+                  {state.anchorType !== "furniture" && (
                     <HorizontalPosition calculator={calculator} />
                   )}
                 </div>
