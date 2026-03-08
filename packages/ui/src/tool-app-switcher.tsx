@@ -87,7 +87,7 @@ function ToolAppSwitcher({
         <button
           type="button"
           className={cn(
-            "group -mx-1 inline-flex max-w-full items-center gap-1 rounded-xl px-1 py-1 text-left transition-colors hover:bg-gray-100/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60 dark:hover:bg-white/5 dark:focus-visible:ring-indigo-300/40",
+            "group -mx-1 inline-flex max-w-full items-center gap-0.5 rounded-xl px-1 py-1 text-left transition-colors hover:bg-gray-100/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60 dark:hover:bg-white/5 dark:focus-visible:ring-indigo-300/40",
             className,
           )}
           aria-label={resolvedAriaLabel}
@@ -100,8 +100,8 @@ function ToolAppSwitcher({
             subtitle={currentSubtitle}
             title={currentTitle}
           />
-          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-gray-400 transition-colors group-hover:text-gray-600 dark:text-white/35 dark:group-hover:text-white/60">
-            <ChevronDown className="h-4 w-4" />
+          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-gray-400 transition-colors group-hover:text-gray-600 dark:text-white/35 dark:group-hover:text-white/60">
+            <ChevronDown className="h-3.5 w-3.5" />
           </span>
         </button>
       </PopoverTrigger>

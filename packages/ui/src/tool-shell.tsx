@@ -160,7 +160,7 @@ const ToolPanelActionButton = React.forwardRef<HTMLButtonElement, ButtonProps>(
       size={size}
       variant={variant}
       className={cn(
-        "h-9 w-9 rounded-xl bg-white/80 dark:bg-slate-900/60",
+        "h-9 w-9 rounded-xl border-gray-200/70 bg-white/80 text-gray-500 shadow-sm hover:border-gray-300 hover:bg-white hover:text-gray-800 disabled:pointer-events-none disabled:opacity-35 dark:border-white/10 dark:bg-slate-900/60 dark:text-white/60 dark:hover:border-white/20 dark:hover:bg-slate-900 dark:hover:text-white",
         className,
       )}
       {...props}

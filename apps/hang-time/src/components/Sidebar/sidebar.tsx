@@ -344,19 +344,19 @@ export function Sidebar({ calculator }: SidebarProps) {
                   onDelete={remove}
                   onRename={rename}
                   iconOnly
-                  tooltipLabel="Browse layouts"
+                  tooltipLabel="Browse Layouts"
                   buttonClassName="bg-white/80 dark:bg-slate-900/60"
                 />
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <ToolPanelActionButton
                       onClick={handleNewLayout}
-                      aria-label="New layout"
+                      aria-label="New Layout"
                     >
                       <Plus className="h-4 w-4" />
                     </ToolPanelActionButton>
                   </TooltipTrigger>
-                  <TooltipContent>New layout</TooltipContent>
+                  <TooltipContent>New Layout</TooltipContent>
                 </Tooltip>
                 <SaveLayoutDialog
                   onSave={save}
@@ -368,7 +368,7 @@ export function Sidebar({ calculator }: SidebarProps) {
                   loadedLayout={loadedLayout}
                   hasUnsavedChanges={hasUnsavedChanges}
                   iconOnly
-                  tooltipLabel="Save layout"
+                  tooltipLabel="Save Layout"
                   buttonClassName="bg-white/80 dark:bg-slate-900/60"
                 />
                 <GalleryExamples

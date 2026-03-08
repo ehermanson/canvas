@@ -454,10 +454,10 @@ function ProjectManagerDialog({
                       className="flex w-full items-center justify-between px-1 py-1 text-left"
                     >
                       <div className="min-w-0">
-                        <p className="truncate text-base font-medium text-gray-900 dark:text-white">
+                        <p className="truncate text-sm font-medium text-gray-900 dark:text-white">
                           {project.name}
                         </p>
-                        <p className="truncate text-sm text-gray-500 dark:text-white/45">
+                        <p className="truncate text-[11px] text-gray-500 dark:text-white/45">
                           {currentSnapshot?.name} · {project.snapshots.length}{" "}
                           {project.snapshots.length === 1
                             ? "snapshot"
@@ -469,7 +469,7 @@ function ProjectManagerDialog({
                           {formatProjectBrowserDate(project.updatedAt)}
                         </p>
                         <p className="mt-1 text-[11px] text-gray-400 dark:text-white/35">
-                          {isActive ? "Open now" : "Open"}
+                          {isActive ? "Current" : "Open"}
                         </p>
                       </div>
                     </button>
@@ -615,7 +615,7 @@ function ProjectBrowserSection({
           />
 
           <CollapsibleContent className="pt-2.5 pb-3">
-            <InspectorInset className="rounded-2xl border-gray-200/60 bg-gray-50/70 px-3 pt-3 pb-3">
+            <InspectorInset className="space-y-4 border-gray-200/60 bg-gray-50/70">
               <div className="space-y-4">
                 <div className="grid gap-3">
                   <div className="space-y-1">
@@ -633,7 +633,7 @@ function ProjectBrowserSection({
                           event.currentTarget.blur();
                         }
                       }}
-                      className="h-9 bg-white/80 dark:bg-slate-900/70"
+                      className="h-8 bg-white/80 text-sm dark:bg-slate-900/70"
                     />
                   </div>
                   <div className="space-y-1">
@@ -651,7 +651,7 @@ function ProjectBrowserSection({
                           event.currentTarget.blur();
                         }
                       }}
-                      className="h-9 bg-white/80 dark:bg-slate-900/70"
+                      className="h-8 bg-white/80 text-sm dark:bg-slate-900/70"
                     />
                   </div>
                 </div>
@@ -691,13 +691,13 @@ function ProjectBrowserSection({
                               <p className="truncate text-sm font-medium text-gray-900 dark:text-white">
                                 {snapshot.name}
                               </p>
-                              <p className="truncate text-xs text-gray-500 dark:text-white/45">
+                              <p className="truncate text-[11px] text-gray-500 dark:text-white/45">
                                 Updated{" "}
                                 {formatProjectBrowserDate(snapshot.updatedAt)}
                               </p>
                             </div>
                             <span className="shrink-0 pl-3 text-[11px] text-gray-400 dark:text-white/35">
-                              {isActive ? "Live" : "Open"}
+                              {isActive ? "Current" : "Open"}
                             </span>
                           </button>
 
@@ -817,7 +817,7 @@ function RoomShapeSection({
                     asChild
                     layout="column"
                     tone="blue"
-                    className="gap-1 rounded-md bg-white p-2"
+                    className="gap-1.5 px-2.5 py-2.5"
                   >
                     <button
                       type="button"
@@ -867,7 +867,7 @@ function WallsSection({
         <div className="space-y-3 pt-2.5 pb-3">
           <InspectorInset
             tone="cyan"
-            className="rounded-md p-2 text-[10px] leading-relaxed text-cyan-700 dark:text-cyan-300"
+            className="text-[11px] leading-relaxed text-cyan-700 dark:text-cyan-300"
           >
             Click an endpoint handle on the canvas to draw new wall segments.
             Drag endpoints to reshape. Drag one endpoint onto another to connect
@@ -941,7 +941,7 @@ function WallCard({
       asChild
       selected={isSelected}
       tone="cyan"
-      className="cursor-pointer space-y-2 rounded-md p-2"
+      className="cursor-pointer space-y-2"
     >
       <div data-sidebar-wall-id={wall.id} onClick={onSelect}>
         <div className="flex items-center gap-2">
@@ -1061,7 +1061,7 @@ function WallFeatureCard({
   const measurementStep = getMeasurementStep(unit);
 
   return (
-    <div className={cn("space-y-2 rounded-md border p-2", cardClass)}>
+    <div className={cn("space-y-2 rounded-xl border px-2.5 py-2.5", cardClass)}>
       <div className="flex items-center gap-1.5">
         <Icon className={cn("h-3.5 w-3.5", accentClass)} />
         <span className={cn("text-[11px] font-medium capitalize", accentClass)}>
@@ -1155,11 +1155,11 @@ function CompactMeasurementInput({
             onChange(nextValue);
           }
         }}
-        className="h-5 pr-5 text-[10px]"
+        className="h-6 bg-white/80 pr-6 text-[11px] dark:bg-slate-900/70"
         min={min}
         step={step}
       />
-      <span className="pointer-events-none absolute top-1/2 right-1.5 -translate-y-1/2 text-[8px] text-gray-400 dark:text-white/20">
+      <span className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-[9px] text-gray-400 dark:text-white/25">
         {suffix}
       </span>
     </div>
@@ -1177,8 +1177,8 @@ function DoorFeatureControls({
 }) {
   return (
     <div className="grid grid-cols-2 gap-1.5">
-      <div className="flex flex-col gap-0.5">
-        <span className="text-[10px] text-gray-400 dark:text-white/30">
+      <div className="flex flex-col gap-1">
+        <span className="text-[11px] text-gray-400 dark:text-white/35">
           Swing
         </span>
         <div className="grid grid-cols-2 gap-1">
@@ -1201,8 +1201,8 @@ function DoorFeatureControls({
         </div>
       </div>
 
-      <div className="flex flex-col gap-0.5">
-        <span className="text-[10px] text-gray-400 dark:text-white/30">
+      <div className="flex flex-col gap-1">
+        <span className="text-[11px] text-gray-400 dark:text-white/35">
           Hinge
         </span>
         <div className="grid grid-cols-2 gap-1">
@@ -1247,11 +1247,36 @@ function FeatureOptionButton({
       layout="column"
       selected={selected}
       tone="indigo"
-      className="gap-1 rounded-md p-2"
+      className="gap-1 px-2 py-2"
     >
       <button type="button" onClick={onClick} title={title}>
         {children}
-        <span className="text-[9px] leading-tight">{label}</span>
+        <span className="text-[10px] leading-tight">{label}</span>
+      </button>
+    </InspectorOptionCard>
+  );
+}
+
+function FeatureCreateButton({
+  accentClassName,
+  icon: Icon,
+  label,
+  onClick,
+}: {
+  accentClassName: string;
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <InspectorOptionCard
+      asChild
+      tone="neutral"
+      className="gap-2 px-2.5 py-2 text-gray-500 dark:text-white/55"
+    >
+      <button type="button" onClick={onClick}>
+        <Icon className={cn("h-3.5 w-3.5 shrink-0", accentClassName)} />
+        <span className="text-[11px] font-medium">{label}</span>
       </button>
     </InspectorOptionCard>
   );
@@ -1267,11 +1292,11 @@ function WallFeatureActions({
   wallLength: number;
 }) {
   return (
-    <div className="grid grid-cols-2 gap-1 pt-0.5">
-      <Button
-        variant="ghost"
-        size="sm"
-        className="h-6 justify-start gap-1 px-1.5 text-[10px] text-gray-400 hover:text-indigo-500 dark:text-white/30"
+    <div className="grid grid-cols-2 gap-1.5 pt-0.5">
+      <FeatureCreateButton
+        icon={DoorIcon}
+        accentClassName="text-indigo-500"
+        label="Add Door"
         onClick={() =>
           addWallFeature(wallId, {
             type: "door",
@@ -1281,14 +1306,11 @@ function WallFeatureActions({
             swingHand: "left",
           })
         }
-      >
-        <DoorIcon className="h-3 w-3" />
-        <span>+ Door</span>
-      </Button>
-      <Button
-        variant="ghost"
-        size="sm"
-        className="h-6 justify-start gap-1 px-1.5 text-[10px] text-gray-400 hover:text-sky-500 dark:text-white/30"
+      />
+      <FeatureCreateButton
+        icon={WindowIcon}
+        accentClassName="text-sky-500"
+        label="Add Window"
         onClick={() =>
           addWallFeature(wallId, {
             type: "window",
@@ -1298,14 +1320,11 @@ function WallFeatureActions({
             height: 48,
           })
         }
-      >
-        <WindowIcon className="h-3 w-3" />
-        <span>+ Window</span>
-      </Button>
-      <Button
-        variant="ghost"
-        size="sm"
-        className="h-6 justify-start gap-1 px-1.5 text-[10px] text-gray-400 hover:text-emerald-500 dark:text-white/30"
+      />
+      <FeatureCreateButton
+        icon={OpeningIcon}
+        accentClassName="text-emerald-500"
+        label="Add Opening"
         onClick={() =>
           addWallFeature(wallId, {
             type: "opening",
@@ -1313,14 +1332,11 @@ function WallFeatureActions({
             width: 42,
           })
         }
-      >
-        <OpeningIcon className="h-3 w-3" />
-        <span>+ Opening</span>
-      </Button>
-      <Button
-        variant="ghost"
-        size="sm"
-        className="h-6 justify-start gap-1 px-1.5 text-[10px] text-gray-400 hover:text-stone-500 dark:text-white/30"
+      />
+      <FeatureCreateButton
+        icon={ClosetIcon}
+        accentClassName="text-stone-400"
+        label="Add Closet"
         onClick={() =>
           addWallFeature(wallId, {
             type: "closet",
@@ -1329,10 +1345,7 @@ function WallFeatureActions({
             height: 96,
           })
         }
-      >
-        <ClosetIcon className="h-3 w-3" />
-        <span>+ Closet</span>
-      </Button>
+      />
     </div>
   );
 }
@@ -1438,7 +1451,7 @@ function CustomFurnitureCreator({
                 layout="column"
                 selected={customShape === "rectangle"}
                 tone="emerald"
-                className="gap-1 rounded-md p-2"
+                className="gap-1.5 px-2.5 py-2.5"
               >
                 <button
                   type="button"
@@ -1453,7 +1466,7 @@ function CustomFurnitureCreator({
                 layout="column"
                 selected={customShape === "circle"}
                 tone="cyan"
-                className="gap-1 rounded-md p-2"
+                className="gap-1.5 px-2.5 py-2.5"
               >
                 <button type="button" onClick={() => setCustomShape("circle")}>
                   <div className="h-5 w-5 rounded-full border-2 border-current" />
@@ -1527,7 +1540,7 @@ function FurniturePresetGrid({
           key={preset.name}
           asChild
           layout="column"
-          className="min-h-20 items-start justify-between rounded-xl bg-white/70 px-3 py-3 text-left"
+          className="min-h-20 items-start justify-between px-3 py-3 text-left"
         >
           <button type="button" onClick={() => addFurniture(preset)}>
             <span className="line-clamp-2 text-sm font-semibold text-gray-800 dark:text-white/85">
@@ -1922,7 +1935,7 @@ function FurnitureSection({
                     asChild
                     selected={selectedIds.includes(item.id)}
                     tone="cyan"
-                    className="cursor-pointer px-2 py-2 text-xs"
+                    className="cursor-pointer text-[11px]"
                   >
                     <div
                       data-sidebar-furniture-id={item.id}
@@ -2037,7 +2050,7 @@ function HistoryDebugSection({
           ) : null}
 
           <div className="grid grid-cols-3 gap-2">
-            <InspectorInset className="px-2 py-2">
+            <InspectorInset className="px-2.5 py-2.5">
               <div className="text-[10px] uppercase tracking-[0.12em] text-gray-400 dark:text-white/35">
                 Undo
               </div>
@@ -2045,7 +2058,7 @@ function HistoryDebugSection({
                 {planner.historyDebug.pastCount}
               </div>
             </InspectorInset>
-            <InspectorInset tone="cyan" className="px-2 py-2">
+            <InspectorInset tone="cyan" className="px-2.5 py-2.5">
               <div className="text-[10px] uppercase tracking-[0.12em] text-cyan-600/80 dark:text-cyan-300/75">
                 Current
               </div>
@@ -2054,7 +2067,7 @@ function HistoryDebugSection({
                 {planner.historyDebug.totalCount}
               </div>
             </InspectorInset>
-            <InspectorInset className="px-2 py-2">
+            <InspectorInset className="px-2.5 py-2.5">
               <div className="text-[10px] uppercase tracking-[0.12em] text-gray-400 dark:text-white/35">
                 Redo
               </div>
@@ -2064,7 +2077,7 @@ function HistoryDebugSection({
             </InspectorInset>
           </div>
 
-          <InspectorInset className="px-3 py-2">
+          <InspectorInset className="px-3 py-2.5">
             <div className="text-[10px] uppercase tracking-[0.12em] text-gray-400 dark:text-white/35">
               Snapshot Key
             </div>

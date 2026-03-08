@@ -80,22 +80,21 @@ interface InspectorInsetProps extends React.HTMLAttributes<HTMLDivElement> {
   tone?: InspectorTone;
 }
 
-function InspectorInset({
-  className,
-  tone = "neutral",
-  ...props
-}: InspectorInsetProps) {
-  return (
-    <div
-      className={cn(
-        "rounded-xl border px-3 py-3",
-        insetToneClassNames[tone],
-        className,
-      )}
-      {...props}
-    />
-  );
-}
+const InspectorInset = React.forwardRef<HTMLDivElement, InspectorInsetProps>(
+  function InspectorInset({ className, tone = "neutral", ...props }, ref) {
+    return (
+      <div
+        ref={ref}
+        className={cn(
+          "rounded-xl border px-3 py-2.5",
+          insetToneClassNames[tone],
+          className,
+        )}
+        {...props}
+      />
+    );
+  },
+);
 
 interface InspectorOptionCardProps extends React.HTMLAttributes<HTMLElement> {
   asChild?: boolean;
@@ -117,13 +116,13 @@ function InspectorOptionCard({
   return (
     <Comp
       className={cn(
-        "rounded-lg border transition-colors",
+        "rounded-xl border text-left transition-colors",
         layout === "column"
           ? "flex flex-col items-center"
-          : "flex items-start gap-3",
+          : "flex items-start gap-2.5",
         selected
           ? optionToneClassNames[tone]
-          : "border-gray-200 bg-gray-50 text-gray-700 hover:border-gray-300 hover:bg-gray-100 dark:border-white/10 dark:bg-white/5 dark:text-white/70 dark:hover:border-white/20 dark:hover:bg-white/10",
+          : "border-gray-200/80 bg-white/75 text-gray-700 hover:border-gray-300 hover:bg-gray-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-white/70 dark:hover:border-white/20 dark:hover:bg-white/[0.08]",
         className,
       )}
       data-selected={selected ? "true" : "false"}
@@ -150,7 +149,7 @@ function InspectorListRow({
   return (
     <Comp
       className={cn(
-        "rounded-xl border px-3 py-2 transition-colors",
+        "rounded-xl border px-2.5 py-2.5 transition-colors",
         selected
           ? listToneClassNames[tone]
           : "border-gray-200/70 bg-white/70 hover:border-gray-300 dark:border-white/10 dark:bg-white/[0.02] dark:hover:border-white/20",
@@ -195,7 +194,7 @@ function InspectorSegmentedControlItem({
   return (
     <Comp
       className={cn(
-        "rounded-lg border px-2 py-2 text-xs font-medium transition-colors",
+        "rounded-lg border px-2.5 py-2 text-[11px] font-medium leading-tight transition-colors",
         selected
           ? segmentedToneClassNames[tone]
           : "border-transparent text-gray-500 hover:bg-white/60 hover:text-gray-800 dark:text-white/45 dark:hover:bg-white/[0.06] dark:hover:text-white/80",

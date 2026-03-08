@@ -30,6 +30,7 @@ import {
   X,
 } from "lucide-react";
 import {
+  InspectorInset,
   InspectorOptionCard,
   InspectorSectionHeader,
   InspectorSegmentedControlItem,
@@ -217,16 +218,16 @@ function DraggableFrameCard({
   const content = (
     <div
       className={cn(
-        "rounded-lg border transition-all",
+        "rounded-xl border transition-all",
         isOverlay
           ? "border-pink-400 bg-white shadow-xl dark:bg-slate-800"
           : isDragging
-            ? "opacity-30 border-pink-300 bg-pink-50/50 dark:border-pink-500/50 dark:bg-pink-500/10"
-            : "border-gray-200 bg-white dark:border-white/10 dark:bg-white/5",
+            ? "border-pink-300 bg-pink-50/50 opacity-30 dark:border-pink-500/50 dark:bg-pink-500/10"
+            : "border-gray-200/70 bg-white/75 dark:border-white/10 dark:bg-white/[0.04]",
       )}
     >
       {/* Header with drag handle and remove button */}
-      <div className="flex items-center gap-2 px-2 py-1.5 border-b border-gray-100 dark:border-white/5">
+      <div className="flex items-center gap-2 border-b border-gray-200/70 px-2.5 py-2 dark:border-white/10">
         <button
           className="cursor-grab touch-none text-gray-300 hover:text-gray-500 dark:text-white/30 dark:hover:text-white/60"
           {...attributes}
@@ -234,7 +235,7 @@ function DraggableFrameCard({
         >
           <GripVertical className="h-4 w-4" />
         </button>
-        <span className="text-xs font-semibold text-gray-600 dark:text-white/70">
+        <span className="text-[11px] font-semibold text-gray-700 dark:text-white/75">
           Frame {index + 1}
         </span>
         {canRemove && (
@@ -251,9 +252,9 @@ function DraggableFrameCard({
       </div>
 
       {/* Frame size controls */}
-      <div className="p-2 space-y-2">
+      <div className="space-y-2.5 px-2.5 py-2.5">
         {uniformSize ? (
-          <p className="text-[10px] text-gray-400 dark:text-white/40 italic">
+          <p className="text-[11px] text-gray-400 italic dark:text-white/40">
             Using uniform size
           </p>
         ) : (
@@ -267,7 +268,7 @@ function DraggableFrameCard({
                     p.width === frame.width && p.height === frame.height
                   }
                   tone="pink"
-                  className="px-1.5 py-0.5 text-[10px]"
+                  className="px-2 py-1 text-[11px]"
                 >
                   <button
                     type="button"
@@ -283,7 +284,7 @@ function DraggableFrameCard({
                 asChild
                 selected={!isPresetSize(frame.width, frame.height)}
                 tone="pink"
-                className="px-1.5 py-0.5 text-[10px]"
+                className="px-2 py-1 text-[11px]"
               >
                 <button
                   type="button"
@@ -320,7 +321,7 @@ function DraggableFrameCard({
                         width: fromU(parseFloat(e.target.value) || 1),
                       })
                     }
-                    className="h-7 text-xs"
+                    className="h-8 bg-white/80 text-xs dark:bg-slate-900/70"
                   />
                 </Field>
                 <Field>
@@ -341,7 +342,7 @@ function DraggableFrameCard({
                         height: fromU(parseFloat(e.target.value) || 1),
                       })
                     }
-                    className="h-7 text-xs"
+                    className="h-8 bg-white/80 text-xs dark:bg-slate-900/70"
                   />
                 </Field>
               </div>
@@ -414,20 +415,21 @@ function RowContainer({
   });
 
   return (
-    <div
+    <InspectorInset
       ref={setNodeRef}
       className={cn(
-        "rounded-xl border-2 border-dashed p-3 transition-colors",
+        "rounded-2xl border-2 border-dashed px-3 py-3 transition-colors",
         isOver
           ? "border-pink-400 bg-pink-50/50 dark:border-pink-500 dark:bg-pink-500/10"
-          : "border-gray-200 bg-gray-50/50 dark:border-white/10 dark:bg-white/5",
+          : "border-gray-200/80 bg-white/65 dark:border-white/10 dark:bg-white/[0.03]",
       )}
+      tone="neutral"
     >
-      <div className="flex items-center gap-2 mb-2">
-        <span className="text-[11px] font-semibold text-gray-500 dark:text-white/50 uppercase tracking-wide">
+      <div className="mb-2 flex items-center gap-2">
+        <span className="text-[11px] font-semibold tracking-[0.12em] text-gray-500 uppercase dark:text-white/45">
           Row {rowIndex + 1}
         </span>
-        <span className="text-[10px] text-gray-400 dark:text-white/30">
+        <span className="text-[11px] text-gray-400 dark:text-white/30">
           ({frames.length} {frames.length === 1 ? "frame" : "frames"})
         </span>
         {/* Per-row vertical alignment (only shown when frames have different heights) */}
@@ -443,10 +445,10 @@ function RowContainer({
                       <button
                         onClick={() => onVAlignChange(option.value)}
                         className={cn(
-                          "p-1 rounded transition-colors",
+                          "rounded-lg border p-1.5 transition-colors",
                           isSelected
-                            ? "bg-pink-100 text-pink-600 dark:bg-pink-500/20 dark:text-pink-400"
-                            : "text-gray-300 hover:text-gray-500 hover:bg-gray-100 dark:text-white/30 dark:hover:text-white/50 dark:hover:bg-white/10",
+                            ? "border-pink-400/40 bg-pink-500/[0.08] text-pink-600 dark:bg-pink-500/20 dark:text-pink-400"
+                            : "border-transparent text-gray-300 hover:border-gray-200 hover:bg-white/70 hover:text-gray-500 dark:text-white/30 dark:hover:border-white/10 dark:hover:bg-white/[0.06] dark:hover:text-white/50",
                         )}
                       >
                         <Icon className="h-3.5 w-3.5" />
@@ -465,7 +467,7 @@ function RowContainer({
           <button
             onClick={onRemoveRow}
             className={cn(
-              "p-1 text-gray-300 hover:text-red-500 dark:text-white/30 dark:hover:text-red-400 rounded hover:bg-red-50 dark:hover:bg-red-500/10",
+              "rounded-lg border border-transparent p-1.5 text-gray-300 hover:border-red-200 hover:bg-red-50 hover:text-red-500 dark:text-white/30 dark:hover:border-red-400/20 dark:hover:bg-red-500/10 dark:hover:text-red-400",
               !showVAlignControls && "ml-auto",
             )}
             title="Remove empty row"
@@ -500,14 +502,14 @@ function RowContainer({
             variant="ghost"
             size="sm"
             onClick={() => onAddFrame(rowIndex)}
-            className="w-full h-8 border border-dashed border-gray-200 dark:border-white/10 text-gray-400 hover:text-gray-600 hover:border-gray-300 dark:text-white/40 dark:hover:text-white/60 dark:hover:border-white/20"
+            className="h-8 w-full rounded-xl border border-dashed border-gray-200/80 text-gray-400 hover:border-gray-300 hover:bg-white/70 hover:text-gray-600 dark:border-white/10 dark:text-white/40 dark:hover:border-white/20 dark:hover:bg-white/[0.05] dark:hover:text-white/60"
           >
             <Plus className="h-3.5 w-3.5 mr-1" />
             Add Frame
           </Button>
         </div>
       </SortableContext>
-    </div>
+    </InspectorInset>
   );
 }
 
