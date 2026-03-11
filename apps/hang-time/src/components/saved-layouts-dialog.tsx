@@ -1,22 +1,22 @@
-import { Check, FolderOpen, Pencil, Trash2, X } from "lucide-react";
-import { SuiteDialogContent } from "@canvas-tools/ui";
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { SuiteDialogContent } from '@canvas-tools/ui';
+import { Check, FolderOpen, Pencil, Trash2, X } from 'lucide-react';
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { cn } from "@/lib/utils";
-import type { SavedLayout } from "@/types";
+} from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils';
+import type { SavedLayout } from '@/types';
 
 interface SavedLayoutsDialogProps {
   layouts: SavedLayout[];
@@ -33,10 +33,10 @@ interface SavedLayoutsDialogProps {
 }
 
 function formatDate(timestamp: number): string {
-  return new Date(timestamp).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
+  return new Date(timestamp).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
   });
 }
 
@@ -51,7 +51,7 @@ export function SavedLayoutsDialog({
   tooltipLabel,
 }: SavedLayoutsDialogProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editValue, setEditValue] = useState("");
+  const [editValue, setEditValue] = useState('');
   const [editError, setEditError] = useState<string | null>(null);
 
   const startEditing = (layout: SavedLayout, e: React.MouseEvent) => {
@@ -64,7 +64,7 @@ export function SavedLayoutsDialog({
   const cancelEditing = (e: React.MouseEvent) => {
     e.stopPropagation();
     setEditingId(null);
-    setEditValue("");
+    setEditValue('');
     setEditError(null);
   };
 
@@ -75,28 +75,28 @@ export function SavedLayoutsDialog({
     const result = onRename(editingId, editValue);
     if (result.success) {
       setEditingId(null);
-      setEditValue("");
+      setEditValue('');
       setEditError(null);
     } else {
-      setEditError(result.error || "Failed to rename");
+      setEditError(result.error || 'Failed to rename');
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
+    if (e.key === 'Enter') {
       e.stopPropagation();
       if (!editingId) return;
       const result = onRename(editingId, editValue);
       if (result.success) {
         setEditingId(null);
-        setEditValue("");
+        setEditValue('');
         setEditError(null);
       } else {
-        setEditError(result.error || "Failed to rename");
+        setEditError(result.error || 'Failed to rename');
       }
-    } else if (e.key === "Escape") {
+    } else if (e.key === 'Escape') {
       setEditingId(null);
-      setEditValue("");
+      setEditValue('');
       setEditError(null);
     }
   };
@@ -107,17 +107,17 @@ export function SavedLayoutsDialog({
       size="sm"
       className={cn(
         iconOnly
-          ? "h-9 w-9 rounded-xl p-0"
+          ? 'h-9 w-9 rounded-xl p-0'
           : buttonLabel
-            ? "justify-start"
-            : "flex-1",
+            ? 'justify-start'
+            : 'flex-1',
         buttonClassName,
       )}
-      aria-label={tooltipLabel ?? buttonLabel ?? "Saved layouts"}
+      aria-label={tooltipLabel ?? buttonLabel ?? 'Saved layouts'}
     >
       <FolderOpen
         className={
-          iconOnly ? "h-4 w-4" : buttonLabel ? "mr-2 h-4 w-4" : "size-4"
+          iconOnly ? 'h-4 w-4' : buttonLabel ? 'mr-2 h-4 w-4' : 'size-4'
         }
       />
       {!iconOnly && buttonLabel ? <span>{buttonLabel}</span> : null}
@@ -132,7 +132,7 @@ export function SavedLayoutsDialog({
             <DialogTrigger asChild>{triggerButton}</DialogTrigger>
           </TooltipTrigger>
           <TooltipContent>
-            {tooltipLabel ?? buttonLabel ?? "Saved layouts"}
+            {tooltipLabel ?? buttonLabel ?? 'Saved layouts'}
           </TooltipContent>
         </Tooltip>
       ) : (
@@ -173,7 +173,7 @@ export function SavedLayoutsDialog({
                         }}
                         onKeyDown={handleKeyDown}
                         autoFocus
-                        className={`h-8 ${editError ? "border-red-500" : ""}`}
+                        className={`h-8 ${editError ? 'border-red-500' : ''}`}
                       />
                       {editError && (
                         <p className="text-xs text-red-500 dark:text-red-400">

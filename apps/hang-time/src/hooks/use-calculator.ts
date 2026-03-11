@@ -4,10 +4,10 @@ import {
   parseAsString,
   parseAsStringLiteral,
   useQueryStates,
-} from "nuqs";
-import { useCallback, useEffect, useMemo } from "react";
-import { DEFAULT_PRESET } from "@/data/gallery-presets";
-import { createId } from "@/lib/id";
+} from 'nuqs';
+import { useCallback, useEffect, useMemo } from 'react';
+import { DEFAULT_PRESET } from '@/data/gallery-presets';
+import { createId } from '@/lib/id';
 import type {
   AnchorType,
   CalculatorState,
@@ -22,31 +22,31 @@ import type {
   HangingType,
   HorizontalAnchorType,
   Unit,
-} from "@/types";
+} from '@/types';
 import {
   calculateLayoutPositions,
   fromDisplayUnit,
   toDisplayUnit,
-} from "@/utils/calculations";
+} from '@/utils/calculations';
 
-const UNIT_STORAGE_KEY = "picture-hanging-unit";
+const UNIT_STORAGE_KEY = 'picture-hanging-unit';
 
 // Get saved unit from localStorage or default to 'in'
-function getSavedUnit(): "in" | "cm" {
-  if (typeof window === "undefined") return "in";
+function getSavedUnit(): 'in' | 'cm' {
+  if (typeof window === 'undefined') return 'in';
   const saved = localStorage.getItem(UNIT_STORAGE_KEY);
-  return saved === "cm" ? "cm" : "in";
+  return saved === 'cm' ? 'cm' : 'in';
 }
 
 // Parser definitions grouped by concern
 const wallParsers = {
-  u: parseAsStringLiteral(["in", "cm"] as const).withDefault(getSavedUnit()),
+  u: parseAsStringLiteral(['in', 'cm'] as const).withDefault(getSavedUnit()),
   ww: parseAsFloat.withDefault(120),
   wh: parseAsFloat.withDefault(96),
 };
 
 const framesParsers = {
-  f: parseAsString.withDefault(""), // JSON-encoded GalleryFrame[]
+  f: parseAsString.withDefault(''), // JSON-encoded GalleryFrame[]
   us: parseAsBoolean.withDefault(false), // uniformSize - when false, frames use individual sizes
 };
 
@@ -54,27 +54,27 @@ const frameParsers = {
   fw: parseAsFloat.withDefault(12),
   fh: parseAsFloat.withDefault(12),
   ho: parseAsFloat.withDefault(2),
-  ht: parseAsStringLiteral(["center", "dual"] as const).withDefault("center"),
+  ht: parseAsStringLiteral(['center', 'dual'] as const).withDefault('center'),
   hi: parseAsFloat.withDefault(3), // hook inset from edge for dual hanging
   hs: parseAsFloat.withDefault(3),
   hd: parseAsStringLiteral([
-    "fixed",
-    "space-between",
-    "space-evenly",
-    "space-around",
-  ] as const).withDefault("fixed"),
+    'fixed',
+    'space-between',
+    'space-evenly',
+    'space-around',
+  ] as const).withDefault('fixed'),
 };
 
 const positionParsers = {
   at: parseAsStringLiteral([
-    "floor",
-    "ceiling",
-    "center",
-    "furniture",
-  ] as const).withDefault("floor"),
+    'floor',
+    'ceiling',
+    'center',
+    'furniture',
+  ] as const).withDefault('floor'),
   av: parseAsFloat.withDefault(57),
-  hat: parseAsStringLiteral(["center", "left", "right"] as const).withDefault(
-    "center",
+  hat: parseAsStringLiteral(['center', 'left', 'right'] as const).withDefault(
+    'center',
   ),
   hav: parseAsFloat.withDefault(0),
 };
@@ -82,29 +82,29 @@ const positionParsers = {
 const furnitureParsers = {
   fuw: parseAsFloat.withDefault(48),
   fuh: parseAsFloat.withDefault(30),
-  fua: parseAsStringLiteral(["left", "center", "right"] as const).withDefault(
-    "center",
+  fua: parseAsStringLiteral(['left', 'center', 'right'] as const).withDefault(
+    'center',
   ),
   fuo: parseAsFloat.withDefault(0),
   ffa: parseAsStringLiteral([
-    "left",
-    "center",
-    "right",
-    "span",
-  ] as const).withDefault("center"),
+    'left',
+    'center',
+    'right',
+    'span',
+  ] as const).withDefault('center'),
   fva: parseAsStringLiteral([
-    "center",
-    "ceiling",
-    "above-furniture",
-  ] as const).withDefault("above-furniture"),
+    'center',
+    'ceiling',
+    'above-furniture',
+  ] as const).withDefault('above-furniture'),
 };
 
 const layoutParsers = {
-  va: parseAsStringLiteral(["center", "top", "bottom"] as const).withDefault(
-    "center",
+  va: parseAsStringLiteral(['center', 'top', 'bottom'] as const).withDefault(
+    'center',
   ),
   rs: parseAsFloat.withDefault(3), // row spacing (vertical between rows)
-  rc: parseAsString.withDefault(""), // JSON-encoded GalleryRowConfig[]
+  rc: parseAsString.withDefault(''), // JSON-encoded GalleryRowConfig[]
 };
 
 // Parse frames from JSON string
@@ -116,9 +116,9 @@ function parseFrames(json: string): GalleryFrame[] {
       return parsed
         .filter(
           (f) =>
-            typeof f.id === "string" &&
-            typeof f.w === "number" &&
-            typeof f.h === "number",
+            typeof f.id === 'string' &&
+            typeof f.w === 'number' &&
+            typeof f.h === 'number',
         )
         .map((f) => ({
           id: f.id,
@@ -135,7 +135,7 @@ function parseFrames(json: string): GalleryFrame[] {
 
 // Serialize frames to JSON with short keys
 function serializeFrames(frames: GalleryFrame[]): string {
-  if (frames.length === 0) return "";
+  if (frames.length === 0) return '';
   return JSON.stringify(
     frames.map((f) => ({
       id: f.id,
@@ -153,7 +153,7 @@ function parseRowConfigs(json: string): GalleryRowConfig[] {
     const parsed = JSON.parse(json);
     if (Array.isArray(parsed)) {
       return parsed.filter(
-        (r): r is GalleryRowConfig => typeof r.id === "string",
+        (r): r is GalleryRowConfig => typeof r.id === 'string',
       );
     }
   } catch {
@@ -191,7 +191,7 @@ export function useCalculator() {
   const rowConfigs = useMemo(() => parseRowConfigs(layout.rc), [layout.rc]);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === 'undefined') return;
     localStorage.setItem(UNIT_STORAGE_KEY, wall.u);
   }, [wall.u]);
 
@@ -344,7 +344,7 @@ export function useCalculator() {
   // Row config setters
   const setRowConfigs = useCallback(
     (configs: GalleryRowConfig[]) => {
-      setLayout({ rc: configs.length > 0 ? JSON.stringify(configs) : "" });
+      setLayout({ rc: configs.length > 0 ? JSON.stringify(configs) : '' });
     },
     [setLayout],
   );

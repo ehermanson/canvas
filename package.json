@@ -3,6 +3,9 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
+  "engines": {
+    "node": "22.x"
+  },
   "workspaces": [
     "apps/*",
     "packages/*"
@@ -12,6 +15,8 @@
     "dev:room-plan": "npm run dev --workspace @canvas-tools/room-plan",
     "deploy:hang-time": "npm run deploy --workspace @canvas-tools/hang-time",
     "deploy:room-plan": "npm run deploy --workspace @canvas-tools/room-plan",
+    "deploy:dry-run:hang-time": "npm run deploy:dry-run --workspace @canvas-tools/hang-time",
+    "deploy:dry-run:room-plan": "npm run deploy:dry-run --workspace @canvas-tools/room-plan",
     "build:hang-time": "npm run build --workspace @canvas-tools/hang-time",
     "build:room-plan": "npm run build --workspace @canvas-tools/room-plan",
     "test:hang-time": "npm run test --workspace @canvas-tools/hang-time",
@@ -20,6 +25,6 @@
     "lint": "npm run lint --workspace @canvas-tools/hang-time && npm run lint --workspace @canvas-tools/room-plan",
     "build": "npm run build:hang-time && npm run build:room-plan",
     "test": "npm run test:viewport && npm run test:hang-time && npm run test:room-plan",
-    "ci": "npm run test && npm run build"
+    "ci": "npm run lint && npm run test && npm run build"
   }
 }

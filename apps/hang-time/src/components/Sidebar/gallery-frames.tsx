@@ -1,4 +1,10 @@
 import {
+  InspectorInset,
+  InspectorOptionCard,
+  InspectorSectionHeader,
+  InspectorSegmentedControlItem,
+} from '@canvas-tools/ui';
+import {
   closestCenter,
   DndContext,
   type DragEndEvent,
@@ -10,14 +16,14 @@ import {
   useDroppable,
   useSensor,
   useSensors,
-} from "@dnd-kit/core";
+} from '@dnd-kit/core';
 import {
   SortableContext,
   sortableKeyboardCoordinates,
   useSortable,
   verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import {
   AlignHorizontalDistributeCenter,
   AlignHorizontalJustifyStart,
@@ -28,13 +34,7 @@ import {
   Plus,
   Trash2,
   X,
-} from "lucide-react";
-import {
-  InspectorInset,
-  InspectorOptionCard,
-  InspectorSectionHeader,
-  InspectorSegmentedControlItem,
-} from "@canvas-tools/ui";
+} from 'lucide-react';
 
 // Custom icons for row vertical alignment (showing different-height frames)
 function AlignTopIcon({ className }: { className?: string }) {
@@ -115,31 +115,31 @@ function AlignBottomIcon({ className }: { className?: string }) {
   );
 }
 
-import { useRef, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
-import { Field, FieldLabel } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
+import { useRef, useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible';
+import { Field, FieldLabel } from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
-import type { UseCalculatorReturn } from "@/hooks/use-calculator";
-import { createId } from "@/lib/id";
-import { cn } from "@/lib/utils";
-import type { Distribution, GalleryFrame, GalleryVAlign } from "@/types";
+} from '@/components/ui/tooltip';
+import type { UseCalculatorReturn } from '@/hooks/use-calculator';
+import { createId } from '@/lib/id';
+import { cn } from '@/lib/utils';
+import type { Distribution, GalleryFrame, GalleryVAlign } from '@/types';
 
 const VALIGN_OPTIONS: {
   value: GalleryVAlign;
   label: string;
   icon: typeof AlignTopIcon;
 }[] = [
-  { value: "top", label: "Top", icon: AlignTopIcon },
-  { value: "center", label: "Center", icon: AlignCenterIcon },
-  { value: "bottom", label: "Bottom", icon: AlignBottomIcon },
+  { value: 'top', label: 'Top', icon: AlignTopIcon },
+  { value: 'center', label: 'Center', icon: AlignCenterIcon },
+  { value: 'bottom', label: 'Bottom', icon: AlignBottomIcon },
 ];
 
 const DISTRIBUTION_OPTIONS: {
@@ -147,18 +147,18 @@ const DISTRIBUTION_OPTIONS: {
   label: string;
   icon: typeof AlignHorizontalDistributeCenter;
 }[] = [
-  { value: "fixed", label: "Fixed", icon: AlignHorizontalJustifyStart },
+  { value: 'fixed', label: 'Fixed', icon: AlignHorizontalJustifyStart },
   {
-    value: "space-between",
-    label: "Between",
+    value: 'space-between',
+    label: 'Between',
     icon: AlignHorizontalSpaceBetween,
   },
   {
-    value: "space-evenly",
-    label: "Evenly",
+    value: 'space-evenly',
+    label: 'Evenly',
     icon: AlignHorizontalDistributeCenter,
   },
-  { value: "space-around", label: "Around", icon: AlignHorizontalSpaceAround },
+  { value: 'space-around', label: 'Around', icon: AlignHorizontalSpaceAround },
 ];
 
 const FRAME_PRESETS = [
@@ -179,7 +179,7 @@ const isPresetSize = (width: number, height: number) =>
 interface DraggableFrameCardProps {
   frame: GalleryFrame;
   index: number;
-  unit: "in" | "cm";
+  unit: 'in' | 'cm';
   u: (val: number) => number;
   fromU: (val: number) => number;
   uniformSize: boolean;
@@ -218,12 +218,12 @@ function DraggableFrameCard({
   const content = (
     <div
       className={cn(
-        "rounded-xl border transition-all",
+        'rounded-xl border transition-all',
         isOverlay
-          ? "border-pink-400 bg-white shadow-xl dark:bg-slate-800"
+          ? 'border-pink-400 bg-white shadow-xl dark:bg-slate-800'
           : isDragging
-            ? "border-pink-300 bg-pink-50/50 opacity-30 dark:border-pink-500/50 dark:bg-pink-500/10"
-            : "border-gray-200/70 bg-white/75 dark:border-white/10 dark:bg-white/[0.04]",
+            ? 'border-pink-300 bg-pink-50/50 opacity-30 dark:border-pink-500/50 dark:bg-pink-500/10'
+            : 'border-gray-200/70 bg-white/75 dark:border-white/10 dark:bg-white/[0.04]',
       )}
     >
       {/* Header with drag handle and remove button */}
@@ -380,7 +380,7 @@ interface RowContainerProps {
   rowIndex: number;
   frames: GalleryFrame[];
   allFrames: GalleryFrame[];
-  unit: "in" | "cm";
+  unit: 'in' | 'cm';
   u: (val: number) => number;
   fromU: (val: number) => number;
   uniformSize: boolean;
@@ -418,10 +418,10 @@ function RowContainer({
     <InspectorInset
       ref={setNodeRef}
       className={cn(
-        "rounded-2xl border-2 border-dashed px-3 py-3 transition-colors",
+        'rounded-2xl border-2 border-dashed px-3 py-3 transition-colors',
         isOver
-          ? "border-pink-400 bg-pink-50/50 dark:border-pink-500 dark:bg-pink-500/10"
-          : "border-gray-200/80 bg-white/65 dark:border-white/10 dark:bg-white/[0.03]",
+          ? 'border-pink-400 bg-pink-50/50 dark:border-pink-500 dark:bg-pink-500/10'
+          : 'border-gray-200/80 bg-white/65 dark:border-white/10 dark:bg-white/[0.03]',
       )}
       tone="neutral"
     >
@@ -430,7 +430,7 @@ function RowContainer({
           Row {rowIndex + 1}
         </span>
         <span className="text-[11px] text-gray-400 dark:text-white/30">
-          ({frames.length} {frames.length === 1 ? "frame" : "frames"})
+          ({frames.length} {frames.length === 1 ? 'frame' : 'frames'})
         </span>
         {/* Per-row vertical alignment (only shown when frames have different heights) */}
         {showVAlignControls && (
@@ -445,10 +445,10 @@ function RowContainer({
                       <button
                         onClick={() => onVAlignChange(option.value)}
                         className={cn(
-                          "rounded-lg border p-1.5 transition-colors",
+                          'rounded-lg border p-1.5 transition-colors',
                           isSelected
-                            ? "border-pink-400/40 bg-pink-500/[0.08] text-pink-600 dark:bg-pink-500/20 dark:text-pink-400"
-                            : "border-transparent text-gray-300 hover:border-gray-200 hover:bg-white/70 hover:text-gray-500 dark:text-white/30 dark:hover:border-white/10 dark:hover:bg-white/[0.06] dark:hover:text-white/50",
+                            ? 'border-pink-400/40 bg-pink-500/[0.08] text-pink-600 dark:bg-pink-500/20 dark:text-pink-400'
+                            : 'border-transparent text-gray-300 hover:border-gray-200 hover:bg-white/70 hover:text-gray-500 dark:text-white/30 dark:hover:border-white/10 dark:hover:bg-white/[0.06] dark:hover:text-white/50',
                         )}
                       >
                         <Icon className="h-3.5 w-3.5" />
@@ -467,8 +467,8 @@ function RowContainer({
           <button
             onClick={onRemoveRow}
             className={cn(
-              "rounded-lg border border-transparent p-1.5 text-gray-300 hover:border-red-200 hover:bg-red-50 hover:text-red-500 dark:text-white/30 dark:hover:border-red-400/20 dark:hover:bg-red-500/10 dark:hover:text-red-400",
-              !showVAlignControls && "ml-auto",
+              'rounded-lg border border-transparent p-1.5 text-gray-300 hover:border-red-200 hover:bg-red-50 hover:text-red-500 dark:text-white/30 dark:hover:border-red-400/20 dark:hover:bg-red-500/10 dark:hover:text-red-400',
+              !showVAlignControls && 'ml-auto',
             )}
             title="Remove empty row"
           >
@@ -582,8 +582,8 @@ export function GalleryFrames({ calculator }: Props) {
     const currentOverId = over.id as string;
     let targetRow: number | null = null;
 
-    if (currentOverId.startsWith("row-")) {
-      targetRow = parseInt(currentOverId.replace("row-", ""), 10);
+    if (currentOverId.startsWith('row-')) {
+      targetRow = parseInt(currentOverId.replace('row-', ''), 10);
     } else {
       const overFrame = state.frames.find((f) => f.id === over.id);
       if (overFrame && activeFrame.row !== overFrame.row) {
@@ -890,18 +890,18 @@ export function GalleryFrames({ calculator }: Props) {
                     >
                       <Icon
                         className={cn(
-                          "h-4 w-4",
+                          'h-4 w-4',
                           isSelected
-                            ? "text-pink-500 dark:text-pink-400"
-                            : "text-gray-400 dark:text-white/40",
+                            ? 'text-pink-500 dark:text-pink-400'
+                            : 'text-gray-400 dark:text-white/40',
                         )}
                       />
                       <span
                         className={cn(
-                          "mt-0.5 text-[10px] font-medium",
+                          'mt-0.5 text-[10px] font-medium',
                           isSelected
-                            ? "text-pink-600 dark:text-pink-300"
-                            : "text-gray-600 dark:text-white/60",
+                            ? 'text-pink-600 dark:text-pink-300'
+                            : 'text-gray-600 dark:text-white/60',
                         )}
                       >
                         {option.label}
@@ -914,7 +914,7 @@ export function GalleryFrames({ calculator }: Props) {
           </Field>
 
           {/* Spacing (only for fixed distribution) */}
-          {state.hDistribution === "fixed" && (
+          {state.hDistribution === 'fixed' && (
             <Field>
               <FieldLabel htmlFor="h-spacing">
                 Spacing ({state.unit})

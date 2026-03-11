@@ -1,11 +1,11 @@
-import { CircleDot } from "lucide-react";
-import { InspectorOptionCard, InspectorSectionHeader } from "@canvas-tools/ui";
-import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
-import { Field, FieldLabel } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
-import type { UseCalculatorReturn } from "@/hooks/use-calculator";
-import { cn } from "@/lib/utils";
-import type { HangingType } from "@/types";
+import { InspectorOptionCard, InspectorSectionHeader } from '@canvas-tools/ui';
+import { CircleDot } from 'lucide-react';
+import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible';
+import { Field, FieldLabel } from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
+import type { UseCalculatorReturn } from '@/hooks/use-calculator';
+import { cn } from '@/lib/utils';
+import type { HangingType } from '@/types';
 
 // Custom icons for hook types
 function SingleHookIcon({ className }: { className?: string }) {
@@ -80,8 +80,8 @@ const HANGING_TYPE_OPTIONS: {
   label: string;
   icon: typeof SingleHookIcon;
 }[] = [
-  { value: "center", label: "Single", icon: SingleHookIcon },
-  { value: "dual", label: "Dual", icon: DualHookIcon },
+  { value: 'center', label: 'Single', icon: SingleHookIcon },
+  { value: 'dual', label: 'Dual', icon: DualHookIcon },
 ];
 
 interface Props {
@@ -127,18 +127,18 @@ export function HangingHardware({ calculator }: Props) {
                     >
                       <Icon
                         className={cn(
-                          "h-6 w-8",
+                          'h-6 w-8',
                           isSelected
-                            ? "text-cyan-600 dark:text-cyan-400"
-                            : "text-gray-400 dark:text-white/40",
+                            ? 'text-cyan-600 dark:text-cyan-400'
+                            : 'text-gray-400 dark:text-white/40',
                         )}
                       />
                       <span
                         className={cn(
-                          "text-xs font-medium mt-1",
+                          'text-xs font-medium mt-1',
                           isSelected
-                            ? "text-cyan-600 dark:text-cyan-300"
-                            : "text-gray-600 dark:text-white/60",
+                            ? 'text-cyan-600 dark:text-cyan-300'
+                            : 'text-gray-600 dark:text-white/60',
                         )}
                       >
                         {option.label}
@@ -172,7 +172,7 @@ export function HangingHardware({ calculator }: Props) {
           </Field>
 
           {/* Hook Inset (only for dual) */}
-          {state.hangingType === "dual" && (
+          {state.hangingType === 'dual' && (
             <Field>
               <FieldLabel htmlFor="hook-inset">
                 Hook Inset ({state.unit})

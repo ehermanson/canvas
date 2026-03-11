@@ -203,8 +203,12 @@ describe('useSavedLayouts', () => {
         result.current.save('My Layout');
       });
 
-      expect(result.current.loadedLayout?.id).toBe('12345678-1234-1234-1234-123456789012');
-      expect(mockSessionStorage[LOADED_LAYOUT_KEY]).toBe('12345678-1234-1234-1234-123456789012');
+      expect(result.current.loadedLayout?.id).toBe(
+        '12345678-1234-1234-1234-123456789012',
+      );
+      expect(mockSessionStorage[LOADED_LAYOUT_KEY]).toBe(
+        '12345678-1234-1234-1234-123456789012',
+      );
     });
 
     it('persists to localStorage', () => {

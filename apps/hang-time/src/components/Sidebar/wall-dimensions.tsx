@@ -1,9 +1,9 @@
-import { Ruler } from "lucide-react";
-import { InspectorSectionHeader } from "@canvas-tools/ui";
-import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
-import { Field, FieldLabel } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
-import type { UseCalculatorReturn } from "@/hooks/use-calculator";
+import { InspectorSectionHeader } from '@canvas-tools/ui';
+import { Ruler } from 'lucide-react';
+import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible';
+import { Field, FieldLabel } from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
+import type { UseCalculatorReturn } from '@/hooks/use-calculator';
 
 interface Props {
   calculator: UseCalculatorReturn;

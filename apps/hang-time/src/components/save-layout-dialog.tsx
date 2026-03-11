@@ -1,7 +1,7 @@
-import { Save } from "lucide-react";
-import { SuiteDialogContent } from "@canvas-tools/ui";
-import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
+import { SuiteDialogContent } from '@canvas-tools/ui';
+import { Save } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogClose,
@@ -10,16 +10,16 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { cn } from "@/lib/utils";
-import type { SavedLayout } from "@/types";
+} from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils';
+import type { SavedLayout } from '@/types';
 
 interface SaveLayoutDialogProps {
   onSave: (title: string) => { success: boolean; error?: string };
@@ -46,10 +46,10 @@ export function SaveLayoutDialog({
   iconOnly = false,
   tooltipLabel,
 }: SaveLayoutDialogProps) {
-  const [title, setTitle] = useState("");
+  const [title, setTitle] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [mode, setMode] = useState<"update" | "new">("update");
+  const [mode, setMode] = useState<'update' | 'new'>('update');
 
   // Check for duplicate name as user types
   const nameTaken = title.trim() && isNameTaken(title);
@@ -57,9 +57,9 @@ export function SaveLayoutDialog({
   // Reset state when dialog opens/closes
   useEffect(() => {
     if (!isOpen) {
-      setTitle("");
+      setTitle('');
       setError(null);
-      setMode("update");
+      setMode('update');
     }
   }, [isOpen]);
 
@@ -68,7 +68,7 @@ export function SaveLayoutDialog({
     if (result.success) {
       setIsOpen(false);
     } else {
-      setError(result.error || "Failed to save");
+      setError(result.error || 'Failed to save');
     }
   };
 
@@ -78,12 +78,12 @@ export function SaveLayoutDialog({
     if (result.success) {
       setIsOpen(false);
     } else {
-      setError(result.error || "Failed to update");
+      setError(result.error || 'Failed to update');
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && title.trim() && !nameTaken) {
+    if (e.key === 'Enter' && title.trim() && !nameTaken) {
       handleSave();
     }
   };
@@ -91,18 +91,18 @@ export function SaveLayoutDialog({
   const canSave = title.trim() && !nameTaken;
   const triggerClassName = cn(
     iconOnly
-      ? "h-9 w-9 rounded-xl p-0"
+      ? 'h-9 w-9 rounded-xl p-0'
       : buttonLabel
-        ? "justify-start"
-        : "flex-1",
+        ? 'justify-start'
+        : 'flex-1',
     buttonClassName,
   );
   const triggerIconClassName = iconOnly
-    ? "h-4 w-4"
+    ? 'h-4 w-4'
     : buttonLabel
-      ? "mr-2 h-4 w-4"
-      : "size-4";
-  const resolvedTooltipLabel = tooltipLabel ?? buttonLabel ?? "Save layout";
+      ? 'mr-2 h-4 w-4'
+      : 'size-4';
+  const resolvedTooltipLabel = tooltipLabel ?? buttonLabel ?? 'Save layout';
 
   // If already saved (exact match), just show disabled button
   if (existingLayoutForCurrentConfig) {
@@ -165,7 +165,7 @@ export function SaveLayoutDialog({
             </DialogDescription>
           </DialogHeader>
 
-          {mode === "update" ? (
+          {mode === 'update' ? (
             <>
               <div className="py-2 text-sm text-gray-600 dark:text-white/60">
                 Update the existing layout with your changes, or save as a new
@@ -182,7 +182,7 @@ export function SaveLayoutDialog({
                 </Button>
                 <Button
                   variant="outline"
-                  onClick={() => setMode("new")}
+                  onClick={() => setMode('new')}
                   className="w-full"
                 >
                   Save as New Layout
@@ -209,7 +209,7 @@ export function SaveLayoutDialog({
                   placeholder="e.g., Living Room Gallery v2"
                   autoFocus
                   className={
-                    nameTaken ? "border-red-500 focus-visible:ring-red-500" : ""
+                    nameTaken ? 'border-red-500 focus-visible:ring-red-500' : ''
                   }
                 />
                 {nameTaken && (
@@ -224,7 +224,7 @@ export function SaveLayoutDialog({
                 )}
               </div>
               <DialogFooter>
-                <Button variant="outline" onClick={() => setMode("update")}>
+                <Button variant="outline" onClick={() => setMode('update')}>
                   Back
                 </Button>
                 <Button onClick={handleSave} disabled={!canSave}>
@@ -284,7 +284,7 @@ export function SaveLayoutDialog({
             placeholder="e.g., Living Room Gallery"
             autoFocus
             className={
-              nameTaken ? "border-red-500 focus-visible:ring-red-500" : ""
+              nameTaken ? 'border-red-500 focus-visible:ring-red-500' : ''
             }
           />
           {nameTaken && (

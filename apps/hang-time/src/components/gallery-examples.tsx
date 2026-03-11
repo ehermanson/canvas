@@ -1,20 +1,20 @@
-import { Sparkles } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Sparkles } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
+} from '@/components/ui/popover';
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { GALLERY_PRESETS, type GalleryPreset } from "@/data/gallery-presets";
-import type { UseCalculatorReturn } from "@/hooks/use-calculator";
-import { createId } from "@/lib/id";
-import { cn } from "@/lib/utils";
-import type { GalleryFrame } from "@/types";
+} from '@/components/ui/tooltip';
+import { GALLERY_PRESETS, type GalleryPreset } from '@/data/gallery-presets';
+import type { UseCalculatorReturn } from '@/hooks/use-calculator';
+import { createId } from '@/lib/id';
+import { cn } from '@/lib/utils';
+import type { GalleryFrame } from '@/types';
 
 interface GalleryExamplesProps {
   calculator: UseCalculatorReturn;
@@ -95,18 +95,18 @@ export function GalleryExamples({
       size="sm"
       className={cn(
         iconOnly
-          ? "h-9 w-9 rounded-xl p-0"
+          ? 'h-9 w-9 rounded-xl p-0'
           : buttonLabel
-            ? "justify-start"
-            : "flex-1",
-        "bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:bg-white/5 dark:border-white/10 dark:text-white/70 dark:hover:bg-white/10 dark:hover:text-white",
+            ? 'justify-start'
+            : 'flex-1',
+        'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:bg-white/5 dark:border-white/10 dark:text-white/70 dark:hover:bg-white/10 dark:hover:text-white',
         buttonClassName,
       )}
-      aria-label={tooltipLabel ?? buttonLabel ?? "Try examples"}
+      aria-label={tooltipLabel ?? buttonLabel ?? 'Try examples'}
     >
       <Sparkles
         className={
-          iconOnly ? "h-4 w-4" : buttonLabel ? "mr-2 h-4 w-4" : "size-4"
+          iconOnly ? 'h-4 w-4' : buttonLabel ? 'mr-2 h-4 w-4' : 'size-4'
         }
       />
       {!iconOnly && buttonLabel ? <span>{buttonLabel}</span> : null}
@@ -121,7 +121,7 @@ export function GalleryExamples({
             <PopoverTrigger asChild>{triggerButton}</PopoverTrigger>
           </TooltipTrigger>
           <TooltipContent>
-            {tooltipLabel ?? buttonLabel ?? "Try examples"}
+            {tooltipLabel ?? buttonLabel ?? 'Try examples'}
           </TooltipContent>
         </Tooltip>
       ) : (
@@ -137,8 +137,8 @@ export function GalleryExamples({
               key={preset.id}
               onClick={() => applyPreset(preset)}
               className={cn(
-                "w-full flex items-center gap-3 px-2 py-2 rounded-lg text-left transition-colors",
-                "hover:bg-gray-100 dark:hover:bg-white/10",
+                'w-full flex items-center gap-3 px-2 py-2 rounded-lg text-left transition-colors',
+                'hover:bg-gray-100 dark:hover:bg-white/10',
               )}
             >
               <PresetThumbnail preset={preset} />
@@ -209,9 +209,9 @@ function PresetThumbnail({ preset }: { preset: GalleryPreset }) {
           let x = rowX;
           return row.map((frame, frameIndex) => {
             let y: number;
-            if (vAlign === "top") {
+            if (vAlign === 'top') {
               y = rowY;
-            } else if (vAlign === "bottom") {
+            } else if (vAlign === 'bottom') {
               y = rowY + (rowHeight - frame.height);
             } else {
               y = rowY + (rowHeight - frame.height) / 2;

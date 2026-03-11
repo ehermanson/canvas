@@ -1,10 +1,10 @@
-import { MoveHorizontal } from "lucide-react";
-import { InspectorOptionCard, InspectorSectionHeader } from "@canvas-tools/ui";
-import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
-import { Field, FieldLabel } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
-import type { UseCalculatorReturn } from "@/hooks/use-calculator";
-import type { HorizontalAnchorType } from "@/types";
+import { InspectorOptionCard, InspectorSectionHeader } from '@canvas-tools/ui';
+import { MoveHorizontal } from 'lucide-react';
+import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible';
+import { Field, FieldLabel } from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
+import type { UseCalculatorReturn } from '@/hooks/use-calculator';
+import type { HorizontalAnchorType } from '@/types';
 
 interface Props {
   calculator: UseCalculatorReturn;
@@ -17,21 +17,21 @@ const options: {
   defaultValue: number;
 }[] = [
   {
-    value: "center",
-    label: "Center on Wall",
-    desc: "Horizontally centered",
+    value: 'center',
+    label: 'Center on Wall',
+    desc: 'Horizontally centered',
     defaultValue: 0,
   },
   {
-    value: "left",
-    label: "From Left Edge",
-    desc: "Distance from left wall",
+    value: 'left',
+    label: 'From Left Edge',
+    desc: 'Distance from left wall',
     defaultValue: 12,
   },
   {
-    value: "right",
-    label: "From Right Edge",
-    desc: "Distance from right wall",
+    value: 'right',
+    label: 'From Right Edge',
+    desc: 'Distance from right wall',
     defaultValue: 12,
   },
 ];
@@ -53,10 +53,10 @@ export function HorizontalPosition({ calculator }: Props) {
       />
       <CollapsibleContent>
         <div className="space-y-3 pt-2.5 pb-3">
-          {state.hDistribution !== "fixed" ? (
+          {state.hDistribution !== 'fixed' ? (
             <p className="text-xs text-gray-500 dark:text-white/50 italic">
-              Position is automatic for{" "}
-              {state.hDistribution.replace("space-", "")} distribution. Set
+              Position is automatic for{' '}
+              {state.hDistribution.replace('space-', '')} distribution. Set
               distribution to "Fixed" to control position and spacing.
             </p>
           ) : (
@@ -71,7 +71,7 @@ export function HorizontalPosition({ calculator }: Props) {
                     className="cursor-pointer p-3"
                     onClick={() => {
                       setHAnchorType(opt.value);
-                      if (opt.value !== "center")
+                      if (opt.value !== 'center')
                         setHAnchorValue(opt.defaultValue);
                     }}
                   >
@@ -95,7 +95,7 @@ export function HorizontalPosition({ calculator }: Props) {
                 ))}
               </div>
 
-              {state.hAnchorType !== "center" && (
+              {state.hAnchorType !== 'center' && (
                 <Field>
                   <FieldLabel htmlFor="hAnchorValue">
                     Distance from {state.hAnchorType} edge ({state.unit})

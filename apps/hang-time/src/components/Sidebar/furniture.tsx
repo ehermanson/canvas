@@ -1,28 +1,28 @@
-import { Sofa } from "lucide-react";
 import {
   InspectorListRow,
   InspectorOptionCard,
   InspectorSectionHeader,
   InspectorSegmentedControl,
   InspectorSegmentedControlItem,
-} from "@canvas-tools/ui";
-import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
+} from '@canvas-tools/ui';
+import { Sofa } from 'lucide-react';
+import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible';
 import {
   Field,
   FieldGroup,
   FieldLabel,
   FieldLegend,
   FieldSet,
-} from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
-import type { UseCalculatorReturn } from "@/hooks/use-calculator";
-import { cn } from "@/lib/utils";
+} from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
+import type { UseCalculatorReturn } from '@/hooks/use-calculator';
+import { cn } from '@/lib/utils';
 import type {
   Distribution,
   FrameFurnitureAlignment,
   FurnitureAnchor,
   FurnitureVerticalAnchor,
-} from "@/types";
+} from '@/types';
 
 // Visual preview of frame alignment relative to furniture
 function AlignmentPreview({
@@ -33,14 +33,14 @@ function AlignmentPreview({
   isSelected: boolean;
 }) {
   const frameColor = isSelected
-    ? "fill-violet-500 dark:fill-violet-400"
-    : "fill-gray-400 dark:fill-white/40";
+    ? 'fill-violet-500 dark:fill-violet-400'
+    : 'fill-gray-400 dark:fill-white/40';
   const furnitureColor = isSelected
-    ? "fill-violet-200 dark:fill-violet-500/30"
-    : "fill-gray-200 dark:fill-white/20";
+    ? 'fill-violet-200 dark:fill-violet-500/30'
+    : 'fill-gray-200 dark:fill-white/20';
   const wallColor = isSelected
-    ? "stroke-violet-300 dark:stroke-violet-400"
-    : "stroke-gray-300 dark:stroke-white/30";
+    ? 'stroke-violet-300 dark:stroke-violet-400'
+    : 'stroke-gray-300 dark:stroke-white/30';
 
   const w = 36;
   const h = 32;
@@ -59,18 +59,18 @@ function AlignmentPreview({
     const totalFrameWidth = numFrames * fw;
 
     switch (mode) {
-      case "left":
+      case 'left':
         return [furnitureX, furnitureX + fw + 1, furnitureX + 2 * (fw + 1)];
-      case "center": {
+      case 'center': {
         const centerStart =
           furnitureX + (furnitureWidth - totalFrameWidth - 2) / 2;
         return [centerStart, centerStart + fw + 1, centerStart + 2 * (fw + 1)];
       }
-      case "right": {
+      case 'right': {
         const rightStart = furnitureX + furnitureWidth - totalFrameWidth - 2;
         return [rightStart, rightStart + fw + 1, rightStart + 2 * (fw + 1)];
       }
-      case "span": {
+      case 'span': {
         const gap = (furnitureWidth - totalFrameWidth) / 4;
         return [
           furnitureX + gap,
@@ -129,11 +129,11 @@ function DistributionPreview({
   isSelected: boolean;
 }) {
   const frameColor = isSelected
-    ? "fill-violet-500 dark:fill-violet-400"
-    : "fill-gray-400 dark:fill-white/40";
+    ? 'fill-violet-500 dark:fill-violet-400'
+    : 'fill-gray-400 dark:fill-white/40';
   const wallColor = isSelected
-    ? "stroke-violet-300 dark:stroke-violet-400"
-    : "stroke-gray-300 dark:stroke-white/30";
+    ? 'stroke-violet-300 dark:stroke-violet-400'
+    : 'stroke-gray-300 dark:stroke-white/30';
 
   const w = 48;
   const h = 24;
@@ -145,21 +145,21 @@ function DistributionPreview({
     const available = w - totalFrames;
 
     switch (mode) {
-      case "fixed": {
+      case 'fixed': {
         const gap = 3;
         const totalWidth = 3 * fw + 2 * gap;
         const start = (w - totalWidth) / 2;
         return [start, start + fw + gap, start + 2 * (fw + gap)];
       }
-      case "space-between": {
+      case 'space-between': {
         const gap = available / 2;
         return [0, fw + gap, 2 * (fw + gap)];
       }
-      case "space-evenly": {
+      case 'space-evenly': {
         const gap = available / 4;
         return [gap, gap + fw + gap, gap + 2 * (fw + gap)];
       }
-      case "space-around": {
+      case 'space-around': {
         const gap = available / 3;
         return [gap / 2, gap / 2 + fw + gap, gap / 2 + 2 * (fw + gap)];
       }
@@ -196,26 +196,26 @@ function DistributionPreview({
 }
 
 const FURNITURE_ANCHOR_OPTIONS: { value: FurnitureAnchor; label: string }[] = [
-  { value: "left", label: "Left" },
-  { value: "center", label: "Center" },
-  { value: "right", label: "Right" },
+  { value: 'left', label: 'Left' },
+  { value: 'center', label: 'Center' },
+  { value: 'right', label: 'Right' },
 ];
 
 const FRAME_ALIGNMENT_OPTIONS: {
   value: FrameFurnitureAlignment;
   label: string;
 }[] = [
-  { value: "left", label: "Left" },
-  { value: "center", label: "Center" },
-  { value: "right", label: "Right" },
-  { value: "span", label: "Span" },
+  { value: 'left', label: 'Left' },
+  { value: 'center', label: 'Center' },
+  { value: 'right', label: 'Right' },
+  { value: 'span', label: 'Span' },
 ];
 
 // Only dynamic distributions for span mode (fixed is redundant with center alignment)
 const SPAN_DISTRIBUTION_OPTIONS: { value: Distribution; label: string }[] = [
-  { value: "space-between", label: "Edge" },
-  { value: "space-evenly", label: "Even" },
-  { value: "space-around", label: "Balanced" },
+  { value: 'space-between', label: 'Edge' },
+  { value: 'space-evenly', label: 'Even' },
+  { value: 'space-around', label: 'Balanced' },
 ];
 
 const VERTICAL_ANCHOR_OPTIONS: {
@@ -224,12 +224,12 @@ const VERTICAL_ANCHOR_OPTIONS: {
   desc: string;
 }[] = [
   {
-    value: "above-furniture",
-    label: "Above Furniture",
-    desc: "Offset from furniture top",
+    value: 'above-furniture',
+    label: 'Above Furniture',
+    desc: 'Offset from furniture top',
   },
-  { value: "ceiling", label: "From Ceiling", desc: "Offset from ceiling" },
-  { value: "center", label: "Centered", desc: "Between ceiling and furniture" },
+  { value: 'ceiling', label: 'From Ceiling', desc: 'Offset from ceiling' },
+  { value: 'center', label: 'Centered', desc: 'Between ceiling and furniture' },
 ];
 
 interface Props {
@@ -326,7 +326,7 @@ export function Furniture({ calculator }: Props) {
           </Field>
 
           {/* Offset from edge - hidden when centered */}
-          {state.furnitureAnchor !== "center" && (
+          {state.furnitureAnchor !== 'center' && (
             <Field>
               <FieldLabel htmlFor="furnitureOffset">
                 Offset from {state.furnitureAnchor} edge ({state.unit})
@@ -378,10 +378,10 @@ export function Furniture({ calculator }: Props) {
           </Field>
 
           {/* Offset input - shown for non-center vertical anchors */}
-          {state.furnitureVAnchor !== "center" && (
+          {state.furnitureVAnchor !== 'center' && (
             <Field>
               <FieldLabel htmlFor="furnitureGap">
-                {state.furnitureVAnchor === "above-furniture"
+                {state.furnitureVAnchor === 'above-furniture'
                   ? `Gap above furniture (${state.unit})`
                   : `Distance from ceiling (${state.unit})`}
               </FieldLabel>
@@ -415,10 +415,10 @@ export function Furniture({ calculator }: Props) {
                     onClick={() => {
                       setFrameFurnitureAlign(option.value);
                       if (
-                        option.value === "span" &&
-                        state.hDistribution === "fixed"
+                        option.value === 'span' &&
+                        state.hDistribution === 'fixed'
                       ) {
-                        setHDistribution("space-evenly");
+                        setHDistribution('space-evenly');
                       }
                     }}
                   >
@@ -428,10 +428,10 @@ export function Furniture({ calculator }: Props) {
                     />
                     <span
                       className={cn(
-                        "mt-1 text-[10px] font-medium",
+                        'mt-1 text-[10px] font-medium',
                         state.frameFurnitureAlign === option.value
-                          ? "text-violet-600 dark:text-violet-300"
-                          : "text-gray-600 dark:text-white/60",
+                          ? 'text-violet-600 dark:text-violet-300'
+                          : 'text-gray-600 dark:text-white/60',
                       )}
                     >
                       {option.label}
@@ -443,7 +443,7 @@ export function Furniture({ calculator }: Props) {
           </Field>
 
           {/* Gap between frames - shown for left/center/right alignment */}
-          {state.frameFurnitureAlign !== "span" && (
+          {state.frameFurnitureAlign !== 'span' && (
             <Field>
               <FieldLabel htmlFor="hSpacing">
                 Gap between frames ({state.unit})
@@ -462,7 +462,7 @@ export function Furniture({ calculator }: Props) {
           )}
 
           {/* Span mode: show horizontal distribution options */}
-          {state.frameFurnitureAlign === "span" && (
+          {state.frameFurnitureAlign === 'span' && (
             <Field>
               <FieldLabel>Distribution</FieldLabel>
               <div className="grid grid-cols-3 gap-1.5">
@@ -485,10 +485,10 @@ export function Furniture({ calculator }: Props) {
                       />
                       <span
                         className={cn(
-                          "mt-1 text-[10px] font-medium",
+                          'mt-1 text-[10px] font-medium',
                           state.hDistribution === option.value
-                            ? "text-violet-600 dark:text-violet-300"
-                            : "text-gray-600 dark:text-white/60",
+                            ? 'text-violet-600 dark:text-violet-300'
+                            : 'text-gray-600 dark:text-white/60',
                         )}
                       >
                         {option.label}
