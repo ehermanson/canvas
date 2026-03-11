@@ -262,6 +262,26 @@ export function useCalculator() {
   const setHAnchorType = (value: HorizontalAnchorType) =>
     setPosition({ hat: value });
   const setHAnchorValue = (value: number) => setPosition({ hav: value });
+  const setManualPosition = useCallback(
+    ({
+      anchorType,
+      anchorValue,
+      hAnchorType,
+      hAnchorValue,
+    }: {
+      anchorType: AnchorType;
+      anchorValue: number;
+      hAnchorType: HorizontalAnchorType;
+      hAnchorValue: number;
+    }) =>
+      setPosition({
+        at: anchorType,
+        av: anchorValue,
+        hat: hAnchorType,
+        hav: hAnchorValue,
+      }),
+    [setPosition],
+  );
 
   const setFurnitureWidth = (value: number) => setFurniture({ fuw: value });
   const setFurnitureHeight = (value: number) => setFurniture({ fuh: value });
@@ -363,6 +383,7 @@ export function useCalculator() {
     setAnchorValue,
     setHAnchorType,
     setHAnchorValue,
+    setManualPosition,
     setFurnitureWidth,
     setFurnitureHeight,
     setFurnitureAnchor,

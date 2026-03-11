@@ -24,6 +24,8 @@ import type { UseCalculatorReturn } from "@/hooks/use-calculator";
 import { useTheme } from "@/hooks/use-theme";
 import type { Unit } from "@/types";
 import {
+  calculateLayoutPositions,
+  fromDisplayUnit,
   formatMeasurement,
   formatShort,
   toDisplayUnit,
@@ -31,6 +33,261 @@ import {
 
 interface PreviewProps {
   calculator: UseCalculatorReturn;
+}
+
+type HookSelection = {
+  frameId: number;
+  hookIndex: number;
+};
+
+type PositionedFrame = {
+  frameId: string;
+  position: UseCalculatorReturn["layoutPositions"][number];
+};
+
+type LayoutBounds = {
+  height: number;
+  maxX: number;
+  maxY: number;
+  minX: number;
+  minY: number;
+  width: number;
+};
+
+type FrameDragSession = {
+  bounds: LayoutBounds;
+  frameId: string;
+  lastArrangementKey?: string;
+  mode: "gallery" | "layout";
+  moved: boolean;
+  originalPosition: UseCalculatorReturn["layoutPositions"][number];
+  startClientX: number;
+  startClientY: number;
+};
+
+const ROW_SWITCH_HYSTERESIS = 2;
+const SLOT_SWITCH_HYSTERESIS = 1;
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), max);
+}
+
+function getLayoutBounds(frames: PositionedFrame[]): LayoutBounds | null {
+  if (frames.length === 0) {
+    return null;
+  }
+
+  const minX = Math.min(...frames.map(({ position }) => position.x));
+  const minY = Math.min(...frames.map(({ position }) => position.y));
+  const maxX = Math.max(
+    ...frames.map(({ position }) => position.x + position.width),
+  );
+  const maxY = Math.max(
+    ...frames.map(({ position }) => position.y + position.height),
+  );
+
+  return {
+    minX,
+    minY,
+    maxX,
+    maxY,
+    width: maxX - minX,
+    height: maxY - minY,
+  };
+}
+
+function findFrameAtPoint(
+  frames: PositionedFrame[],
+  point: { x: number; y: number },
+  {
+    offsetX,
+    offsetY,
+    scale,
+  }: {
+    offsetX: number;
+    offsetY: number;
+    scale: number;
+  },
+) {
+  for (let index = frames.length - 1; index >= 0; index -= 1) {
+    const frame = frames[index];
+    const { position } = frame;
+    const left = offsetX + position.x * scale;
+    const top = offsetY + position.y * scale;
+    const right = left + position.width * scale;
+    const bottom = top + position.height * scale;
+
+    if (
+      point.x >= left &&
+      point.x <= right &&
+      point.y >= top &&
+      point.y <= bottom
+    ) {
+      return frame;
+    }
+  }
+
+  return null;
+}
+
+function findHookAtPoint(
+  frames: PositionedFrame[],
+  point: { x: number; y: number },
+  {
+    offsetX,
+    offsetY,
+    scale,
+    radius,
+  }: {
+    offsetX: number;
+    offsetY: number;
+    scale: number;
+    radius: number;
+  },
+): HookSelection | null {
+  for (const { position } of frames) {
+    const hookX1 = offsetX + position.hookX * scale;
+    const hookY = offsetY + position.hookY * scale;
+
+    if (Math.hypot(point.x - hookX1, point.y - hookY) <= radius) {
+      return { frameId: position.id, hookIndex: 0 };
+    }
+
+    if (position.hookX2 !== undefined) {
+      const hookX2 = offsetX + position.hookX2 * scale;
+      if (Math.hypot(point.x - hookX2, point.y - hookY) <= radius) {
+        return { frameId: position.id, hookIndex: 1 };
+      }
+    }
+  }
+
+  return null;
+}
+
+function reorderFramesForCanvasDrag(
+  frames: UseCalculatorReturn["state"]["frames"],
+  positionedFrames: PositionedFrame[],
+  draggedFrameId: string,
+  point: { x: number; y: number },
+) {
+  const rows = new Map<number, PositionedFrame[]>();
+  positionedFrames.forEach((frame) => {
+    const row = frame.position.row ?? 0;
+    if (!rows.has(row)) {
+      rows.set(row, []);
+    }
+    rows.get(row)!.push(frame);
+  });
+
+  const rowEntries = [...rows.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .map(([rowIndex, rowFrames]) => ({
+      rowIndex,
+      frames: rowFrames,
+      centerY:
+        rowFrames.reduce(
+          (sum, frame) => sum + frame.position.y + frame.position.height / 2,
+          0,
+        ) / rowFrames.length,
+    }));
+
+  if (rowEntries.length === 0) {
+    return null;
+  }
+
+  const draggedFrame = frames.find((frame) => frame.id === draggedFrameId);
+  if (!draggedFrame) {
+    return null;
+  }
+
+  const currentRowIndex = draggedFrame.row ?? 0;
+  const currentRowEntry =
+    rowEntries.find((row) => row.rowIndex === currentRowIndex) ?? rowEntries[0];
+
+  let targetRowEntry = rowEntries.reduce((best, row) =>
+    Math.abs(row.centerY - point.y) < Math.abs(best.centerY - point.y)
+      ? row
+      : best,
+  );
+
+  if (targetRowEntry.rowIndex !== currentRowEntry.rowIndex) {
+    const movingDown = targetRowEntry.centerY > currentRowEntry.centerY;
+    const rowBoundary =
+      (targetRowEntry.centerY + currentRowEntry.centerY) / 2 +
+      (movingDown ? ROW_SWITCH_HYSTERESIS : -ROW_SWITCH_HYSTERESIS);
+
+    if (
+      (movingDown && point.y < rowBoundary) ||
+      (!movingDown && point.y > rowBoundary)
+    ) {
+      targetRowEntry = currentRowEntry;
+    }
+  }
+
+  const currentIndexInTargetRow = targetRowEntry.frames.findIndex(
+    (frame) => frame.frameId === draggedFrameId,
+  );
+
+  const framesInTargetRow = targetRowEntry.frames.filter(
+    (frame) => frame.frameId !== draggedFrameId,
+  );
+
+  let targetIndex = framesInTargetRow.length;
+  for (let index = 0; index < framesInTargetRow.length; index += 1) {
+    const frame = framesInTargetRow[index];
+    const centerX = frame.position.x + frame.position.width / 2;
+    const slotBoundary =
+      centerX +
+      (index >= Math.max(currentIndexInTargetRow, 0)
+        ? SLOT_SWITCH_HYSTERESIS
+        : -SLOT_SWITCH_HYSTERESIS);
+    if (point.x < slotBoundary) {
+      targetIndex = index;
+      break;
+    }
+  }
+
+  const groupedFrames = new Map<
+    number,
+    UseCalculatorReturn["state"]["frames"]
+  >();
+  frames.forEach((frame) => {
+    const row = frame.row ?? 0;
+    if (!groupedFrames.has(row)) {
+      groupedFrames.set(row, []);
+    }
+    groupedFrames.get(row)!.push(frame);
+  });
+
+  groupedFrames.forEach((rowFrames, rowIndex) => {
+    groupedFrames.set(
+      rowIndex,
+      rowFrames.filter((frame) => frame.id !== draggedFrameId),
+    );
+  });
+
+  const targetRowFrames = groupedFrames.get(targetRowEntry.rowIndex) ?? [];
+  const nextTargetRowFrames = [...targetRowFrames];
+  nextTargetRowFrames.splice(targetIndex, 0, {
+    ...draggedFrame,
+    row: targetRowEntry.rowIndex,
+  });
+  groupedFrames.set(targetRowEntry.rowIndex, nextTargetRowFrames);
+
+  const normalizedFrames = [...groupedFrames.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .flatMap(([, rowFrames], normalizedRowIndex) =>
+      rowFrames.map((frame) => ({ ...frame, row: normalizedRowIndex })),
+    );
+
+  const arrangementKey = normalizedFrames
+    .map((frame, index) => `${index}:${frame.id}:${frame.row ?? 0}`)
+    .join("|");
+
+  return {
+    arrangementKey,
+    frames: normalizedFrames,
+  };
 }
 
 function CanvasLegendPopover({
@@ -167,7 +424,8 @@ function CanvasSettingsPopover({
 }
 
 export function Preview({ calculator }: PreviewProps) {
-  const { state, layoutPositions, setUnit } = calculator;
+  const { layoutPositions, setFrames, setManualPosition, setUnit, state } =
+    calculator;
   const { theme } = useTheme();
   const isDark = theme === "dark";
 
@@ -175,16 +433,76 @@ export function Preview({ calculator }: PreviewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const containerSize = useElementSize(containerRef);
   const [isPanning, setIsPanning] = useState(false);
+  const [isDraggingFrame, setIsDraggingFrame] = useState(false);
+  const [selectedFrameId, setSelectedFrameId] = useState<string | null>(null);
+  const [dragPreviewFrames, setDragPreviewFrames] = useState<
+    UseCalculatorReturn["state"]["frames"] | null
+  >(null);
+  const [dragPreviewOffset, setDragPreviewOffset] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
+  const frameDragRef = useRef<FrameDragSession | null>(null);
+  const suppressCanvasClickRef = useRef(false);
+  const lastManualPositionRef = useRef<{ x: number; y: number } | null>(null);
 
   // Track reference hook (shows wall measurements) and compare hook (shows distance from reference)
-  const [referenceHook, setReferenceHook] = useState<{
-    frameId: number;
-    hookIndex: number;
-  } | null>(null);
-  const [compareHook, setCompareHook] = useState<{
-    frameId: number;
-    hookIndex: number;
-  } | null>(null);
+  const [referenceHook, setReferenceHook] = useState<HookSelection | null>(
+    null,
+  );
+  const [compareHook, setCompareHook] = useState<HookSelection | null>(null);
+
+  const positionedFrames = useMemo<PositionedFrame[]>(
+    () =>
+      layoutPositions.map((position, index) => ({
+        frameId: state.frames[index]?.id ?? String(position.id),
+        position,
+      })),
+    [layoutPositions, state.frames],
+  );
+
+  const previewLayoutPositions = useMemo(
+    () =>
+      dragPreviewFrames
+        ? calculateLayoutPositions({ ...state, frames: dragPreviewFrames })
+        : layoutPositions,
+    [dragPreviewFrames, layoutPositions, state],
+  );
+
+  const displayedFrames = dragPreviewFrames ?? state.frames;
+  const displayedPositionedFrames = useMemo<PositionedFrame[]>(
+    () =>
+      previewLayoutPositions.map((position, index) => ({
+        frameId: displayedFrames[index]?.id ?? String(position.id),
+        position,
+      })),
+    [displayedFrames, previewLayoutPositions],
+  );
+
+  const moveLayoutTo = useCallback(
+    (nextMinX: number, nextMinY: number, bounds: LayoutBounds) => {
+      const clampedX = clamp(nextMinX, 0, state.wallWidth - bounds.width);
+      const clampedY = clamp(nextMinY, 0, state.wallHeight - bounds.height);
+      const lastPosition = lastManualPositionRef.current;
+
+      if (
+        lastPosition &&
+        Math.abs(lastPosition.x - clampedX) < 0.001 &&
+        Math.abs(lastPosition.y - clampedY) < 0.001
+      ) {
+        return;
+      }
+
+      lastManualPositionRef.current = { x: clampedX, y: clampedY };
+      setManualPosition({
+        anchorType: "floor",
+        anchorValue: state.wallHeight - (clampedY + bounds.height),
+        hAnchorType: "left",
+        hAnchorValue: clampedX,
+      });
+    },
+    [setManualPosition, state.wallHeight, state.wallWidth],
+  );
 
   const fmt = useCallback(
     (val: number) =>
@@ -287,12 +605,19 @@ export function Preview({ calculator }: PreviewProps) {
   // Regular click = set reference hook, Shift+click = set compare hook
   const handleCanvasClick = useCallback(
     (e: React.MouseEvent<HTMLCanvasElement>) => {
+      if (suppressCanvasClickRef.current) {
+        suppressCanvasClickRef.current = false;
+        return;
+      }
+
       const canvas = canvasRef.current;
       if (!canvas) return;
 
       const rect = canvas.getBoundingClientRect();
-      const clickX = e.clientX - rect.left;
-      const clickY = e.clientY - rect.top;
+      const point = {
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top,
+      };
 
       const hookRadius = 12; // Slightly larger than visual for easier clicking
       const isShiftClick = e.shiftKey;
@@ -301,48 +626,43 @@ export function Preview({ calculator }: PreviewProps) {
       const offsetX = pan.x;
       const offsetY = pan.y;
 
-      // Check if click is on any hook
-      for (const frame of layoutPositions) {
-        const hookX1 = offsetX + frame.hookX * scale;
-        const hookY = offsetY + frame.hookY * scale;
-
-        // Check first hook
-        const dist1 = Math.hypot(clickX - hookX1, clickY - hookY);
-        if (dist1 <= hookRadius) {
-          const hookData = { frameId: frame.id, hookIndex: 0 };
-          if (isShiftClick && referenceHook) {
-            // Shift+click: set as compare hook (if we have a reference)
-            setCompareHook(hookData);
-          } else {
-            // Regular click: set as reference, clear compare
-            setReferenceHook(hookData);
-            setCompareHook(null);
-          }
-          return;
+      const hookHit = findHookAtPoint(positionedFrames, point, {
+        offsetX,
+        offsetY,
+        scale,
+        radius: hookRadius,
+      });
+      if (hookHit) {
+        const frameHit = positionedFrames.find(
+          ({ position }) => position.id === hookHit.frameId,
+        );
+        if (frameHit) {
+          setSelectedFrameId(frameHit.frameId);
         }
-
-        // Check second hook if dual
-        if (frame.hookX2 !== undefined) {
-          const hookX2 = offsetX + frame.hookX2 * scale;
-          const dist2 = Math.hypot(clickX - hookX2, clickY - hookY);
-          if (dist2 <= hookRadius) {
-            const hookData = { frameId: frame.id, hookIndex: 1 };
-            if (isShiftClick && referenceHook) {
-              setCompareHook(hookData);
-            } else {
-              setReferenceHook(hookData);
-              setCompareHook(null);
-            }
-            return;
-          }
+        if (isShiftClick && referenceHook) {
+          setCompareHook(hookHit);
+        } else {
+          setReferenceHook(hookHit);
+          setCompareHook(null);
         }
+        return;
       }
 
-      // Click elsewhere clears selection (back to first hook default)
+      const frameHit = findFrameAtPoint(positionedFrames, point, {
+        offsetX,
+        offsetY,
+        scale,
+      });
+      if (frameHit) {
+        setSelectedFrameId(frameHit.frameId);
+        return;
+      }
+
       setReferenceHook(null);
       setCompareHook(null);
+      setSelectedFrameId(null);
     },
-    [layoutPositions, scale, referenceHook, pan],
+    [positionedFrames, scale, referenceHook, pan],
   );
 
   // Wheel zoom handler - zoom centered on cursor
@@ -377,32 +697,219 @@ export function Preview({ calculator }: PreviewProps) {
   // Pan handlers
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
-      // Left-click or middle-click to pan
-      if (e.button === 0 || e.button === 1) {
+      containerRef.current?.focus();
+
+      if (e.button === 1) {
         setIsPanning(true);
         startPan(e.clientX, e.clientY);
+        return;
       }
+
+      if (e.button !== 0) {
+        return;
+      }
+
+      const rect = canvasRef.current?.getBoundingClientRect();
+      const bounds = getLayoutBounds(positionedFrames);
+      if (!rect || !bounds) {
+        setIsPanning(true);
+        startPan(e.clientX, e.clientY);
+        return;
+      }
+
+      const point = {
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top,
+      };
+      const offsetX = pan.x;
+      const offsetY = pan.y;
+      const hookHit = findHookAtPoint(positionedFrames, point, {
+        offsetX,
+        offsetY,
+        scale,
+        radius: 12,
+      });
+
+      if (hookHit) {
+        return;
+      }
+
+      const frameHit = findFrameAtPoint(positionedFrames, point, {
+        offsetX,
+        offsetY,
+        scale,
+      });
+      if (frameHit) {
+        setSelectedFrameId(frameHit.frameId);
+        frameDragRef.current = {
+          frameId: frameHit.frameId,
+          bounds,
+          mode:
+            e.altKey || positionedFrames.length === 1 ? "layout" : "gallery",
+          moved: false,
+          originalPosition: frameHit.position,
+          startClientX: e.clientX,
+          startClientY: e.clientY,
+        };
+        lastManualPositionRef.current = {
+          x: bounds.minX,
+          y: bounds.minY,
+        };
+        setDragPreviewFrames(null);
+        setDragPreviewOffset(null);
+        return;
+      }
+
+      setIsPanning(true);
+      startPan(e.clientX, e.clientY);
     },
-    [startPan],
+    [pan, positionedFrames, scale, startPan],
   );
 
   const handleMouseMove = useCallback(
     (e: React.MouseEvent) => {
+      const dragSession = frameDragRef.current;
+      if (dragSession) {
+        const deltaX = (e.clientX - dragSession.startClientX) / scale;
+        const deltaY = (e.clientY - dragSession.startClientY) / scale;
+        const moveDistance = Math.hypot(
+          e.clientX - dragSession.startClientX,
+          e.clientY - dragSession.startClientY,
+        );
+
+        if (!dragSession.moved && moveDistance > 4) {
+          dragSession.moved = true;
+          suppressCanvasClickRef.current = true;
+          setIsDraggingFrame(true);
+        }
+
+        if (!dragSession.moved) {
+          return;
+        }
+
+        setDragPreviewOffset({ x: deltaX, y: deltaY });
+
+        if (dragSession.mode === "layout") {
+          moveLayoutTo(
+            dragSession.bounds.minX + deltaX,
+            dragSession.bounds.minY + deltaY,
+            dragSession.bounds,
+          );
+          return;
+        }
+
+        const dragPoint = {
+          x:
+            dragSession.originalPosition.x +
+            dragSession.originalPosition.width / 2 +
+            deltaX,
+          y:
+            dragSession.originalPosition.y +
+            dragSession.originalPosition.height / 2 +
+            deltaY,
+        };
+        const nextArrangement = reorderFramesForCanvasDrag(
+          displayedFrames,
+          displayedPositionedFrames,
+          dragSession.frameId,
+          dragPoint,
+        );
+
+        if (
+          !nextArrangement ||
+          nextArrangement.arrangementKey === dragSession.lastArrangementKey
+        ) {
+          return;
+        }
+
+        dragSession.lastArrangementKey = nextArrangement.arrangementKey;
+        setDragPreviewFrames(nextArrangement.frames);
+        return;
+      }
+
       updatePan(e.clientX, e.clientY);
     },
-    [updatePan],
+    [
+      displayedFrames,
+      displayedPositionedFrames,
+      moveLayoutTo,
+      scale,
+      updatePan,
+    ],
+  );
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLDivElement>) => {
+      if (!selectedFrameId) {
+        return;
+      }
+
+      const bounds = getLayoutBounds(positionedFrames);
+      if (!bounds) {
+        return;
+      }
+
+      const step = fromDisplayUnit(e.shiftKey ? 5 : 1, state.unit);
+      let deltaX = 0;
+      let deltaY = 0;
+
+      switch (e.key) {
+        case "ArrowLeft":
+          deltaX = -step;
+          break;
+        case "ArrowRight":
+          deltaX = step;
+          break;
+        case "ArrowUp":
+          deltaY = -step;
+          break;
+        case "ArrowDown":
+          deltaY = step;
+          break;
+        default:
+          return;
+      }
+
+      e.preventDefault();
+      moveLayoutTo(bounds.minX + deltaX, bounds.minY + deltaY, bounds);
+    },
+    [moveLayoutTo, positionedFrames, selectedFrameId, state.unit],
   );
 
   const handleMouseUp = useCallback(() => {
+    const dragSession = frameDragRef.current;
+    if (dragSession) {
+      if (dragSession.mode === "gallery" && dragPreviewFrames) {
+        setFrames(dragPreviewFrames);
+      }
+      frameDragRef.current = null;
+      lastManualPositionRef.current = null;
+      setIsDraggingFrame(false);
+      setDragPreviewFrames(null);
+      setDragPreviewOffset(null);
+      return;
+    }
+
     setIsPanning(false);
     stopPan();
-  }, [stopPan]);
+  }, [dragPreviewFrames, setFrames, stopPan]);
 
   // Also handle mouse leave to stop panning
   const handleMouseLeave = useCallback(() => {
+    const dragSession = frameDragRef.current;
+    if (dragSession) {
+      if (dragSession.mode === "gallery" && dragPreviewFrames) {
+        setFrames(dragPreviewFrames);
+      }
+      frameDragRef.current = null;
+      lastManualPositionRef.current = null;
+      setIsDraggingFrame(false);
+      setDragPreviewFrames(null);
+      setDragPreviewOffset(null);
+    }
     setIsPanning(false);
     stopPan();
-  }, [stopPan]);
+  }, [dragPreviewFrames, setFrames, stopPan]);
 
   // Draw background on canvas (wall, rulers, furniture - but NOT frames for gallery mode)
   useEffect(() => {
@@ -617,12 +1124,23 @@ export function Preview({ calculator }: PreviewProps) {
       ctx.fillText(fmtShort(state.furnitureWidth), fx + fw / 2, fy - 6);
     }
 
+    const activeDragSession = frameDragRef.current;
+    const activeDraggedFrameId =
+      activeDragSession?.mode === "gallery" ? activeDragSession.frameId : null;
+
     // Draw frames on canvas
-    layoutPositions.forEach((frame) => {
+    displayedPositionedFrames.forEach(({ frameId, position: frame }) => {
+      const isDraggedPlaceholder = frameId === activeDraggedFrameId;
       const fx = offsetX + frame.x * scale;
       const fy = offsetY + frame.y * scale;
       const fw = frame.width * scale;
       const fh = frame.height * scale;
+      const isSelected = frameId === selectedFrameId;
+
+      if (isDraggedPlaceholder) {
+        ctx.save();
+        ctx.globalAlpha = 0.28;
+      }
 
       ctx.fillStyle = isDark ? "rgba(0,0,0,0.3)" : "rgba(0,0,0,0.1)";
       ctx.fillRect(fx + 3, fy + 3, fw, fh);
@@ -636,10 +1154,14 @@ export function Preview({ calculator }: PreviewProps) {
       ctx.fillRect(fx, fy, fw, fh);
       ctx.strokeStyle = frame.isOutOfBounds
         ? "#ef4444"
-        : isDark
-          ? "#64748b"
-          : "#333";
-      ctx.lineWidth = frame.isOutOfBounds ? 3 : 2;
+        : isSelected
+          ? isDark
+            ? "#67e8f9"
+            : "#0891b2"
+          : isDark
+            ? "#64748b"
+            : "#333";
+      ctx.lineWidth = frame.isOutOfBounds ? 3 : isSelected ? 3 : 2;
       ctx.strokeRect(fx, fy, fw, fh);
 
       const matInset = Math.min(fw, fh) * 0.1;
@@ -691,7 +1213,58 @@ export function Preview({ calculator }: PreviewProps) {
       ctx.rotate(-Math.PI / 2);
       ctx.fillText(fmtShort(frame.height), 0, 0);
       ctx.restore();
+
+      if (isDraggedPlaceholder) {
+        ctx.restore();
+      }
     });
+
+    if (
+      activeDragSession?.mode === "gallery" &&
+      dragPreviewOffset &&
+      activeDragSession.originalPosition
+    ) {
+      const frame = activeDragSession.originalPosition;
+      const fx = offsetX + (frame.x + dragPreviewOffset.x) * scale;
+      const fy = offsetY + (frame.y + dragPreviewOffset.y) * scale;
+      const fw = frame.width * scale;
+      const fh = frame.height * scale;
+
+      ctx.save();
+      ctx.fillStyle = isDark ? "rgba(0,0,0,0.35)" : "rgba(0,0,0,0.14)";
+      ctx.fillRect(fx + 4, fy + 4, fw, fh);
+      ctx.fillStyle = isDark ? "#334155" : "#f8f8f8";
+      ctx.fillRect(fx, fy, fw, fh);
+      ctx.strokeStyle = isDark ? "#67e8f9" : "#0891b2";
+      ctx.lineWidth = 3;
+      ctx.strokeRect(fx, fy, fw, fh);
+
+      const matInset = Math.min(fw, fh) * 0.1;
+      ctx.strokeStyle = isDark ? "#475569" : "#ddd";
+      ctx.lineWidth = 1;
+      ctx.strokeRect(
+        fx + matInset,
+        fy + matInset,
+        fw - matInset * 2,
+        fh - matInset * 2,
+      );
+
+      ctx.fillStyle = isDark ? "#94a3b8" : "#666";
+      ctx.font = "bold 11px -apple-system, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(frame.name, fx + fw / 2, fy + fh / 2 + 4);
+
+      ctx.font = "10px -apple-system, sans-serif";
+      ctx.fillStyle = isDark ? "#818cf8" : "#4f46e5";
+      ctx.fillText(fmtShort(frame.width), fx + fw / 2, fy - 6);
+
+      ctx.save();
+      ctx.translate(fx - 6, fy + fh / 2);
+      ctx.rotate(-Math.PI / 2);
+      ctx.fillText(fmtShort(frame.height), 0, 0);
+      ctx.restore();
+      ctx.restore();
+    }
 
     // Helper to draw full measurements for a specific hook
     const drawFullMeasurements = (
@@ -782,7 +1355,7 @@ export function Preview({ calculator }: PreviewProps) {
     };
 
     // Always show hook gap for dual hooks (for all frames)
-    layoutPositions.forEach((f) => {
+    previewLayoutPositions.forEach((f) => {
       if (f.hookX2 !== undefined && f.hookGap !== undefined) {
         const hookX = offsetX + f.hookX * scale;
         const hookX2 = offsetX + f.hookX2 * scale;
@@ -820,7 +1393,9 @@ export function Preview({ calculator }: PreviewProps) {
 
     // Draw full measurements for reference hook (first by default)
     if (referenceHook) {
-      const frame = layoutPositions.find((f) => f.id === referenceHook.frameId);
+      const frame = previewLayoutPositions.find(
+        (f) => f.id === referenceHook.frameId,
+      );
       if (frame) {
         drawFullMeasurements(frame, referenceHook.hookIndex);
 
@@ -868,17 +1443,24 @@ export function Preview({ calculator }: PreviewProps) {
           ctx.fillText(tooltipText, tooltipX, tooltipY + 2);
         }
       }
-    } else if (layoutPositions.length > 0) {
+    } else if (selectedFrameId) {
+      const selectedFrame = positionedFrames.find(
+        ({ frameId }) => frameId === selectedFrameId,
+      )?.position;
+      if (selectedFrame) {
+        drawFullMeasurements(selectedFrame, 0);
+      }
+    } else if (previewLayoutPositions.length > 0) {
       // Default: show first hook measurements
-      drawFullMeasurements(layoutPositions[0], 0);
+      drawFullMeasurements(previewLayoutPositions[0], 0);
     }
 
     // Draw comparison measurements between reference and compare hooks
     if (referenceHook && compareHook) {
-      const refFrame = layoutPositions.find(
+      const refFrame = previewLayoutPositions.find(
         (f) => f.id === referenceHook.frameId,
       );
-      const cmpFrame = layoutPositions.find(
+      const cmpFrame = previewLayoutPositions.find(
         (f) => f.id === compareHook.frameId,
       );
 
@@ -968,7 +1550,7 @@ export function Preview({ calculator }: PreviewProps) {
       }
     }
   }, [
-    layoutPositions,
+    displayedPositionedFrames,
     state,
     scale,
     canvasWidth,
@@ -979,17 +1561,25 @@ export function Preview({ calculator }: PreviewProps) {
     compareHook,
     pan,
     isDark,
+    selectedFrameId,
+    dragPreviewOffset,
+    previewLayoutPositions,
   ]);
 
   return (
     <div
       ref={containerRef}
       className="absolute inset-0 overflow-hidden"
+      tabIndex={0}
+      onKeyDown={handleKeyDown}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseLeave}
-      style={{ cursor: isPanning ? "grabbing" : "grab" }}
+      aria-label="Picture layout canvas"
+      style={{
+        cursor: isDraggingFrame || isPanning ? "grabbing" : "grab",
+      }}
     >
       <div
         className="relative"
@@ -998,7 +1588,9 @@ export function Preview({ calculator }: PreviewProps) {
         <canvas
           ref={canvasRef}
           className="absolute inset-0"
-          style={{ cursor: isPanning ? "grabbing" : "grab" }}
+          style={{
+            cursor: isDraggingFrame || isPanning ? "grabbing" : "grab",
+          }}
           onClick={handleCanvasClick}
         />
       </div>
