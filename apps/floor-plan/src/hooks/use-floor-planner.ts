@@ -54,6 +54,34 @@ function normalizeRotation(rotation: number) {
   return ((rotation % 360) + 360) % 360;
 }
 
+function reorderFurnitureItems(
+  items: FurnitureItem[],
+  id: string,
+  targetIndex: number,
+) {
+  const currentIndex = items.findIndex((item) => item.id === id);
+  if (currentIndex === -1) {
+    return items;
+  }
+
+  const boundedTargetIndex = Math.max(
+    0,
+    Math.min(targetIndex, items.length - 1),
+  );
+  if (currentIndex === boundedTargetIndex) {
+    return items;
+  }
+
+  const next = [...items];
+  const [item] = next.splice(currentIndex, 1);
+  if (!item) {
+    return items;
+  }
+
+  next.splice(boundedTargetIndex, 0, item);
+  return next;
+}
+
 function getSavedUnit() {
   const savedUnit =
     localStorage.getItem(UNIT_STORAGE_KEY) ??
@@ -910,6 +938,70 @@ export function useRoomPlanner(
     [room, pushHistory],
   );
 
+  const moveFurnitureForward = useCallback(
+    (id: string) => {
+      setFurniture((prev) => {
+        const currentIndex = prev.findIndex((item) => item.id === id);
+        if (currentIndex === -1 || currentIndex === prev.length - 1) {
+          return prev;
+        }
+
+        const next = reorderFurnitureItems(prev, id, currentIndex + 1);
+        pushHistory(room, next);
+        return next;
+      });
+    },
+    [pushHistory, room],
+  );
+
+  const moveFurnitureBackward = useCallback(
+    (id: string) => {
+      setFurniture((prev) => {
+        const currentIndex = prev.findIndex((item) => item.id === id);
+        if (currentIndex <= 0) {
+          return prev;
+        }
+
+        const next = reorderFurnitureItems(prev, id, currentIndex - 1);
+        pushHistory(room, next);
+        return next;
+      });
+    },
+    [pushHistory, room],
+  );
+
+  const bringFurnitureToFront = useCallback(
+    (id: string) => {
+      setFurniture((prev) => {
+        const currentIndex = prev.findIndex((item) => item.id === id);
+        if (currentIndex === -1 || currentIndex === prev.length - 1) {
+          return prev;
+        }
+
+        const next = reorderFurnitureItems(prev, id, prev.length - 1);
+        pushHistory(room, next);
+        return next;
+      });
+    },
+    [pushHistory, room],
+  );
+
+  const sendFurnitureToBack = useCallback(
+    (id: string) => {
+      setFurniture((prev) => {
+        const currentIndex = prev.findIndex((item) => item.id === id);
+        if (currentIndex <= 0) {
+          return prev;
+        }
+
+        const next = reorderFurnitureItems(prev, id, 0);
+        pushHistory(room, next);
+        return next;
+      });
+    },
+    [pushHistory, room],
+  );
+
   const updatePulloutSofa = useCallback(
     (id: string, updates: Partial<PulloutSofaState>) => {
       setFurniture((prev) => {
@@ -1250,6 +1342,10 @@ export function useRoomPlanner(
     setFurnitureRotation,
     commitFurnitureMove,
     rotateFurniture,
+    moveFurnitureForward,
+    moveFurnitureBackward,
+    bringFurnitureToFront,
+    sendFurnitureToBack,
     removeFurniture,
     removeFurnitureGroup,
     duplicateFurniture,

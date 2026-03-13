@@ -361,6 +361,92 @@ describe('useRoomPlanner', () => {
     expect(result.current.furniture).toHaveLength(2);
   });
 
+  it('reorders furniture layers and keeps that order undoable', () => {
+    const { result } = renderHook(() => useRoomPlanner());
+
+    let firstId = '';
+    let secondId = '';
+    let thirdId = '';
+
+    act(() => {
+      firstId = result.current.addFurniture(DESK_PRESET);
+      secondId = result.current.addFurniture({
+        ...DESK_PRESET,
+        name: 'Desk Two',
+      });
+      thirdId = result.current.addFurniture({
+        ...DESK_PRESET,
+        name: 'Desk Three',
+      });
+    });
+
+    expect(result.current.furniture.map((item) => item.id)).toEqual([
+      firstId,
+      secondId,
+      thirdId,
+    ]);
+
+    act(() => {
+      result.current.sendFurnitureToBack(thirdId);
+    });
+
+    expect(result.current.furniture.map((item) => item.id)).toEqual([
+      thirdId,
+      firstId,
+      secondId,
+    ]);
+
+    act(() => {
+      result.current.moveFurnitureForward(thirdId);
+    });
+
+    expect(result.current.furniture.map((item) => item.id)).toEqual([
+      firstId,
+      thirdId,
+      secondId,
+    ]);
+
+    act(() => {
+      result.current.bringFurnitureToFront(firstId);
+    });
+
+    expect(result.current.furniture.map((item) => item.id)).toEqual([
+      thirdId,
+      secondId,
+      firstId,
+    ]);
+
+    act(() => {
+      result.current.moveFurnitureBackward(firstId);
+    });
+
+    expect(result.current.furniture.map((item) => item.id)).toEqual([
+      thirdId,
+      firstId,
+      secondId,
+    ]);
+
+    act(() => {
+      result.current.undo();
+    });
+
+    expect(result.current.furniture.map((item) => item.id)).toEqual([
+      thirdId,
+      secondId,
+      firstId,
+    ]);
+
+    act(() => {
+      result.current.redo();
+    });
+
+    expect(result.current.furniture.map((item) => item.id)).toEqual([
+      thirdId,
+      firstId,
+      secondId,
+    ]);
+  });
+
   it('rotates the room and furniture together around the room center', () => {
     const { result } = renderHook(() =>
       useRoomPlanner(

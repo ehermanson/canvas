@@ -24,6 +24,9 @@ import {
 } from '@canvas-tools/ui';
 import {
   ChevronDown,
+  ChevronsDown,
+  ChevronsUp,
+  ChevronUp,
   Copy,
   Download,
   FolderOpen,
@@ -149,8 +152,12 @@ type FurnitureSectionPlanner = Pick<
   | 'duplicateFurniture'
   | 'furniture'
   | 'fromDisplay'
+  | 'bringFurnitureToFront'
+  | 'moveFurnitureBackward'
+  | 'moveFurnitureForward'
   | 'removeFurniture'
   | 'rotateFurniture'
+  | 'sendFurnitureToBack'
   | 'setPulloutBedSize'
   | 'selectedId'
   | 'selectedIds'
@@ -1794,11 +1801,17 @@ function PulloutSofaInspector({
 }
 
 function FurnitureItemInspector({
+  bringFurnitureToFront,
   duplicateFurniture,
   fromDisplay,
   furniture,
+  furnitureCount,
+  layerIndex,
+  moveFurnitureBackward,
+  moveFurnitureForward,
   removeFurniture,
   rotateFurniture,
+  sendFurnitureToBack,
   setPulloutBedSize,
   togglePulloutSofa,
   toDisplay,
@@ -1806,11 +1819,17 @@ function FurnitureItemInspector({
   updateFurniture,
   updatePulloutSofa,
 }: {
+  bringFurnitureToFront: RoomPlannerReturn['bringFurnitureToFront'];
   duplicateFurniture: RoomPlannerReturn['duplicateFurniture'];
   fromDisplay: Parser;
   furniture: FurnitureItem;
+  furnitureCount: number;
+  layerIndex: number;
+  moveFurnitureBackward: RoomPlannerReturn['moveFurnitureBackward'];
+  moveFurnitureForward: RoomPlannerReturn['moveFurnitureForward'];
   removeFurniture: RoomPlannerReturn['removeFurniture'];
   rotateFurniture: RoomPlannerReturn['rotateFurniture'];
+  sendFurnitureToBack: RoomPlannerReturn['sendFurnitureToBack'];
   setPulloutBedSize: RoomPlannerReturn['setPulloutBedSize'];
   togglePulloutSofa: RoomPlannerReturn['togglePulloutSofa'];
   toDisplay: Formatter;
@@ -1819,6 +1838,8 @@ function FurnitureItemInspector({
   updatePulloutSofa: RoomPlannerReturn['updatePulloutSofa'];
 }) {
   const unitSuffix = getUnitSuffix(unit);
+  const canMoveBackward = layerIndex > 0;
+  const canMoveForward = layerIndex < furnitureCount - 1;
 
   return (
     <div
@@ -1897,6 +1918,59 @@ function FurnitureItemInspector({
         </Button>
       </div>
 
+      <div className="space-y-2">
+        <div className="flex items-center justify-between gap-2">
+          <Label className="text-xs text-gray-500 dark:text-white/50">
+            Layer
+          </Label>
+          <span className="text-[11px] text-gray-400 dark:text-white/35">
+            {layerIndex + 1} of {furnitureCount}
+          </span>
+        </div>
+        <div className="grid grid-cols-2 gap-1.5">
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 text-xs"
+            onClick={() => sendFurnitureToBack(furniture.id)}
+            disabled={!canMoveBackward}
+          >
+            <ChevronsDown className="mr-1 h-3 w-3" />
+            To Back
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 text-xs"
+            onClick={() => moveFurnitureBackward(furniture.id)}
+            disabled={!canMoveBackward}
+          >
+            <ChevronDown className="mr-1 h-3 w-3" />
+            Backward
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 text-xs"
+            onClick={() => moveFurnitureForward(furniture.id)}
+            disabled={!canMoveForward}
+          >
+            <ChevronUp className="mr-1 h-3 w-3" />
+            Forward
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 text-xs"
+            onClick={() => bringFurnitureToFront(furniture.id)}
+            disabled={!canMoveForward}
+          >
+            <ChevronsUp className="mr-1 h-3 w-3" />
+            To Front
+          </Button>
+        </div>
+      </div>
+
       <div className="flex gap-1.5">
         <Button
           variant="outline"
@@ -1940,11 +2014,15 @@ function FurnitureSection({
 }) {
   const {
     addFurniture,
+    bringFurnitureToFront,
     duplicateFurniture,
     furniture,
     fromDisplay,
+    moveFurnitureBackward,
+    moveFurnitureForward,
     removeFurniture,
     rotateFurniture,
+    sendFurnitureToBack,
     setPulloutBedSize,
     selectedId,
     selectedIds,
@@ -2005,7 +2083,7 @@ function FurnitureSection({
                 </p>
               ) : null}
               <div className="space-y-1">
-                {furniture.map((item) => (
+                {furniture.map((item, index) => (
                   <InspectorListRow
                     key={item.id}
                     asChild
@@ -2030,11 +2108,17 @@ function FurnitureSection({
                       </div>
                       {selectedIds.length === 1 && item.id === selectedId ? (
                         <FurnitureItemInspector
+                          bringFurnitureToFront={bringFurnitureToFront}
                           duplicateFurniture={duplicateFurniture}
                           fromDisplay={fromDisplay}
                           furniture={item}
+                          furnitureCount={furniture.length}
+                          layerIndex={index}
+                          moveFurnitureBackward={moveFurnitureBackward}
+                          moveFurnitureForward={moveFurnitureForward}
                           removeFurniture={removeFurniture}
                           rotateFurniture={rotateFurniture}
+                          sendFurnitureToBack={sendFurnitureToBack}
                           setPulloutBedSize={setPulloutBedSize}
                           togglePulloutSofa={togglePulloutSofa}
                           toDisplay={toDisplay}
