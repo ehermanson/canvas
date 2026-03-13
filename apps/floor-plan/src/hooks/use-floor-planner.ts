@@ -34,7 +34,8 @@ import type {
   WallFeature,
 } from '@/types';
 
-const UNIT_STORAGE_KEY = 'room-planner-unit';
+const UNIT_STORAGE_KEY = 'floor-planner-unit';
+const LEGACY_UNIT_STORAGE_KEY = 'room-planner-unit';
 
 const MAX_HISTORY = 50;
 
@@ -53,13 +54,19 @@ function normalizeRotation(rotation: number) {
   return ((rotation % 360) + 360) % 360;
 }
 
+function getSavedUnit() {
+  const savedUnit =
+    localStorage.getItem(UNIT_STORAGE_KEY) ??
+    localStorage.getItem(LEGACY_UNIT_STORAGE_KEY);
+  return savedUnit === 'cm' ? 'cm' : 'in';
+}
+
 export function useRoomPlanner(
   initialState?: RoomPlannerState,
   historyKey?: string,
 ) {
   const [initialPlannerState] = useState(() => {
-    const savedUnit = localStorage.getItem(UNIT_STORAGE_KEY);
-    const fallbackUnit = savedUnit === 'cm' ? 'cm' : 'in';
+    const fallbackUnit = getSavedUnit();
     return normalizePlannerState(
       initialState ?? createDefaultPlannerState(fallbackUnit),
       fallbackUnit,
@@ -1145,6 +1152,7 @@ export function useRoomPlanner(
 
   useEffect(() => {
     localStorage.setItem(UNIT_STORAGE_KEY, unit);
+    localStorage.removeItem(LEGACY_UNIT_STORAGE_KEY);
   }, [unit]);
 
   useEffect(() => {

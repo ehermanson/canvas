@@ -1,7 +1,7 @@
 import {
   FloatingIconButton,
+  FloorPlanAppIcon,
   HangTimeAppIcon,
-  RoomPlanAppIcon,
   ToolAppSwitcher,
   ToolLinkButton,
   ToolPanel,
@@ -49,9 +49,9 @@ import { HorizontalPosition } from './horizontal-position';
 import { VerticalPosition } from './vertical-position';
 import { WallDimensions } from './wall-dimensions';
 
-export const ROOM_PLAN_URL = 'https://room-plan.app';
+export const FLOOR_PLAN_URL = 'https://floor-plan.app';
 
-export function OpenRoomPlanLink({
+export function OpenFloorPlanLink({
   className,
   iconOnly,
   tooltipLabel,
@@ -63,9 +63,9 @@ export function OpenRoomPlanLink({
   return (
     <ToolLinkButton
       className={className}
-      href={ROOM_PLAN_URL}
+      href={FLOOR_PLAN_URL}
       iconOnly={iconOnly}
-      label="Open Room Plan"
+      label="Open Floor Plan"
       tooltipLabel={tooltipLabel}
     />
   );
@@ -233,11 +233,11 @@ export function Sidebar({ calculator }: SidebarProps) {
                   currentSubtitle="Pixel Perfect Picture Placement"
                   items={[
                     {
-                      href: ROOM_PLAN_URL,
-                      icon: <RoomPlanAppIcon className="h-4 w-4 text-white" />,
+                      href: FLOOR_PLAN_URL,
+                      icon: <FloorPlanAppIcon className="h-4 w-4 text-white" />,
                       iconClassName:
                         'bg-gradient-to-br from-indigo-500 to-violet-600',
-                      title: 'Room Plan',
+                      title: 'Floor Plan',
                       subtitle: 'Room layout studio',
                     },
                   ]}

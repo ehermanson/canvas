@@ -41,12 +41,19 @@ interface PlannerUrlSelection {
 
 type UrlUpdateMode = 'push' | 'replace';
 
-export const LEGACY_PLANNER_STORAGE_KEY = 'room-planner-state';
-export const LEGACY_ACTIVE_SESSION_STORAGE_KEY = 'room-planner-active-session';
-export const LEGACY_SESSIONS_STORAGE_KEY = 'room-planner-sessions';
-export const PLANNER_ACTIVE_PROJECT_STORAGE_KEY = 'room-planner-active-project';
-export const PLANNER_PROJECTS_STORAGE_KEY = 'room-planner-projects';
+export const LEGACY_PLANNER_STORAGE_KEY = 'floor-planner-state';
+export const LEGACY_ACTIVE_SESSION_STORAGE_KEY = 'floor-planner-active-session';
+export const LEGACY_SESSIONS_STORAGE_KEY = 'floor-planner-sessions';
+export const PLANNER_ACTIVE_PROJECT_STORAGE_KEY =
+  'floor-planner-active-project';
+export const PLANNER_PROJECTS_STORAGE_KEY = 'floor-planner-projects';
 export const PLANNER_PROJECTS_STORAGE_VERSION = 1;
+
+const PREVIOUS_PLANNER_STORAGE_KEY = 'room-planner-state';
+const PREVIOUS_ACTIVE_SESSION_STORAGE_KEY = 'room-planner-active-session';
+const PREVIOUS_SESSIONS_STORAGE_KEY = 'room-planner-sessions';
+const PREVIOUS_ACTIVE_PROJECT_STORAGE_KEY = 'room-planner-active-project';
+const PREVIOUS_PROJECTS_STORAGE_KEY = 'room-planner-projects';
 
 const DEFAULT_PROJECT_NAME = 'Untitled Room';
 const DEFAULT_SNAPSHOT_NAME = 'Current Layout';
@@ -421,14 +428,16 @@ function migrateLegacySessionsToProjects(
 
 function loadPlannerProjectsState(): PlannerProjectsState {
   try {
-    const rawProjects = localStorage.getItem(PLANNER_PROJECTS_STORAGE_KEY);
+    const rawProjects =
+      localStorage.getItem(PLANNER_PROJECTS_STORAGE_KEY) ??
+      localStorage.getItem(PREVIOUS_PROJECTS_STORAGE_KEY);
     if (rawProjects) {
       const parsed = JSON.parse(rawProjects) as Partial<PlannerProjectStore>;
       const projects = normalizeProjects(parsed.projects);
       if (projects.length > 0) {
-        const storedActiveId = localStorage.getItem(
-          PLANNER_ACTIVE_PROJECT_STORAGE_KEY,
-        );
+        const storedActiveId =
+          localStorage.getItem(PLANNER_ACTIVE_PROJECT_STORAGE_KEY) ??
+          localStorage.getItem(PREVIOUS_ACTIVE_PROJECT_STORAGE_KEY);
         const activeProjectId = projects.some(
           (project) => project.id === storedActiveId,
         )
@@ -446,7 +455,9 @@ function loadPlannerProjectsState(): PlannerProjectsState {
   }
 
   try {
-    const rawSessions = localStorage.getItem(LEGACY_SESSIONS_STORAGE_KEY);
+    const rawSessions =
+      localStorage.getItem(LEGACY_SESSIONS_STORAGE_KEY) ??
+      localStorage.getItem(PREVIOUS_SESSIONS_STORAGE_KEY);
     if (rawSessions) {
       const parsed = JSON.parse(
         rawSessions,
@@ -454,9 +465,9 @@ function loadPlannerProjectsState(): PlannerProjectsState {
       const sessions = normalizeLegacySessions(parsed.sessions);
       if (sessions.length > 0) {
         const projects = migrateLegacySessionsToProjects(sessions);
-        const storedActiveSessionId = localStorage.getItem(
-          LEGACY_ACTIVE_SESSION_STORAGE_KEY,
-        );
+        const storedActiveSessionId =
+          localStorage.getItem(LEGACY_ACTIVE_SESSION_STORAGE_KEY) ??
+          localStorage.getItem(PREVIOUS_ACTIVE_SESSION_STORAGE_KEY);
         const activeProjectId = projects.some(
           (project) => project.id === storedActiveSessionId,
         )
@@ -474,7 +485,9 @@ function loadPlannerProjectsState(): PlannerProjectsState {
   }
 
   try {
-    const rawLegacyState = localStorage.getItem(LEGACY_PLANNER_STORAGE_KEY);
+    const rawLegacyState =
+      localStorage.getItem(LEGACY_PLANNER_STORAGE_KEY) ??
+      localStorage.getItem(PREVIOUS_PLANNER_STORAGE_KEY);
     if (rawLegacyState) {
       const parsedLegacyState = JSON.parse(
         rawLegacyState,
@@ -523,6 +536,11 @@ function persistPlannerProjectsState(store: PlannerProjectsState) {
   localStorage.removeItem(LEGACY_PLANNER_STORAGE_KEY);
   localStorage.removeItem(LEGACY_SESSIONS_STORAGE_KEY);
   localStorage.removeItem(LEGACY_ACTIVE_SESSION_STORAGE_KEY);
+  localStorage.removeItem(PREVIOUS_PLANNER_STORAGE_KEY);
+  localStorage.removeItem(PREVIOUS_SESSIONS_STORAGE_KEY);
+  localStorage.removeItem(PREVIOUS_ACTIVE_SESSION_STORAGE_KEY);
+  localStorage.removeItem(PREVIOUS_ACTIVE_PROJECT_STORAGE_KEY);
+  localStorage.removeItem(PREVIOUS_PROJECTS_STORAGE_KEY);
 }
 
 function getDuplicateProjectName(name: string) {

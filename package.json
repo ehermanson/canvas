@@ -12,19 +12,19 @@
   ],
   "scripts": {
     "dev:hang-time": "npm run dev --workspace @canvas-tools/hang-time",
-    "dev:room-plan": "npm run dev --workspace @canvas-tools/room-plan",
+    "dev:floor-plan": "npm run dev --workspace @canvas-tools/floor-plan",
     "deploy:hang-time": "npm run deploy --workspace @canvas-tools/hang-time",
-    "deploy:room-plan": "npm run deploy --workspace @canvas-tools/room-plan",
+    "deploy:floor-plan": "npm run deploy --workspace @canvas-tools/floor-plan",
     "deploy:dry-run:hang-time": "npm run deploy:dry-run --workspace @canvas-tools/hang-time",
-    "deploy:dry-run:room-plan": "npm run deploy:dry-run --workspace @canvas-tools/room-plan",
+    "deploy:dry-run:floor-plan": "npm run deploy:dry-run --workspace @canvas-tools/floor-plan",
     "build:hang-time": "npm run build --workspace @canvas-tools/hang-time",
-    "build:room-plan": "npm run build --workspace @canvas-tools/room-plan",
+    "build:floor-plan": "npm run build --workspace @canvas-tools/floor-plan",
     "test:hang-time": "npm run test --workspace @canvas-tools/hang-time",
-    "test:room-plan": "npm run test --workspace @canvas-tools/room-plan",
+    "test:floor-plan": "npm run test --workspace @canvas-tools/floor-plan",
     "test:viewport": "npm run test --workspace @canvas-tools/viewport",
-    "lint": "npm run lint --workspace @canvas-tools/hang-time && npm run lint --workspace @canvas-tools/room-plan",
-    "build": "npm run build:hang-time && npm run build:room-plan",
-    "test": "npm run test:viewport && npm run test:hang-time && npm run test:room-plan",
+    "lint": "npm run lint --workspace @canvas-tools/hang-time && npm run lint --workspace @canvas-tools/floor-plan",
+    "build": "npm run build:hang-time && npm run build:floor-plan",
+    "test": "npm run test:viewport && npm run test:hang-time && npm run test:floor-plan",
     "ci": "npm run lint && npm run test && npm run build"
   }
 }

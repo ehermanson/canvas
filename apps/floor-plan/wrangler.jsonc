@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "room-plan",
+  "name": "floor-plan",
   "main": "src/worker.ts",
   "compatibility_date": "2026-03-08",
   "compatibility_flags": ["nodejs_compat"],
@@ -14,5 +14,5 @@
     "enabled": true
   },
 
-  "routes": [{ "pattern": "room-plan.app", "custom_domain": true }]
+  "routes": [{ "pattern": "floor-plan.app", "custom_domain": true }]
 }

@@ -1,13 +1,13 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { OpenRoomPlanLink, ROOM_PLAN_URL } from './sidebar';
+import { FLOOR_PLAN_URL, OpenFloorPlanLink } from './sidebar';
 
-describe('OpenRoomPlanLink', () => {
-  it('renders a link to the Room Plan app', () => {
-    render(<OpenRoomPlanLink />);
+describe('OpenFloorPlanLink', () => {
+  it('renders a link to the Floor Plan app', () => {
+    render(<OpenFloorPlanLink />);
 
     expect(
-      screen.getByRole('link', { name: /open room plan/i }),
-    ).toHaveAttribute('href', ROOM_PLAN_URL);
+      screen.getByRole('link', { name: /open floor plan/i }),
+    ).toHaveAttribute('href', FLOOR_PLAN_URL);
   });
 });

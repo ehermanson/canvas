@@ -1,9 +1,9 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Canvas } from '@/components/canvas';
 import { Sidebar } from '@/components/Sidebar/sidebar';
+import { useRoomPlanner } from '@/hooks/use-floor-planner';
 import type { PlannerProjectsReturn } from '@/hooks/use-planner-projects';
 import { usePlannerProjects } from '@/hooks/use-planner-projects';
-import { useRoomPlanner } from '@/hooks/use-room-planner';
 import { ThemeProvider, useTheme } from '@/hooks/use-theme';
 import { cn } from '@/lib/utils';
 

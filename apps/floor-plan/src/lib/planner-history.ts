@@ -5,7 +5,8 @@ import type {
   Room,
 } from '@/types';
 
-const PLANNER_HISTORY_STORAGE_PREFIX = 'room-planner-history';
+const PLANNER_HISTORY_STORAGE_PREFIX = 'floor-planner-history';
+const LEGACY_PLANNER_HISTORY_STORAGE_PREFIX = 'room-planner-history';
 
 function cloneHistoryEntry(entry: HistoryEntry): HistoryEntry {
   return {
@@ -35,6 +36,10 @@ export function createPlannerHistoryState(
 
 export function getPlannerHistoryStorageKey(historyKey: string) {
   return `${PLANNER_HISTORY_STORAGE_PREFIX}:${historyKey}`;
+}
+
+function getLegacyPlannerHistoryStorageKey(historyKey: string) {
+  return `${LEGACY_PLANNER_HISTORY_STORAGE_PREFIX}:${historyKey}`;
 }
 
 export function getPlannerSnapshotHistoryKey(
@@ -129,9 +134,11 @@ export function loadPlannerHistoryState(
   }
 
   try {
-    const raw = window.sessionStorage.getItem(
-      getPlannerHistoryStorageKey(historyKey),
-    );
+    const raw =
+      window.sessionStorage.getItem(getPlannerHistoryStorageKey(historyKey)) ??
+      window.sessionStorage.getItem(
+        getLegacyPlannerHistoryStorageKey(historyKey),
+      );
     if (!raw) {
       return initialState;
     }
@@ -169,6 +176,9 @@ export function persistPlannerHistoryState(
     getPlannerHistoryStorageKey(historyKey),
     JSON.stringify(historyState),
   );
+  window.sessionStorage.removeItem(
+    getLegacyPlannerHistoryStorageKey(historyKey),
+  );
 }
 
 export function removePlannerHistoryState(
@@ -179,4 +189,7 @@ export function removePlannerHistoryState(
   }
 
   window.sessionStorage.removeItem(getPlannerHistoryStorageKey(historyKey));
+  window.sessionStorage.removeItem(
+    getLegacyPlannerHistoryStorageKey(historyKey),
+  );
 }

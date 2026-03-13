@@ -33,7 +33,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import type { RoomPlannerReturn } from '@/hooks/use-room-planner';
+import type { RoomPlannerReturn } from '@/hooks/use-floor-planner';
 import { useTheme } from '@/hooks/use-theme';
 import type {
   FurnitureAlignmentMatch,

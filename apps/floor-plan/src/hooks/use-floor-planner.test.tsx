@@ -1,7 +1,7 @@
 import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import { useRoomPlanner } from '@/hooks/use-room-planner';
+import { useRoomPlanner } from '@/hooks/use-floor-planner';
 import type { FurniturePreset, RoomPlannerState } from '@/types';
 
 const DESK_PRESET: FurniturePreset = {

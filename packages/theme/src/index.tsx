@@ -16,9 +16,10 @@ interface ThemeContextValue {
 
 export function createAppThemeScope(options: {
   defaultTheme?: Theme;
+  legacyStorageKeys?: string[];
   storageKey: string;
 }) {
-  const { defaultTheme = 'dark', storageKey } = options;
+  const { defaultTheme = 'dark', legacyStorageKeys = [], storageKey } = options;
   const ThemeContext = createContext<ThemeContextValue | null>(null);
 
   function ThemeProvider({ children }: { children: ReactNode }) {
@@ -32,18 +33,28 @@ export function createAppThemeScope(options: {
         return saved;
       }
 
+      for (const legacyStorageKey of legacyStorageKeys) {
+        const legacySaved = window.localStorage.getItem(legacyStorageKey);
+        if (legacySaved === 'light' || legacySaved === 'dark') {
+          return legacySaved;
+        }
+      }
+
       return defaultTheme;
     });
 
     useEffect(() => {
       window.localStorage.setItem(storageKey, theme);
+      for (const legacyStorageKey of legacyStorageKeys) {
+        window.localStorage.removeItem(legacyStorageKey);
+      }
 
       if (theme === 'dark') {
         document.documentElement.classList.add('dark');
       } else {
         document.documentElement.classList.remove('dark');
       }
-    }, [storageKey, theme]);
+    }, [legacyStorageKeys, storageKey, theme]);
 
     const value: ThemeContextValue = {
       setTheme: (nextTheme) => {

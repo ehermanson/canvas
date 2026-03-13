@@ -1,5 +1,6 @@
 import {
   FloatingIconButton,
+  FloorPlanAppIcon,
   HangTimeAppIcon,
   InspectorInset,
   InspectorListRow,
@@ -7,7 +8,6 @@ import {
   InspectorSectionHeader,
   InspectorSegmentedControl,
   InspectorSegmentedControlItem,
-  RoomPlanAppIcon,
   SuiteDialogContent,
   ToolAppSwitcher,
   ToolLinkButton,
@@ -80,8 +80,8 @@ import {
   PULLOUT_SOFA_DEFAULTS,
 } from '@/data/furniture-presets';
 import { ROOM_TEMPLATES } from '@/data/room-templates';
+import type { RoomPlannerReturn } from '@/hooks/use-floor-planner';
 import type { PlannerProjectsReturn } from '@/hooks/use-planner-projects';
-import type { RoomPlannerReturn } from '@/hooks/use-room-planner';
 import { cn } from '@/lib/utils';
 import type {
   FurnitureItem,
@@ -359,9 +359,9 @@ function SidebarHeader({ onClose }: { onClose: () => void }) {
       <ToolPanelTitle
         content={
           <ToolAppSwitcher
-            currentIcon={<RoomPlanAppIcon className="h-4 w-4 text-white" />}
+            currentIcon={<FloorPlanAppIcon className="h-4 w-4 text-white" />}
             currentIconClassName="bg-gradient-to-br from-indigo-500 to-violet-600"
-            currentTitle="Room Plan"
+            currentTitle="Floor Plan"
             currentSubtitle="Room layout studio"
             items={[
               {
@@ -375,7 +375,7 @@ function SidebarHeader({ onClose }: { onClose: () => void }) {
             ]}
           />
         }
-        title="Room Plan"
+        title="Floor Plan"
         subtitle="Room layout studio"
         actions={
           <ToolPanelHeaderButton onClick={onClose} title="Hide sidebar">
@@ -428,7 +428,7 @@ function ProjectManagerDialog({
       .replace(/^-+|-+$/g, '');
 
     link.href = url;
-    link.download = `${safeName || 'room-plan-project'}.json`;
+    link.download = `${safeName || 'floor-plan-project'}.json`;
     link.click();
     URL.revokeObjectURL(url);
   }, [activeProject.id, activeProject.name, exportProject]);

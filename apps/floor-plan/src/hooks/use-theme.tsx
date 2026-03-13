@@ -1,7 +1,8 @@
 import { createAppThemeScope } from '@canvas-tools/theme';
 
 const { ThemeProvider, useTheme } = createAppThemeScope({
-  storageKey: 'room-planner-theme',
+  legacyStorageKeys: ['room-planner-theme'],
+  storageKey: 'floor-planner-theme',
 });
 
 export { ThemeProvider, useTheme };

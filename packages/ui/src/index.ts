@@ -69,7 +69,7 @@ export {
   TooltipTrigger,
 } from "./components/ui/tooltip";
 export { SuiteDialogContent } from "./suite-dialog-content";
-export { HangTimeAppIcon, RoomPlanAppIcon } from "./app-marks";
+export { HangTimeAppIcon, FloorPlanAppIcon } from "./app-marks";
 export {
   InspectorInset,
   InspectorListRow,
