@@ -15,6 +15,14 @@ export {
   CollapsibleTrigger,
 } from "./components/ui/collapsible";
 export {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuShortcut,
+  ContextMenuTrigger,
+} from "./components/ui/context-menu";
+export {
   Dialog,
   DialogClose,
   DialogContent,

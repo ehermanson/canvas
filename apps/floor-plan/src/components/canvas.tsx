@@ -1,4 +1,10 @@
 import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuShortcut,
+  ContextMenuTrigger,
   ViewportToolbar,
   ViewportToolbarButton,
   ViewportToolbarValue,
@@ -10,15 +16,38 @@ import {
   screenToWorld as mapScreenToWorld,
   worldToScreen as mapWorldToScreen,
 } from '@canvas-tools/viewport';
-import { HelpCircle, Moon, RotateCw, Settings, Sun } from 'lucide-react';
+import {
+  ChevronDown,
+  ChevronsDown,
+  ChevronsUp,
+  ChevronUp,
+  Copy,
+  HelpCircle,
+  Moon,
+  Pencil,
+  RotateCw,
+  Settings,
+  Sun,
+  Trash2,
+} from 'lucide-react';
 import {
   useCallback,
   useEffect,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
   Popover,
@@ -111,6 +140,14 @@ type FurnitureAlignmentGuide = {
   end: number;
   position: number;
   start: number;
+};
+type CanvasContextMenuTarget =
+  | { id: string; kind: 'furniture' }
+  | { featureId: string; kind: 'feature'; wallId: string }
+  | { id: string; kind: 'wall' };
+type FurnitureRenameDialogState = {
+  draftName: string;
+  itemId: string;
 };
 
 const MAJOR_GRID_SIZE = 12;
@@ -959,6 +996,59 @@ const RESIZE_HANDLE_EDGES = ['left', 'right', 'top', 'bottom'] as const;
 const FURNITURE_WALL_SNAP_SCREEN_THRESHOLD = 16;
 const FURNITURE_ALIGNMENT_SNAP_SCREEN_THRESHOLD = 10;
 
+function getContextMenuFeatureWidth(defaultWidth: number, wallLength: number) {
+  return Math.max(6, Math.min(defaultWidth, wallLength));
+}
+
+function createWallFeatureFromContextMenu(
+  type: WallFeature['type'],
+  wallLength: number,
+): Omit<WallFeature, 'id'> | null {
+  if (wallLength <= 0) {
+    return null;
+  }
+
+  switch (type) {
+    case 'door': {
+      const width = getContextMenuFeatureWidth(36, wallLength);
+      return {
+        type,
+        offset: Math.max(0, (wallLength - width) / 2),
+        width,
+        swingDirection: 'inward',
+        swingHand: 'left',
+      };
+    }
+    case 'window': {
+      const width = getContextMenuFeatureWidth(36, wallLength);
+      return {
+        type,
+        offset: Math.max(0, (wallLength - width) / 2),
+        width,
+        sillHeight: 36,
+        height: 48,
+      };
+    }
+    case 'opening': {
+      const width = getContextMenuFeatureWidth(42, wallLength);
+      return {
+        type,
+        offset: Math.max(0, (wallLength - width) / 2),
+        width,
+      };
+    }
+    case 'closet': {
+      const width = getContextMenuFeatureWidth(48, wallLength);
+      return {
+        type,
+        offset: Math.max(0, (wallLength - width) / 2),
+        width,
+        height: 96,
+      };
+    }
+  }
+}
+
 function CanvasSettingsPopover({
   gridSnap,
   setGridSnap,
@@ -1141,6 +1231,11 @@ export function Canvas({ planner }: CanvasProps) {
     edge: FurnitureResizeEdge;
     id: string;
   } | null>(null);
+  const [contextMenuTarget, setContextMenuTarget] =
+    useState<CanvasContextMenuTarget | null>(null);
+  const [renameDialog, setRenameDialog] =
+    useState<FurnitureRenameDialogState | null>(null);
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
 
   // ── View state ──
   const [zoom, setZoom] = useState(1);
@@ -1169,15 +1264,24 @@ export function Canvas({ planner }: CanvasProps) {
     setSelectedId,
     setSelectedIds,
     toggleSelectedId,
+    addWallFeature,
+    removeWall,
+    removeWallFeature,
     moveFurnitureGroup,
     updateFurnitureGroup,
     setFurnitureFrame,
     updateFurnitureFrame,
     setFurnitureRotation,
     commitFurnitureMove,
+    renameFurniture,
     duplicateFurniture,
     duplicateFurnitureGroup,
+    removeFurniture,
     removeFurnitureGroup,
+    moveFurnitureForward,
+    moveFurnitureBackward,
+    bringFurnitureToFront,
+    sendFurnitureToBack,
     togglePulloutSofa,
     moveEndpoint,
     commitEndpointMove,
@@ -1189,10 +1293,11 @@ export function Canvas({ planner }: CanvasProps) {
     commitFeatureMove,
     translateWall,
     nudgeWallFeature,
-    disconnectEndpoint,
-    splitEndpoint,
+    updateWallFeature,
     selectedWallId,
     setSelectedWallId,
+    disconnectEndpoint,
+    splitEndpoint,
     showGrid,
     gridSnap,
     showMeasurements,
@@ -1203,6 +1308,170 @@ export function Canvas({ planner }: CanvasProps) {
     toDisplay,
     unit,
   } = planner;
+
+  const contextMenuItem = useMemo(
+    () =>
+      contextMenuTarget?.kind === 'furniture'
+        ? (furniture.find((item) => item.id === contextMenuTarget.id) ?? null)
+        : null,
+    [contextMenuTarget, furniture],
+  );
+  const contextMenuWall = useMemo(
+    () =>
+      contextMenuTarget?.kind === 'wall'
+        ? (room.walls.find((wall) => wall.id === contextMenuTarget.id) ?? null)
+        : null,
+    [contextMenuTarget, room.walls],
+  );
+  const contextMenuFeature = useMemo(() => {
+    if (contextMenuTarget?.kind !== 'feature') {
+      return null;
+    }
+
+    const wall = room.walls.find(
+      (entry) => entry.id === contextMenuTarget.wallId,
+    );
+    if (!wall) {
+      return null;
+    }
+
+    const feature =
+      wall.features.find((entry) => entry.id === contextMenuTarget.featureId) ??
+      null;
+    if (!feature) {
+      return null;
+    }
+
+    return {
+      feature,
+      wall,
+    };
+  }, [contextMenuTarget, room.walls]);
+  const deleteTarget = useMemo(
+    () => furniture.find((item) => item.id === deleteTargetId) ?? null,
+    [deleteTargetId, furniture],
+  );
+  const contextMenuWallLength = useMemo(() => {
+    if (!contextMenuWall) {
+      return null;
+    }
+
+    const start = room.endpoints.find(
+      (endpoint) => endpoint.id === contextMenuWall.startId,
+    );
+    const end = room.endpoints.find(
+      (endpoint) => endpoint.id === contextMenuWall.endId,
+    );
+    if (!start || !end) {
+      return null;
+    }
+
+    return getWallLength(start, end);
+  }, [contextMenuWall, room.endpoints]);
+  const contextMenuLayerIndex = useMemo(
+    () =>
+      contextMenuItem
+        ? furniture.findIndex((item) => item.id === contextMenuItem.id)
+        : -1,
+    [contextMenuItem, furniture],
+  );
+  const canMoveContextMenuItemBackward = contextMenuLayerIndex > 0;
+  const canMoveContextMenuItemForward =
+    contextMenuLayerIndex >= 0 && contextMenuLayerIndex < furniture.length - 1;
+
+  useEffect(() => {
+    if (
+      contextMenuTarget &&
+      ((contextMenuTarget.kind === 'furniture' && !contextMenuItem) ||
+        (contextMenuTarget.kind === 'feature' && !contextMenuFeature) ||
+        (contextMenuTarget.kind === 'wall' && !contextMenuWall))
+    ) {
+      setContextMenuTarget(null);
+    }
+  }, [contextMenuFeature, contextMenuItem, contextMenuTarget, contextMenuWall]);
+
+  const handleRenameSubmit = useCallback(() => {
+    if (!renameDialog) {
+      return;
+    }
+
+    renameFurniture(renameDialog.itemId, renameDialog.draftName);
+    setRenameDialog(null);
+  }, [renameDialog, renameFurniture]);
+
+  const handleDeleteConfirm = useCallback(() => {
+    if (!deleteTargetId) {
+      return;
+    }
+
+    removeFurniture(deleteTargetId);
+    setDeleteTargetId(null);
+  }, [deleteTargetId, removeFurniture]);
+
+  const handleAddWallFeatureFromContextMenu = useCallback(
+    (type: WallFeature['type']) => {
+      if (!contextMenuWall || !contextMenuWallLength) {
+        return;
+      }
+
+      const feature = createWallFeatureFromContextMenu(
+        type,
+        contextMenuWallLength,
+      );
+      if (!feature) {
+        return;
+      }
+
+      addWallFeature(contextMenuWall.id, feature);
+    },
+    [addWallFeature, contextMenuWall, contextMenuWallLength],
+  );
+
+  const handleDeleteWallFeatureFromContextMenu = useCallback(() => {
+    if (!contextMenuFeature) {
+      return;
+    }
+
+    removeWallFeature(
+      contextMenuFeature.wall.id,
+      contextMenuFeature.feature.id,
+    );
+    setSelectedFeature(null);
+  }, [contextMenuFeature, removeWallFeature]);
+
+  const handleToggleDoorSwingDirection = useCallback(() => {
+    if (!contextMenuFeature || contextMenuFeature.feature.type !== 'door') {
+      return;
+    }
+
+    updateWallFeature(
+      contextMenuFeature.wall.id,
+      contextMenuFeature.feature.id,
+      {
+        swingDirection:
+          (contextMenuFeature.feature.swingDirection ?? 'inward') === 'inward'
+            ? 'outward'
+            : 'inward',
+      },
+    );
+  }, [contextMenuFeature, updateWallFeature]);
+
+  const handleToggleDoorHinge = useCallback(() => {
+    if (!contextMenuFeature || contextMenuFeature.feature.type !== 'door') {
+      return;
+    }
+
+    updateWallFeature(
+      contextMenuFeature.wall.id,
+      contextMenuFeature.feature.id,
+      {
+        swingHand:
+          (contextMenuFeature.feature.swingHand ?? 'left') === 'left'
+            ? 'right'
+            : 'left',
+      },
+    );
+  }, [contextMenuFeature, updateWallFeature]);
 
   // ── Coordinate transforms ──
 
@@ -1833,6 +2102,7 @@ export function Canvas({ planner }: CanvasProps) {
     (e: React.MouseEvent<HTMLCanvasElement>) => {
       const canvas = canvasRef.current;
       if (!canvas) return;
+      setContextMenuTarget(null);
       alignmentGuidesRef.current = [];
       const rect = canvas.getBoundingClientRect();
       const sx = e.clientX - rect.left;
@@ -2853,20 +3123,102 @@ export function Canvas({ planner }: CanvasProps) {
     ],
   );
 
-  const handleContextMenu = useCallback(
-    (e: React.MouseEvent) => {
+  const handleContextMenuCapture = useCallback(
+    (e: React.MouseEvent<HTMLCanvasElement>) => {
+      const canvas = canvasRef.current;
+      if (!canvas) {
+        return;
+      }
+
+      if (interactionRef.current.mode === 'drawing-wall') {
+        e.preventDefault();
+        interactionRef.current = { mode: 'idle' };
+        setCursor('default');
+        setContextMenuTarget(null);
+        rerender();
+        return;
+      }
+
       if (isHistoryEditingLocked) {
+        e.preventDefault();
+        setContextMenuTarget(null);
+        return;
+      }
+
+      const rect = canvas.getBoundingClientRect();
+      const sx = e.clientX - rect.left;
+      const sy = e.clientY - rect.top;
+      const world = screenToWorld(sx, sy);
+      const furnitureHit = hitTestFurniture(world);
+      const featureHit = hitTestFeature(world);
+      const wallHit = hitTestWallSegment(world);
+
+      if (furnitureHit) {
+        interactionRef.current = { mode: 'idle' };
+        alignmentGuidesRef.current = [];
+        setCursor('default');
+        setSelectedId(furnitureHit.id);
+        setSelectedIds([furnitureHit.id]);
+        setSelectedWallId(null);
+        setSelectedFeature(null);
+        setSelectedResizeHandle(null);
+        setContextMenuTarget({
+          kind: 'furniture',
+          id: furnitureHit.id,
+        });
+        return;
+      }
+
+      if (featureHit) {
+        interactionRef.current = { mode: 'idle' };
+        alignmentGuidesRef.current = [];
+        setCursor('default');
+        setSelectedId(null);
+        setSelectedIds([]);
+        setSelectedWallId(featureHit.wallId);
+        setSelectedFeature({
+          wallId: featureHit.wallId,
+          featureId: featureHit.featureId,
+        });
+        setSelectedResizeHandle(null);
+        setContextMenuTarget({
+          kind: 'feature',
+          wallId: featureHit.wallId,
+          featureId: featureHit.featureId,
+        });
+        return;
+      }
+
+      if (wallHit) {
+        interactionRef.current = { mode: 'idle' };
+        alignmentGuidesRef.current = [];
+        setCursor('default');
+        setSelectedId(null);
+        setSelectedIds([]);
+        setSelectedWallId(wallHit.id);
+        setSelectedFeature(null);
+        setSelectedResizeHandle(null);
+        setContextMenuTarget({
+          kind: 'wall',
+          id: wallHit.id,
+        });
         return;
       }
 
       e.preventDefault();
-      if (interactionRef.current.mode === 'drawing-wall') {
-        interactionRef.current = { mode: 'idle' };
-        setCursor('default');
-        rerender();
-      }
+      setContextMenuTarget(null);
     },
-    [isHistoryEditingLocked, rerender],
+    [
+      hitTestFurniture,
+      hitTestFeature,
+      hitTestWallSegment,
+      isHistoryEditingLocked,
+      rerender,
+      screenToWorld,
+      setSelectedId,
+      setSelectedIds,
+      setSelectedWallId,
+    ],
   );
 
   // ── Drawing ──
@@ -4025,6 +4377,15 @@ export function Canvas({ planner }: CanvasProps) {
         }
       }
       if (e.key === 'Escape') {
+        if (renameDialog || deleteTargetId) {
+          setRenameDialog(null);
+          setDeleteTargetId(null);
+          return;
+        }
+        if (contextMenuTarget) {
+          setContextMenuTarget(null);
+          return;
+        }
         if (
           interactionRef.current.mode === 'drawing-wall' ||
           interactionRef.current.mode === 'selected-endpoint'
@@ -4046,6 +4407,9 @@ export function Canvas({ planner }: CanvasProps) {
         } else {
           planner.undo();
         }
+        return;
+      }
+      if (renameDialog || deleteTargetId || contextMenuTarget) {
         return;
       }
       if (planner.isHistoryEditingLocked) {
@@ -4214,11 +4578,14 @@ export function Canvas({ planner }: CanvasProps) {
     selectedWallId,
     duplicateFurniture,
     duplicateFurnitureGroup,
+    contextMenuTarget,
+    deleteTargetId,
     furniture,
     gridSnap,
     nudgeWallFeature,
     planner,
     removeFurnitureGroup,
+    renameDialog,
     setSelectedId,
     setSelectedWallId,
     updateFurnitureFrame,
@@ -4230,32 +4597,280 @@ export function Canvas({ planner }: CanvasProps) {
 
   return (
     <div ref={containerRef} className="absolute inset-0">
-      <canvas
-        ref={canvasRef}
-        className="absolute inset-0"
-        style={{ cursor }}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={() => {
-          const mode = interactionRef.current.mode;
-          if (
-            mode !== 'drawing-wall' &&
-            mode !== 'idle' &&
-            mode !== 'selected-endpoint' &&
-            mode !== 'pending-endpoint' &&
-            mode !== 'pending-furniture' &&
-            mode !== 'pending-resize' &&
-            mode !== 'pending-rotation' &&
-            mode !== 'pending-feature'
-          ) {
-            handleMouseUp();
+      <ContextMenu
+        onOpenChange={(open) => {
+          if (!open) {
+            setContextMenuTarget(null);
           }
         }}
-        onDoubleClick={handleDoubleClick}
-        onWheel={handleWheel}
-        onContextMenu={handleContextMenu}
-      />
+      >
+        <ContextMenuTrigger className="absolute inset-0">
+          <canvas
+            ref={canvasRef}
+            className="absolute inset-0"
+            style={{ cursor }}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={() => {
+              const mode = interactionRef.current.mode;
+              if (
+                mode !== 'drawing-wall' &&
+                mode !== 'idle' &&
+                mode !== 'selected-endpoint' &&
+                mode !== 'pending-endpoint' &&
+                mode !== 'pending-furniture' &&
+                mode !== 'pending-resize' &&
+                mode !== 'pending-rotation' &&
+                mode !== 'pending-feature'
+              ) {
+                handleMouseUp();
+              }
+            }}
+            onDoubleClick={handleDoubleClick}
+            onWheel={handleWheel}
+            onContextMenuCapture={handleContextMenuCapture}
+          />
+        </ContextMenuTrigger>
+        {contextMenuItem ? (
+          <ContextMenuContent sideOffset={10}>
+            <div className="px-2 py-1.5">
+              <p className="truncate text-[11px] font-semibold tracking-[0.16em] text-gray-400 uppercase dark:text-white/35">
+                Furniture
+              </p>
+              <p className="truncate text-sm font-medium text-gray-900 dark:text-white">
+                {contextMenuItem.name}
+              </p>
+            </div>
+            <ContextMenuSeparator />
+            <ContextMenuItem
+              onClick={() => sendFurnitureToBack(contextMenuItem.id)}
+              disabled={!canMoveContextMenuItemBackward}
+            >
+              <ChevronsDown className="h-4 w-4" />
+              To Back
+              <ContextMenuShortcut>Layer</ContextMenuShortcut>
+            </ContextMenuItem>
+            <ContextMenuItem
+              onClick={() => moveFurnitureBackward(contextMenuItem.id)}
+              disabled={!canMoveContextMenuItemBackward}
+            >
+              <ChevronDown className="h-4 w-4" />
+              Backward
+              <ContextMenuShortcut>Layer</ContextMenuShortcut>
+            </ContextMenuItem>
+            <ContextMenuItem
+              onClick={() => moveFurnitureForward(contextMenuItem.id)}
+              disabled={!canMoveContextMenuItemForward}
+            >
+              <ChevronUp className="h-4 w-4" />
+              Forward
+              <ContextMenuShortcut>Layer</ContextMenuShortcut>
+            </ContextMenuItem>
+            <ContextMenuItem
+              onClick={() => bringFurnitureToFront(contextMenuItem.id)}
+              disabled={!canMoveContextMenuItemForward}
+            >
+              <ChevronsUp className="h-4 w-4" />
+              To Front
+              <ContextMenuShortcut>Layer</ContextMenuShortcut>
+            </ContextMenuItem>
+            <ContextMenuSeparator />
+            <ContextMenuItem
+              onClick={() =>
+                setRenameDialog({
+                  draftName: contextMenuItem.name,
+                  itemId: contextMenuItem.id,
+                })
+              }
+            >
+              <Pencil className="h-4 w-4" />
+              Rename
+            </ContextMenuItem>
+            <ContextMenuItem
+              onClick={() => duplicateFurniture(contextMenuItem.id)}
+            >
+              <Copy className="h-4 w-4" />
+              Duplicate
+            </ContextMenuItem>
+            <ContextMenuSeparator />
+            <ContextMenuItem
+              variant="destructive"
+              onClick={() => setDeleteTargetId(contextMenuItem.id)}
+            >
+              <Trash2 className="h-4 w-4" />
+              Delete
+            </ContextMenuItem>
+          </ContextMenuContent>
+        ) : contextMenuWall ? (
+          <ContextMenuContent sideOffset={10}>
+            <div className="px-2 py-1.5">
+              <p className="truncate text-[11px] font-semibold tracking-[0.16em] text-gray-400 uppercase dark:text-white/35">
+                Wall
+              </p>
+              <p className="truncate text-sm font-medium text-gray-900 dark:text-white">
+                {contextMenuWallLength
+                  ? `Segment ${Number.parseFloat(
+                      toDisplay(contextMenuWallLength).toFixed(1),
+                    )}${unit === 'cm' ? ' cm' : '"'}`
+                  : 'Wall Segment'}
+              </p>
+            </div>
+            <ContextMenuSeparator />
+            <ContextMenuItem
+              onClick={() => handleAddWallFeatureFromContextMenu('door')}
+            >
+              Add Door
+              <ContextMenuShortcut>
+                {formatCanvasDimension(36, toDisplay, unit)}
+              </ContextMenuShortcut>
+            </ContextMenuItem>
+            <ContextMenuItem
+              onClick={() => handleAddWallFeatureFromContextMenu('window')}
+            >
+              Add Window
+              <ContextMenuShortcut>
+                {formatCanvasDimension(36, toDisplay, unit)}
+              </ContextMenuShortcut>
+            </ContextMenuItem>
+            <ContextMenuItem
+              onClick={() => handleAddWallFeatureFromContextMenu('opening')}
+            >
+              Add Opening
+              <ContextMenuShortcut>
+                {formatCanvasDimension(42, toDisplay, unit)}
+              </ContextMenuShortcut>
+            </ContextMenuItem>
+            <ContextMenuItem
+              onClick={() => handleAddWallFeatureFromContextMenu('closet')}
+            >
+              Add Closet
+              <ContextMenuShortcut>
+                {formatCanvasDimension(48, toDisplay, unit)}
+              </ContextMenuShortcut>
+            </ContextMenuItem>
+            <ContextMenuSeparator />
+            <ContextMenuItem
+              variant="destructive"
+              onClick={() => removeWall(contextMenuWall.id)}
+            >
+              <Trash2 className="h-4 w-4" />
+              Delete Wall
+            </ContextMenuItem>
+          </ContextMenuContent>
+        ) : contextMenuFeature ? (
+          <ContextMenuContent sideOffset={10}>
+            <div className="px-2 py-1.5">
+              <p className="truncate text-[11px] font-semibold tracking-[0.16em] text-gray-400 uppercase dark:text-white/35">
+                Feature
+              </p>
+              <p className="truncate text-sm font-medium capitalize text-gray-900 dark:text-white">
+                {contextMenuFeature.feature.type}
+              </p>
+            </div>
+            {contextMenuFeature.feature.type === 'door' ? (
+              <>
+                <ContextMenuSeparator />
+                <ContextMenuItem onClick={handleToggleDoorSwingDirection}>
+                  Flip Swing
+                  <ContextMenuShortcut>
+                    {contextMenuFeature.feature.swingDirection ?? 'inward'}
+                  </ContextMenuShortcut>
+                </ContextMenuItem>
+                <ContextMenuItem onClick={handleToggleDoorHinge}>
+                  Flip Hinge
+                  <ContextMenuShortcut>
+                    {contextMenuFeature.feature.swingHand ?? 'left'}
+                  </ContextMenuShortcut>
+                </ContextMenuItem>
+              </>
+            ) : null}
+            <ContextMenuSeparator />
+            <ContextMenuItem
+              variant="destructive"
+              onClick={handleDeleteWallFeatureFromContextMenu}
+            >
+              <Trash2 className="h-4 w-4" />
+              Delete Feature
+            </ContextMenuItem>
+          </ContextMenuContent>
+        ) : null}
+      </ContextMenu>
+      <Dialog
+        open={renameDialog !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setRenameDialog(null);
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Rename Furniture</DialogTitle>
+            <DialogDescription>
+              Give this piece a clearer label for the canvas and sidebar.
+            </DialogDescription>
+          </DialogHeader>
+          <Input
+            value={renameDialog?.draftName ?? ''}
+            onChange={(event) =>
+              setRenameDialog((current) =>
+                current
+                  ? {
+                      ...current,
+                      draftName: event.target.value,
+                    }
+                  : current,
+              )
+            }
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') {
+                event.preventDefault();
+                handleRenameSubmit();
+              }
+            }}
+            autoFocus
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRenameDialog(null)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleRenameSubmit}
+              disabled={!renameDialog?.draftName.trim()}
+            >
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog
+        open={deleteTargetId !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeleteTargetId(null);
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete Furniture?</DialogTitle>
+            <DialogDescription>
+              {deleteTarget
+                ? `Remove "${deleteTarget.name}" from this layout? This can still be undone.`
+                : 'Remove this furniture item from the layout? This can still be undone.'}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteTargetId(null)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDeleteConfirm}>
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       {isHistoryEditingLocked ? (
         <div className="absolute top-4 left-1/2 z-10 flex max-w-[min(92vw,40rem)] -translate-x-1/2 items-center gap-2 rounded-full border border-amber-400/30 bg-slate-950/85 px-3 py-1.5 text-[11px] font-medium text-amber-100 shadow-lg backdrop-blur">
           <span className="whitespace-nowrap">

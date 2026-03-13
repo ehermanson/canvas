@@ -447,6 +447,23 @@ describe('useRoomPlanner', () => {
     ]);
   });
 
+  it('renames furniture and trims whitespace', () => {
+    const { result } = renderHook(() => useRoomPlanner());
+
+    let itemId = '';
+    act(() => {
+      itemId = result.current.addFurniture(DESK_PRESET);
+    });
+
+    act(() => {
+      result.current.renameFurniture(itemId, '  Reading Desk  ');
+    });
+
+    expect(
+      result.current.furniture.find((item) => item.id === itemId)?.name,
+    ).toBe('Reading Desk');
+  });
+
   it('rotates the room and furniture together around the room center', () => {
     const { result } = renderHook(() =>
       useRoomPlanner(

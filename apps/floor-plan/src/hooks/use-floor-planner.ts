@@ -857,6 +857,29 @@ export function useRoomPlanner(
     [room, pushHistory],
   );
 
+  const renameFurniture = useCallback(
+    (id: string, name: string) => {
+      const trimmedName = name.trim();
+      if (!trimmedName) {
+        return;
+      }
+
+      setFurniture((prev) => {
+        const current = prev.find((item) => item.id === id);
+        if (!current || current.name === trimmedName) {
+          return prev;
+        }
+
+        const next = prev.map((item) =>
+          item.id === id ? { ...item, name: trimmedName } : item,
+        );
+        pushHistory(room, next);
+        return next;
+      });
+    },
+    [pushHistory, room],
+  );
+
   const moveFurniture = useCallback((id: string, x: number, y: number) => {
     setFurniture((prev) => prev.map((f) => (f.id === id ? { ...f, x, y } : f)));
   }, []);
@@ -1333,6 +1356,7 @@ export function useRoomPlanner(
     furniture,
     addFurniture,
     updateFurniture,
+    renameFurniture,
     updatePulloutSofa,
     moveFurniture,
     moveFurnitureGroup,
