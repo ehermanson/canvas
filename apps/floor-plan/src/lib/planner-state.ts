@@ -77,6 +77,7 @@ export function createDefaultPlannerState(unit: Unit = 'in'): RoomPlannerState {
     gridSnap: 1,
     showMeasurements: true,
     showGrid: true,
+    neutralFurnitureColors: false,
   };
 }
 
@@ -98,5 +99,6 @@ export function normalizePlannerState(
     gridSnap: normalizeGridSnap(value?.gridSnap),
     showMeasurements: value?.showMeasurements ?? true,
     showGrid: value?.showGrid ?? true,
+    neutralFurnitureColors: value?.neutralFurnitureColors ?? false,
   };
 }

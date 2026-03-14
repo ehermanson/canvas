@@ -53,6 +53,7 @@ function createPlannerState(
     gridSnap: 1,
     showMeasurements: true,
     showGrid: true,
+    neutralFurnitureColors: false,
     ...overrides,
   };
 }
@@ -79,6 +80,25 @@ describe('useRoomPlanner', () => {
     );
 
     expect(result.current.gridSnap).toBe(1);
+  });
+
+  it('loads and updates neutral furniture color mode', () => {
+    const { result } = renderHook(() =>
+      useRoomPlanner(
+        createPlannerState({
+          neutralFurnitureColors: true,
+        }),
+      ),
+    );
+
+    expect(result.current.neutralFurnitureColors).toBe(true);
+
+    act(() => {
+      result.current.setNeutralFurnitureColors(false);
+    });
+
+    expect(result.current.neutralFurnitureColors).toBe(false);
+    expect(result.current.state.neutralFurnitureColors).toBe(false);
   });
 
   it('loads a new planner state and restores that snapshot history independently', () => {

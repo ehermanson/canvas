@@ -895,6 +895,65 @@ function getFurnitureLabelColor(color: string, isDark: boolean) {
   return isDark ? `${color}dd` : `${color}cc`;
 }
 
+function getRenderedFurnitureFillColor(
+  color: string,
+  isDark: boolean,
+  neutralFurnitureColors: boolean,
+) {
+  if (!neutralFurnitureColors) {
+    return color;
+  }
+
+  return isDark ? '#f8fafc' : '#ffffff';
+}
+
+function getRenderedFurnitureFillOpacity(
+  isDraggingItem: boolean,
+  isRug: boolean,
+  neutralFurnitureColors: boolean,
+) {
+  if (!neutralFurnitureColors) {
+    return isRug ? 0.18 : isDraggingItem ? 0.58 : 0.42;
+  }
+
+  return isRug ? 0.24 : isDraggingItem ? 0.66 : 0.5;
+}
+
+function getRenderedFurnitureLabelColor(
+  color: string,
+  isDark: boolean,
+  neutralFurnitureColors: boolean,
+) {
+  if (!neutralFurnitureColors) {
+    return getFurnitureLabelColor(color, isDark);
+  }
+
+  return isDark ? 'rgba(241,245,249,0.84)' : 'rgba(15,23,42,0.72)';
+}
+
+function getRenderedFurnitureStrokeColor(
+  color: string,
+  isDark: boolean,
+  neutralFurnitureColors: boolean,
+) {
+  if (!neutralFurnitureColors) {
+    return getFurnitureLabelColor(color, isDark);
+  }
+
+  return isDark ? 'rgba(241,245,249,0.62)' : 'rgba(15,23,42,0.22)';
+}
+
+function getRenderedFurnitureLabelShadowColor(
+  isDark: boolean,
+  neutralFurnitureColors: boolean,
+) {
+  if (!neutralFurnitureColors) {
+    return 'transparent';
+  }
+
+  return isDark ? 'rgba(15,23,42,0.42)' : 'rgba(248,250,252,0.78)';
+}
+
 const ROTATE_CURSOR_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><g fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 8a10 10 0 0 1 12 1"/><path d="M22 6l2 4-4 1"/><path d="M21 24a10 10 0 0 1-12-1"/><path d="M10 26l-2-4 4-1"/></g><g fill="none" stroke="#111827" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 8a10 10 0 0 1 12 1"/><path d="M22 6l2 4-4 1"/><path d="M21 24a10 10 0 0 1-12-1"/><path d="M10 26l-2-4 4-1"/></g></svg>`;
 const ROTATE_CURSOR = `url("data:image/svg+xml,${encodeURIComponent(
   ROTATE_CURSOR_SVG,
@@ -1080,7 +1139,9 @@ function createWallFeatureFromContextMenu(
 
 function CanvasSettingsPopover({
   gridSnap,
+  neutralFurnitureColors,
   setGridSnap,
+  setNeutralFurnitureColors,
   setShowGrid,
   setShowMeasurements,
   setUnit,
@@ -1090,7 +1151,9 @@ function CanvasSettingsPopover({
 }: Pick<
   RoomPlannerReturn,
   | 'gridSnap'
+  | 'neutralFurnitureColors'
   | 'setGridSnap'
+  | 'setNeutralFurnitureColors'
   | 'setShowGrid'
   | 'setShowMeasurements'
   | 'setUnit'
@@ -1150,6 +1213,14 @@ function CanvasSettingsPopover({
             <Switch
               checked={showMeasurements}
               onCheckedChange={setShowMeasurements}
+            />
+          </div>
+
+          <div className="flex items-center justify-between gap-3">
+            <Label className="text-xs">Neutral Colors</Label>
+            <Switch
+              checked={neutralFurnitureColors}
+              onCheckedChange={setNeutralFurnitureColors}
             />
           </div>
 
@@ -1334,9 +1405,11 @@ export function Canvas({ planner }: CanvasProps) {
     showGrid,
     gridSnap,
     showMeasurements,
+    neutralFurnitureColors,
     setGridSnap,
     setShowGrid,
     setShowMeasurements,
+    setNeutralFurnitureColors,
     setUnit,
     toDisplay,
     unit,
@@ -4055,6 +4128,31 @@ export function Canvas({ planner }: CanvasProps) {
 
       const sw = item.width * z;
       const sd = item.depth * z;
+      const renderedItemColor = getRenderedFurnitureFillColor(
+        item.color,
+        isDark,
+        neutralFurnitureColors,
+      );
+      const isRug = item.type === 'rug';
+      const renderedFillOpacity = getRenderedFurnitureFillOpacity(
+        isDraggingItem,
+        isRug,
+        neutralFurnitureColors,
+      );
+      const renderedLabelColor = getRenderedFurnitureLabelColor(
+        item.color,
+        isDark,
+        neutralFurnitureColors,
+      );
+      const renderedStrokeColor = getRenderedFurnitureStrokeColor(
+        item.color,
+        isDark,
+        neutralFurnitureColors,
+      );
+      const renderedLabelShadowColor = getRenderedFurnitureLabelShadowColor(
+        isDark,
+        neutralFurnitureColors,
+      );
 
       if (!isDraggingItem) {
         ctx.shadowColor = 'rgba(0,0,0,0.15)';
@@ -4063,9 +4161,8 @@ export function Canvas({ planner }: CanvasProps) {
         ctx.shadowOffsetY = 2;
       }
 
-      const isRug = item.type === 'rug';
-      ctx.globalAlpha = isRug ? 0.18 : isDraggingItem ? 0.58 : 0.42;
-      ctx.fillStyle = item.color;
+      ctx.globalAlpha = renderedFillOpacity;
+      ctx.fillStyle = renderedItemColor;
 
       if (item.shape === 'circle') {
         ctx.beginPath();
@@ -4078,9 +4175,7 @@ export function Canvas({ planner }: CanvasProps) {
       ctx.shadowColor = 'transparent';
       ctx.globalAlpha = 1;
 
-      ctx.strokeStyle = isSelected
-        ? '#f59e0b'
-        : getFurnitureLabelColor(item.color, isDark);
+      ctx.strokeStyle = isSelected ? '#f59e0b' : renderedStrokeColor;
       ctx.lineWidth = isSelected ? 2.5 : 1;
 
       if (item.shape === 'circle') {
@@ -4147,9 +4242,7 @@ export function Canvas({ planner }: CanvasProps) {
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.globalAlpha = 1;
-        ctx.fillStyle = isRug
-          ? rugLabelTextColor
-          : getFurnitureLabelColor(item.color, isDark);
+        ctx.fillStyle = isRug ? rugLabelTextColor : renderedLabelColor;
         ctx.font = `700 ${nameFontSize}px -apple-system, BlinkMacSystemFont, sans-serif`;
 
         if (isRug) {
@@ -4157,6 +4250,9 @@ export function Canvas({ planner }: CanvasProps) {
           ctx.shadowBlur = 7;
           ctx.strokeStyle = rugLabelHaloColor;
           ctx.lineWidth = 3;
+        } else if (neutralFurnitureColors) {
+          ctx.shadowColor = renderedLabelShadowColor;
+          ctx.shadowBlur = 3;
         }
 
         if (showTwoLineLabel) {
@@ -4166,9 +4262,7 @@ export function Canvas({ planner }: CanvasProps) {
             ctx.strokeText(nameLabel, 0, nameY);
           }
           ctx.fillText(nameLabel, 0, nameY);
-          ctx.fillStyle = isRug
-            ? rugLabelDetailColor
-            : getFurnitureLabelColor(item.color, isDark);
+          ctx.fillStyle = isRug ? rugLabelDetailColor : renderedLabelColor;
           ctx.globalAlpha = isRug ? 1 : 0.9;
           ctx.font = `${detailFontSize}px -apple-system, BlinkMacSystemFont, sans-serif`;
           if (isRug) {
@@ -4495,6 +4589,7 @@ export function Canvas({ planner }: CanvasProps) {
     selectedWallId,
     showGrid,
     showMeasurements,
+    neutralFurnitureColors,
     toDisplay,
     unit,
     getGroupRotationHandleScreenPoint,
@@ -5131,7 +5226,9 @@ export function Canvas({ planner }: CanvasProps) {
         <CanvasHelpPopover />
         <CanvasSettingsPopover
           gridSnap={gridSnap}
+          neutralFurnitureColors={neutralFurnitureColors}
           setGridSnap={setGridSnap}
+          setNeutralFurnitureColors={setNeutralFurnitureColors}
           setShowGrid={setShowGrid}
           setShowMeasurements={setShowMeasurements}
           setUnit={setUnit}

@@ -34,6 +34,7 @@ function createPlannerState(
     gridSnap: 1,
     showMeasurements: true,
     showGrid: true,
+    neutralFurnitureColors: false,
     ...overrides,
   };
 }

@@ -115,6 +115,8 @@ export interface RoomPlannerState {
   showMeasurements: boolean;
   /** Whether to show grid */
   showGrid: boolean;
+  /** Whether to render furniture with a neutral palette */
+  neutralFurnitureColors: boolean;
 }
 
 export interface PlannerSnapshot {

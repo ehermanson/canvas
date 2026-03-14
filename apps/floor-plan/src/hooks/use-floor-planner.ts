@@ -192,6 +192,9 @@ export function useRoomPlanner(
     initialPlannerState.showMeasurements,
   );
   const [showGrid, setShowGrid] = useState(initialPlannerState.showGrid);
+  const [neutralFurnitureColors, setNeutralFurnitureColors] = useState(
+    initialPlannerState.neutralFurnitureColors,
+  );
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [selectedWallId, setSelectedWallId] = useState<string | null>(null);
   const [activeHistoryKey, setActiveHistoryKey] = useState(historyKey ?? null);
@@ -351,6 +354,7 @@ export function useRoomPlanner(
       setGridSnap(normalized.gridSnap);
       setShowMeasurements(normalized.showMeasurements);
       setShowGrid(normalized.showGrid);
+      setNeutralFurnitureColors(normalized.neutralFurnitureColors);
       setSelectedIds([]);
       setSelectedWallId(null);
       applyHistoryState(restoredHistoryState);
@@ -1356,8 +1360,17 @@ export function useRoomPlanner(
       gridSnap,
       showMeasurements,
       showGrid,
+      neutralFurnitureColors,
     }),
-    [unit, room, furniture, gridSnap, showMeasurements, showGrid],
+    [
+      unit,
+      room,
+      furniture,
+      gridSnap,
+      showMeasurements,
+      showGrid,
+      neutralFurnitureColors,
+    ],
   );
 
   useEffect(() => {
@@ -1489,6 +1502,8 @@ export function useRoomPlanner(
     setShowMeasurements,
     showGrid,
     setShowGrid,
+    neutralFurnitureColors,
+    setNeutralFurnitureColors,
     // History
     undo,
     redo,
