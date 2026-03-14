@@ -584,52 +584,60 @@ function SidebarProjectActions({
 }) {
   return (
     <ToolPanelActionBar>
-      <TooltipProvider delayDuration={200}>
+      <TooltipProvider delay={200}>
         <div className="flex flex-wrap gap-2">
           <Tooltip>
-            <TooltipTrigger asChild>
-              <ToolPanelActionButton
-                onClick={onBrowseProjects}
-                aria-label="Browse projects"
-              >
-                <FolderOpen className="h-4 w-4" />
-              </ToolPanelActionButton>
-            </TooltipTrigger>
+            <TooltipTrigger
+              render={
+                <ToolPanelActionButton
+                  onClick={onBrowseProjects}
+                  aria-label="Browse projects"
+                >
+                  <FolderOpen className="h-4 w-4" />
+                </ToolPanelActionButton>
+              }
+            />
             <TooltipContent>Browse projects</TooltipContent>
           </Tooltip>
           <Tooltip>
-            <TooltipTrigger asChild>
-              <ToolPanelActionButton
-                onClick={onCreateProject}
-                aria-label="New project"
-              >
-                <Plus className="h-4 w-4" />
-              </ToolPanelActionButton>
-            </TooltipTrigger>
+            <TooltipTrigger
+              render={
+                <ToolPanelActionButton
+                  onClick={onCreateProject}
+                  aria-label="New project"
+                >
+                  <Plus className="h-4 w-4" />
+                </ToolPanelActionButton>
+              }
+            />
             <TooltipContent>New project</TooltipContent>
           </Tooltip>
           <Tooltip>
-            <TooltipTrigger asChild>
-              <ToolPanelActionButton
-                onClick={undo}
-                disabled={!canUndo}
-                aria-label="Undo"
-              >
-                <Undo2 className="h-4 w-4" />
-              </ToolPanelActionButton>
-            </TooltipTrigger>
+            <TooltipTrigger
+              render={
+                <ToolPanelActionButton
+                  onClick={undo}
+                  disabled={!canUndo}
+                  aria-label="Undo"
+                >
+                  <Undo2 className="h-4 w-4" />
+                </ToolPanelActionButton>
+              }
+            />
             <TooltipContent>Undo</TooltipContent>
           </Tooltip>
           <Tooltip>
-            <TooltipTrigger asChild>
-              <ToolPanelActionButton
-                onClick={redo}
-                disabled={!canRedo}
-                aria-label="Redo"
-              >
-                <Redo2 className="h-4 w-4" />
-              </ToolPanelActionButton>
-            </TooltipTrigger>
+            <TooltipTrigger
+              render={
+                <ToolPanelActionButton
+                  onClick={redo}
+                  disabled={!canRedo}
+                  aria-label="Redo"
+                >
+                  <Redo2 className="h-4 w-4" />
+                </ToolPanelActionButton>
+              }
+            />
             <TooltipContent>Redo</TooltipContent>
           </Tooltip>
         </div>
@@ -785,19 +793,21 @@ function ProjectBrowserSection({
                           </button>
 
                           <Popover>
-                            <PopoverTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 shrink-0 text-gray-400 hover:text-gray-700 dark:text-white/40 dark:hover:text-white"
-                                onClick={(event) => event.stopPropagation()}
-                              >
-                                <MoreHorizontal className="h-4 w-4" />
-                                <span className="sr-only">
-                                  Snapshot actions
-                                </span>
-                              </Button>
-                            </PopoverTrigger>
+                            <PopoverTrigger
+                              render={
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 shrink-0 text-gray-400 hover:text-gray-700 dark:text-white/40 dark:hover:text-white"
+                                  onClick={(event) => event.stopPropagation()}
+                                >
+                                  <MoreHorizontal className="h-4 w-4" />
+                                  <span className="sr-only">
+                                    Snapshot actions
+                                  </span>
+                                </Button>
+                              }
+                            />
                             <PopoverContent
                               align="end"
                               className="w-44 p-1.5"

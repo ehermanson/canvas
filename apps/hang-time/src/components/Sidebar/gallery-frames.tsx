@@ -434,26 +434,28 @@ function RowContainer({
         </span>
         {/* Per-row vertical alignment (only shown when frames have different heights) */}
         {showVAlignControls && (
-          <TooltipProvider delayDuration={300}>
+          <TooltipProvider delay={300}>
             <div className="ml-auto flex items-center gap-0.5">
               {VALIGN_OPTIONS.map((option) => {
                 const Icon = option.icon;
                 const isSelected = vAlign === option.value;
                 return (
                   <Tooltip key={option.value}>
-                    <TooltipTrigger asChild>
-                      <button
-                        onClick={() => onVAlignChange(option.value)}
-                        className={cn(
-                          'rounded-lg border p-1.5 transition-colors',
-                          isSelected
-                            ? 'border-pink-400/40 bg-pink-500/[0.08] text-pink-600 dark:bg-pink-500/20 dark:text-pink-400'
-                            : 'border-transparent text-gray-300 hover:border-gray-200 hover:bg-white/70 hover:text-gray-500 dark:text-white/30 dark:hover:border-white/10 dark:hover:bg-white/[0.06] dark:hover:text-white/50',
-                        )}
-                      >
-                        <Icon className="h-3.5 w-3.5" />
-                      </button>
-                    </TooltipTrigger>
+                    <TooltipTrigger
+                      render={
+                        <button
+                          onClick={() => onVAlignChange(option.value)}
+                          className={cn(
+                            'rounded-lg border p-1.5 transition-colors',
+                            isSelected
+                              ? 'border-pink-400/40 bg-pink-500/[0.08] text-pink-600 dark:bg-pink-500/20 dark:text-pink-400'
+                              : 'border-transparent text-gray-300 hover:border-gray-200 hover:bg-white/70 hover:text-gray-500 dark:text-white/30 dark:hover:border-white/10 dark:hover:bg-white/[0.06] dark:hover:text-white/50',
+                          )}
+                        >
+                          <Icon className="h-3.5 w-3.5" />
+                        </button>
+                      }
+                    />
                     <TooltipContent side="top">
                       Align {option.label.toLowerCase()}
                     </TooltipContent>

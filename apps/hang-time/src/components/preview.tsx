@@ -297,22 +297,24 @@ function CanvasLegendPopover({
 }) {
   return (
     <Popover>
-      <PopoverTrigger asChild>
-        <ViewportToolbarButton
-          kind="icon"
-          className="relative"
-          aria-label="Canvas legend"
-          title="Canvas legend"
-        >
-          <HelpCircle className="size-4" />
-          {hasOutOfBoundsItems ? (
-            <>
-              <span className="absolute top-1 right-1 flex h-1.5 w-1.5 rounded-full bg-red-500" />
-              <span className="absolute top-[3px] right-[3px] h-2.5 w-2.5 animate-ping rounded-full bg-red-400/70" />
-            </>
-          ) : null}
-        </ViewportToolbarButton>
-      </PopoverTrigger>
+      <PopoverTrigger
+        render={
+          <ViewportToolbarButton
+            kind="icon"
+            className="relative"
+            aria-label="Canvas legend"
+            title="Canvas legend"
+          >
+            <HelpCircle className="size-4" />
+            {hasOutOfBoundsItems ? (
+              <>
+                <span className="absolute top-1 right-1 flex h-1.5 w-1.5 rounded-full bg-red-500" />
+                <span className="absolute top-[3px] right-[3px] h-2.5 w-2.5 animate-ping rounded-full bg-red-400/70" />
+              </>
+            ) : null}
+          </ViewportToolbarButton>
+        }
+      />
       <PopoverContent align="end" className="w-64">
         <div className="flex flex-col gap-2.5">
           <div className="flex items-center gap-2">
@@ -363,15 +365,17 @@ function CanvasSettingsPopover({
 
   return (
     <Popover>
-      <PopoverTrigger asChild>
-        <ViewportToolbarButton
-          kind="icon"
-          aria-label="Canvas settings"
-          title="Canvas settings"
-        >
-          <Settings className="size-4" />
-        </ViewportToolbarButton>
-      </PopoverTrigger>
+      <PopoverTrigger
+        render={
+          <ViewportToolbarButton
+            kind="icon"
+            aria-label="Canvas settings"
+            title="Canvas settings"
+          >
+            <Settings className="size-4" />
+          </ViewportToolbarButton>
+        }
+      />
       <PopoverContent align="end" className="w-64 space-y-4">
         <div className="space-y-1">
           <p className="text-[11px] font-semibold tracking-[0.18em] text-gray-500 uppercase dark:text-white/45">

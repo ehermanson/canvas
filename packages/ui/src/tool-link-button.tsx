@@ -55,7 +55,7 @@ export function ToolLinkButton({
 
   return (
     <Tooltip>
-      <TooltipTrigger asChild>{link}</TooltipTrigger>
+      <TooltipTrigger render={link} />
       <TooltipContent>{tooltipLabel ?? label}</TooltipContent>
     </Tooltip>
   );

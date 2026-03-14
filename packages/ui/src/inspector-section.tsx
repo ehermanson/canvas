@@ -65,7 +65,7 @@ function InspectorSectionHeader({
             </p>
           ) : null}
         </div>
-        <ChevronDown className="mt-0.5 h-4 w-4 shrink-0 text-gray-400 transition-transform duration-200 group-data-[state=closed]:-rotate-90" />
+        <ChevronDown className="-rotate-90 mt-0.5 h-4 w-4 shrink-0 text-gray-400 transition-transform duration-200 group-data-[panel-open]:rotate-0" />
       </CollapsibleTrigger>
     );
   }
@@ -83,7 +83,7 @@ function InspectorSectionHeader({
         </span>
         <span className={labelClassName}>{label}</span>
         {labelTrailing}
-        <ChevronDown className="ml-auto h-4 w-4 text-gray-400 transition-transform group-data-[state=closed]:-rotate-90" />
+        <ChevronDown className="-rotate-90 ml-auto h-4 w-4 text-gray-400 transition-transform group-data-[panel-open]:rotate-0" />
       </h3>
     </CollapsibleTrigger>
   );

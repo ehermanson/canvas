@@ -121,9 +121,7 @@ export function SaveLayoutDialog({
 
     return iconOnly ? (
       <Tooltip>
-        <TooltipTrigger asChild>
-          <span>{button}</span>
-        </TooltipTrigger>
+        <TooltipTrigger render={<span>{button}</span>} />
         <TooltipContent>Already saved</TooltipContent>
       </Tooltip>
     ) : (
@@ -149,13 +147,11 @@ export function SaveLayoutDialog({
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         {iconOnly ? (
           <Tooltip>
-            <TooltipTrigger asChild>
-              <DialogTrigger asChild>{triggerButton}</DialogTrigger>
-            </TooltipTrigger>
+            <TooltipTrigger render={<DialogTrigger render={triggerButton} />} />
             <TooltipContent>{resolvedTooltipLabel}</TooltipContent>
           </Tooltip>
         ) : (
-          <DialogTrigger asChild>{triggerButton}</DialogTrigger>
+          <DialogTrigger render={triggerButton} />
         )}
         <SuiteDialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -187,11 +183,13 @@ export function SaveLayoutDialog({
                 >
                   Save as New Layout
                 </Button>
-                <DialogClose asChild>
-                  <Button variant="ghost" className="w-full">
-                    Cancel
-                  </Button>
-                </DialogClose>
+                <DialogClose
+                  render={
+                    <Button variant="ghost" className="w-full">
+                      Cancel
+                    </Button>
+                  }
+                />
               </DialogFooter>
             </>
           ) : (
@@ -255,13 +253,11 @@ export function SaveLayoutDialog({
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       {iconOnly ? (
         <Tooltip>
-          <TooltipTrigger asChild>
-            <DialogTrigger asChild>{triggerButton}</DialogTrigger>
-          </TooltipTrigger>
+          <TooltipTrigger render={<DialogTrigger render={triggerButton} />} />
           <TooltipContent>{resolvedTooltipLabel}</TooltipContent>
         </Tooltip>
       ) : (
-        <DialogTrigger asChild>{triggerButton}</DialogTrigger>
+        <DialogTrigger render={triggerButton} />
       )}
       <SuiteDialogContent className="sm:max-w-md">
         <DialogHeader>
@@ -298,9 +294,7 @@ export function SaveLayoutDialog({
         </div>
 
         <DialogFooter>
-          <DialogClose asChild>
-            <Button variant="outline">Cancel</Button>
-          </DialogClose>
+          <DialogClose render={<Button variant="outline">Cancel</Button>} />
           <Button onClick={handleSave} disabled={!canSave}>
             Save Layout
           </Button>

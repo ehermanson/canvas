@@ -128,15 +128,13 @@ export function SavedLayoutsDialog({
     <Dialog>
       {iconOnly ? (
         <Tooltip>
-          <TooltipTrigger asChild>
-            <DialogTrigger asChild>{triggerButton}</DialogTrigger>
-          </TooltipTrigger>
+          <TooltipTrigger render={<DialogTrigger render={triggerButton} />} />
           <TooltipContent>
             {tooltipLabel ?? buttonLabel ?? 'Saved layouts'}
           </TooltipContent>
         </Tooltip>
       ) : (
-        <DialogTrigger asChild>{triggerButton}</DialogTrigger>
+        <DialogTrigger render={triggerButton} />
       )}
       <SuiteDialogContent className="sm:max-w-md">
         <DialogHeader>

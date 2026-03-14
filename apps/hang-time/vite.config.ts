@@ -12,8 +12,8 @@ function createManualChunks(id: string) {
     return 'vendor-react';
   }
 
-  if (id.includes('/@radix-ui/')) {
-    return 'vendor-radix';
+  if (id.includes('/@base-ui/')) {
+    return 'vendor-base-ui';
   }
 
   if (id.includes('/@dnd-kit/')) {

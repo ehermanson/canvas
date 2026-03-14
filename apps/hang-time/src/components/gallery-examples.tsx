@@ -117,15 +117,13 @@ export function GalleryExamples({
     <Popover>
       {iconOnly ? (
         <Tooltip>
-          <TooltipTrigger asChild>
-            <PopoverTrigger asChild>{triggerButton}</PopoverTrigger>
-          </TooltipTrigger>
+          <TooltipTrigger render={<PopoverTrigger render={triggerButton} />} />
           <TooltipContent>
             {tooltipLabel ?? buttonLabel ?? 'Try examples'}
           </TooltipContent>
         </Tooltip>
       ) : (
-        <PopoverTrigger asChild>{triggerButton}</PopoverTrigger>
+        <PopoverTrigger render={triggerButton} />
       )}
       <PopoverContent className="w-64 p-2" align="start">
         <div className="space-y-1">

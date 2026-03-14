@@ -336,7 +336,7 @@ export function Sidebar({ calculator }: SidebarProps) {
           </ToolPanelHeader>
 
           <ToolPanelActionBar>
-            <TooltipProvider delayDuration={200}>
+            <TooltipProvider delay={200}>
               <div className="flex flex-wrap gap-2">
                 <SavedLayoutsDialog
                   layouts={layouts}
@@ -348,14 +348,16 @@ export function Sidebar({ calculator }: SidebarProps) {
                   buttonClassName="bg-white/80 dark:bg-slate-900/60"
                 />
                 <Tooltip>
-                  <TooltipTrigger asChild>
-                    <ToolPanelActionButton
-                      onClick={handleNewLayout}
-                      aria-label="New Layout"
-                    >
-                      <Plus className="h-4 w-4" />
-                    </ToolPanelActionButton>
-                  </TooltipTrigger>
+                  <TooltipTrigger
+                    render={
+                      <ToolPanelActionButton
+                        onClick={handleNewLayout}
+                        aria-label="New Layout"
+                      >
+                        <Plus className="h-4 w-4" />
+                      </ToolPanelActionButton>
+                    }
+                  />
                   <TooltipContent>New Layout</TooltipContent>
                 </Tooltip>
                 <SaveLayoutDialog
@@ -378,18 +380,20 @@ export function Sidebar({ calculator }: SidebarProps) {
                   buttonClassName="bg-white/80 dark:bg-slate-900/60"
                 />
                 <Tooltip>
-                  <TooltipTrigger asChild>
-                    <ToolPanelActionButton
-                      onClick={handleCopyLink}
-                      aria-label={copied ? 'Copied' : 'Copy link'}
-                    >
-                      {copied ? (
-                        <Check className="h-4 w-4" />
-                      ) : (
-                        <Link className="h-4 w-4" />
-                      )}
-                    </ToolPanelActionButton>
-                  </TooltipTrigger>
+                  <TooltipTrigger
+                    render={
+                      <ToolPanelActionButton
+                        onClick={handleCopyLink}
+                        aria-label={copied ? 'Copied' : 'Copy link'}
+                      >
+                        {copied ? (
+                          <Check className="h-4 w-4" />
+                        ) : (
+                          <Link className="h-4 w-4" />
+                        )}
+                      </ToolPanelActionButton>
+                    }
+                  />
                   <TooltipContent>
                     {copied ? 'Copied' : 'Copy link'}
                   </TooltipContent>
@@ -405,21 +409,21 @@ export function Sidebar({ calculator }: SidebarProps) {
             <TabsList className="h-auto w-full rounded-none border-b border-gray-200 bg-transparent p-0 dark:border-white/10">
               <TabsTrigger
                 value="config"
-                className="flex-1 rounded-none border-0 py-2.5 text-xs font-medium text-gray-500 shadow-none hover:bg-gray-50 hover:text-gray-700 dark:text-white/50 dark:hover:bg-white/5 dark:hover:text-white/70 data-[state=active]:bg-gray-100 data-[state=active]:text-gray-900 data-[state=active]:shadow-none dark:data-[state=active]:bg-white/10 dark:data-[state=active]:text-white"
+                className="flex-1 rounded-none border-0 py-2.5 text-xs font-medium text-gray-500 shadow-none hover:bg-gray-50 hover:text-gray-700 dark:text-white/50 dark:hover:bg-white/5 dark:hover:text-white/70 data-[active]:bg-gray-100 data-[active]:text-gray-900 data-[active]:shadow-none dark:data-[active]:bg-white/10 dark:data-[active]:text-white"
               >
                 <SlidersHorizontal className="size-3" />
                 Configure
               </TabsTrigger>
               <TabsTrigger
                 value="measurements"
-                className="flex-1 rounded-none border-0 py-2.5 text-xs font-medium text-gray-500 shadow-none hover:bg-gray-50 hover:text-gray-700 dark:text-white/50 dark:hover:bg-white/5 dark:hover:text-white/70 data-[state=active]:bg-gray-100 data-[state=active]:text-gray-900 data-[state=active]:shadow-none dark:data-[state=active]:bg-white/10 dark:data-[state=active]:text-white"
+                className="flex-1 rounded-none border-0 py-2.5 text-xs font-medium text-gray-500 shadow-none hover:bg-gray-50 hover:text-gray-700 dark:text-white/50 dark:hover:bg-white/5 dark:hover:text-white/70 data-[active]:bg-gray-100 data-[active]:text-gray-900 data-[active]:shadow-none dark:data-[active]:bg-white/10 dark:data-[active]:text-white"
               >
                 <Ruler className="size-3" />
                 Measure
               </TabsTrigger>
               <TabsTrigger
                 value="howto"
-                className="flex-1 rounded-none border-0 py-2.5 text-xs font-medium text-gray-500 shadow-none hover:bg-gray-50 hover:text-gray-700 dark:text-white/50 dark:hover:bg-white/5 dark:hover:text-white/70 data-[state=active]:bg-gray-100 data-[state=active]:text-gray-900 data-[state=active]:shadow-none dark:data-[state=active]:bg-white/10 dark:data-[state=active]:text-white"
+                className="flex-1 rounded-none border-0 py-2.5 text-xs font-medium text-gray-500 shadow-none hover:bg-gray-50 hover:text-gray-700 dark:text-white/50 dark:hover:bg-white/5 dark:hover:text-white/70 data-[active]:bg-gray-100 data-[active]:text-gray-900 data-[active]:shadow-none dark:data-[active]:bg-white/10 dark:data-[active]:text-white"
               >
                 <Hammer className="size-3" />
                 Hang

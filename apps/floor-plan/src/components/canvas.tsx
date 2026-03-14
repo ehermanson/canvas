@@ -1073,15 +1073,17 @@ function CanvasSettingsPopover({
 
   return (
     <Popover>
-      <PopoverTrigger asChild>
-        <ViewportToolbarButton
-          kind="icon"
-          aria-label="Canvas settings"
-          title="Canvas settings"
-        >
-          <Settings className="h-3.5 w-3.5" />
-        </ViewportToolbarButton>
-      </PopoverTrigger>
+      <PopoverTrigger
+        render={
+          <ViewportToolbarButton
+            kind="icon"
+            aria-label="Canvas settings"
+            title="Canvas settings"
+          >
+            <Settings className="h-3.5 w-3.5" />
+          </ViewportToolbarButton>
+        }
+      />
       <PopoverContent align="end" className="w-64 space-y-4">
         <div className="space-y-1">
           <p className="text-[11px] font-semibold tracking-[0.18em] text-gray-500 uppercase dark:text-white/45">
@@ -1180,15 +1182,17 @@ function CanvasHelpPopover() {
 
   return (
     <Popover>
-      <PopoverTrigger asChild>
-        <ViewportToolbarButton
-          kind="icon"
-          aria-label="Canvas help"
-          title="Canvas help"
-        >
-          <HelpCircle className="h-3.5 w-3.5" />
-        </ViewportToolbarButton>
-      </PopoverTrigger>
+      <PopoverTrigger
+        render={
+          <ViewportToolbarButton
+            kind="icon"
+            aria-label="Canvas help"
+            title="Canvas help"
+          >
+            <HelpCircle className="h-3.5 w-3.5" />
+          </ViewportToolbarButton>
+        }
+      />
       <PopoverContent align="end" className="w-80 space-y-4">
         <div className="space-y-1">
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-500 dark:text-white/45">
