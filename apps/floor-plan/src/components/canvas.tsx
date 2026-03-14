@@ -4128,28 +4128,63 @@ export function Canvas({ planner }: CanvasProps) {
           nameMetrics.width,
           detailMetrics?.width ?? 0,
         );
+        const showTwoLineLabel =
+          canShowDimensions &&
+          labelHeight < maxLabelHeight &&
+          labelWidth < maxLabelWidth;
+        const showSingleLineLabel =
+          !showTwoLineLabel && nameMetrics.width < maxLabelWidth;
+        const rugLabelTextColor = isDark
+          ? 'rgba(226,232,240,0.74)'
+          : 'rgba(30,41,59,0.66)';
+        const rugLabelDetailColor = isDark
+          ? 'rgba(203,213,225,0.62)'
+          : 'rgba(51,65,85,0.56)';
+        const rugLabelHaloColor = isDark
+          ? 'rgba(15,23,42,0.58)'
+          : 'rgba(248,250,252,0.82)';
 
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.globalAlpha = 1;
-        ctx.fillStyle = getFurnitureLabelColor(item.color, isDark);
+        ctx.fillStyle = isRug
+          ? rugLabelTextColor
+          : getFurnitureLabelColor(item.color, isDark);
         ctx.font = `700 ${nameFontSize}px -apple-system, BlinkMacSystemFont, sans-serif`;
 
-        if (
-          canShowDimensions &&
-          labelHeight < maxLabelHeight &&
-          labelWidth < maxLabelWidth
-        ) {
+        if (isRug) {
+          ctx.shadowColor = rugLabelHaloColor;
+          ctx.shadowBlur = 7;
+          ctx.strokeStyle = rugLabelHaloColor;
+          ctx.lineWidth = 3;
+        }
+
+        if (showTwoLineLabel) {
           const nameY = -(detailFontSize + lineGap) / 2;
           const detailY = nameFontSize / 2 + lineGap / 2;
+          if (isRug) {
+            ctx.strokeText(nameLabel, 0, nameY);
+          }
           ctx.fillText(nameLabel, 0, nameY);
-          ctx.globalAlpha = 0.9;
+          ctx.fillStyle = isRug
+            ? rugLabelDetailColor
+            : getFurnitureLabelColor(item.color, isDark);
+          ctx.globalAlpha = isRug ? 1 : 0.9;
           ctx.font = `${detailFontSize}px -apple-system, BlinkMacSystemFont, sans-serif`;
+          if (isRug) {
+            ctx.lineWidth = 2.5;
+            ctx.strokeText(detailLabel, 0, detailY);
+          }
           ctx.fillText(detailLabel, 0, detailY);
-        } else if (nameMetrics.width < maxLabelWidth) {
+        } else if (showSingleLineLabel) {
+          if (isRug) {
+            ctx.strokeText(nameLabel, 0, 0);
+          }
           ctx.fillText(nameLabel, 0, 0);
         }
 
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
         ctx.globalAlpha = 1;
       }
 
