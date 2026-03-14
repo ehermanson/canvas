@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { PULLOUT_SOFA_DEFAULTS } from '@/data/furniture-presets';
+import { getFurnitureBounds } from '@/lib/furniture-geometry';
 import { createId } from '@/lib/id';
 import {
   areHistoryEntriesEqual,
@@ -80,6 +81,82 @@ function reorderFurnitureItems(
 
   next.splice(boundedTargetIndex, 0, item);
   return next;
+}
+
+function getFurnitureGroupBounds(items: FurnitureItem[]) {
+  if (items.length === 0) {
+    return null;
+  }
+
+  return items.reduce(
+    (bounds, item) => {
+      const itemBounds = getFurnitureBounds(item);
+      return {
+        minX: Math.min(bounds.minX, itemBounds.minX),
+        maxX: Math.max(bounds.maxX, itemBounds.maxX),
+        minY: Math.min(bounds.minY, itemBounds.minY),
+        maxY: Math.max(bounds.maxY, itemBounds.maxY),
+      };
+    },
+    {
+      minX: Number.POSITIVE_INFINITY,
+      maxX: Number.NEGATIVE_INFINITY,
+      minY: Number.POSITIVE_INFINITY,
+      maxY: Number.NEGATIVE_INFINITY,
+    },
+  );
+}
+
+function applyFurnitureTransforms(
+  items: FurnitureItem[],
+  updates: Array<Pick<FurnitureItem, 'id' | 'rotation' | 'x' | 'y'>>,
+) {
+  const updateMap = new Map(
+    updates.map((update) => [
+      update.id,
+      { rotation: update.rotation, x: update.x, y: update.y },
+    ]),
+  );
+
+  return items.map((item) => {
+    const nextTransform = updateMap.get(item.id);
+    return nextTransform ? { ...item, ...nextTransform } : item;
+  });
+}
+
+function rotateFurnitureItems(
+  items: FurnitureItem[],
+  ids: string[],
+  rotationDegrees: number,
+) {
+  const selectedIds = new Set(ids);
+  const selectedItems = items.filter((item) => selectedIds.has(item.id));
+  const rotatableItems = selectedItems.filter((item) => !item.locked);
+
+  if (rotatableItems.length === 0) {
+    return items;
+  }
+
+  const groupBounds = getFurnitureGroupBounds(selectedItems);
+  if (!groupBounds) {
+    return items;
+  }
+
+  const center = {
+    x: (groupBounds.minX + groupBounds.maxX) / 2,
+    y: (groupBounds.minY + groupBounds.maxY) / 2,
+  };
+  const updates = rotatableItems.map((item) => {
+    const nextCenter = rotatePointAround(item, center, rotationDegrees);
+    return {
+      id: item.id,
+      x: nextCenter.x,
+      y: nextCenter.y,
+      rotation: normalizeRotation(item.rotation + rotationDegrees),
+    };
+  });
+
+  return applyFurnitureTransforms(items, updates);
 }
 
 function getSavedUnit() {
@@ -946,6 +1023,13 @@ export function useRoomPlanner(
     );
   }, []);
 
+  const setFurnitureTransforms = useCallback(
+    (updates: Array<Pick<FurnitureItem, 'id' | 'rotation' | 'x' | 'y'>>) => {
+      setFurniture((prev) => applyFurnitureTransforms(prev, updates));
+    },
+    [],
+  );
+
   const commitFurnitureMove = useCallback(() => {
     pushHistory(room, furniture);
   }, [room, furniture, pushHistory]);
@@ -959,6 +1043,17 @@ export function useRoomPlanner(
       });
     },
     [room, pushHistory],
+  );
+
+  const rotateFurnitureGroup = useCallback(
+    (ids: string[], rotationDegrees: number) => {
+      setFurniture((prev) => {
+        const next = rotateFurnitureItems(prev, ids, rotationDegrees);
+        pushHistory(room, next);
+        return next;
+      });
+    },
+    [pushHistory, room],
   );
 
   const moveFurnitureForward = useCallback(
@@ -1364,8 +1459,10 @@ export function useRoomPlanner(
     setFurnitureFrame,
     updateFurnitureFrame,
     setFurnitureRotation,
+    setFurnitureTransforms,
     commitFurnitureMove,
     rotateFurniture,
+    rotateFurnitureGroup,
     moveFurnitureForward,
     moveFurnitureBackward,
     bringFurnitureToFront,

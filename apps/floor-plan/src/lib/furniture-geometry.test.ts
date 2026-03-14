@@ -343,6 +343,27 @@ describe('furniture-geometry', () => {
     expect(checkFurnitureCollision(a, b)).toBe(true);
   });
 
+  it('does not treat rugs overlapping furniture as a collision', () => {
+    const rug = createItem({
+      type: 'rug',
+      name: 'Rug',
+      width: 72,
+      depth: 48,
+    });
+    const chair = createItem({
+      id: 'b',
+      type: 'chair',
+      name: 'Chair',
+      width: 24,
+      depth: 24,
+      x: 8,
+      y: 4,
+    });
+
+    expect(checkFurnitureCollision(rug, chair)).toBe(false);
+    expect(checkFurnitureCollision(chair, rug)).toBe(false);
+  });
+
   it('does not treat edge-touching rectangles as a collision', () => {
     const a = createItem();
     const b = createItem({ id: 'b', x: 60 });

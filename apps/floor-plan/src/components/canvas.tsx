@@ -88,6 +88,7 @@ import {
   getWallLength,
   getWallMeasurementSpans,
   projectOntoSegment,
+  rotatePointAround,
 } from '@/lib/room-geometry';
 import type {
   FurnitureItem,
@@ -917,6 +918,34 @@ function getResizeCursor(edge: FurnitureResizeEdge, rotation: number) {
   }
 }
 
+function normalizeRotationDegrees(rotation: number) {
+  return ((rotation % 360) + 360) % 360;
+}
+
+function getRotationAngleDegrees(center: Point, point: Point) {
+  return normalizeRotationDegrees(
+    (Math.atan2(point.y - center.y, point.x - center.x) * 180) / Math.PI + 90,
+  );
+}
+
+function getSignedRotationDeltaDegrees(current: number, start: number) {
+  return ((current - start + 540) % 360) - 180;
+}
+
+type FurnitureRotationTarget = {
+  center: Point;
+  ids: string[];
+  primaryId: string | null;
+};
+
+type FurnitureRotationState = {
+  center: Point;
+  ids: string[];
+  startAngle: number;
+  startScreen: Point;
+  startTransforms: Array<Pick<FurnitureItem, 'id' | 'rotation' | 'x' | 'y'>>;
+};
+
 // ── Interaction state ──
 
 type InteractionState =
@@ -945,7 +974,7 @@ type InteractionState =
       edge: FurnitureResizeEdge;
       startScreen: Point;
     }
-  | { mode: 'pending-rotation'; id: string; startScreen: Point }
+  | ({ mode: 'pending-rotation' } & FurnitureRotationState)
   | {
       mode: 'pending-feature';
       wallId: string;
@@ -976,7 +1005,7 @@ type InteractionState =
       startScreen: Point;
       moved: boolean;
     }
-  | { mode: 'dragging-rotation'; id: string }
+  | ({ mode: 'dragging-rotation' } & FurnitureRotationState)
   | { mode: 'dragging-feature'; wallId: string; featureId: string }
   | {
       mode: 'drawing-wall';
@@ -1275,7 +1304,7 @@ export function Canvas({ planner }: CanvasProps) {
     updateFurnitureGroup,
     setFurnitureFrame,
     updateFurnitureFrame,
-    setFurnitureRotation,
+    setFurnitureTransforms,
     commitFurnitureMove,
     renameFurniture,
     duplicateFurniture,
@@ -1524,6 +1553,44 @@ export function Canvas({ planner }: CanvasProps) {
     [worldToScreen],
   );
 
+  const applyFurnitureRotation = useCallback(
+    (
+      rotationState: FurnitureRotationState,
+      worldPoint: Point,
+      snapToIncrement: boolean,
+    ) => {
+      const currentAngle = getRotationAngleDegrees(
+        rotationState.center,
+        worldPoint,
+      );
+      const rawDelta = getSignedRotationDeltaDegrees(
+        currentAngle,
+        rotationState.startAngle,
+      );
+      const rotationDelta = snapToIncrement
+        ? Math.round(rawDelta / 15) * 15
+        : rawDelta;
+
+      setFurnitureTransforms(
+        rotationState.startTransforms.map((item) => {
+          const nextCenter = rotatePointAround(
+            { x: item.x, y: item.y },
+            rotationState.center,
+            rotationDelta,
+          );
+
+          return {
+            id: item.id,
+            x: nextCenter.x,
+            y: nextCenter.y,
+            rotation: normalizeRotationDegrees(item.rotation + rotationDelta),
+          };
+        }),
+      );
+    },
+    [setFurnitureTransforms],
+  );
+
   const getVisibleViewportBounds = useCallback(() => {
     const canvas = canvasRef.current;
     const container = containerRef.current;
@@ -1688,6 +1755,30 @@ export function Canvas({ planner }: CanvasProps) {
       },
     );
   }, []);
+
+  const getSelectedFurnitureItems = useCallback(
+    (ids: string[]) => furniture.filter((item) => ids.includes(item.id)),
+    [furniture],
+  );
+
+  const getGroupRotationHandleScreenPoint = useCallback(
+    (items: FurnitureItem[]): Point | null => {
+      const groupBounds = getCombinedFurnitureBounds(items);
+      if (!groupBounds) {
+        return null;
+      }
+
+      const topCenter = worldToScreen(
+        (groupBounds.minX + groupBounds.maxX) / 2,
+        groupBounds.minY,
+      );
+      return {
+        x: topCenter.x,
+        y: topCenter.y - ROTATION_HANDLE_OFFSET,
+      };
+    },
+    [getCombinedFurnitureBounds, worldToScreen],
+  );
 
   const getFurnitureItemsAtPositions = useCallback(
     (
@@ -2026,16 +2117,59 @@ export function Canvas({ planner }: CanvasProps) {
   );
 
   const hitTestRotationHandle = useCallback(
-    (screenPoint: Point): FurnitureItem | null => {
-      if (!selectedId || selectedIds.length !== 1) return null;
-      const item = furniture.find((entry) => entry.id === selectedId);
-      if (!item || item.locked || item.type === 'rug') return null;
-      const handlePoint = getRotationHandleScreenPoint(item);
+    (screenPoint: Point): FurnitureRotationTarget | null => {
+      if (selectedIds.length === 0) return null;
+
+      if (selectedIds.length === 1 && selectedId) {
+        const item = furniture.find((entry) => entry.id === selectedId);
+        if (!item || item.locked) return null;
+        const handlePoint = getRotationHandleScreenPoint(item);
+        return distSq(screenPoint, handlePoint) <= ROTATION_HANDLE_RADIUS ** 2
+          ? {
+              center: { x: item.x, y: item.y },
+              ids: [item.id],
+              primaryId: item.id,
+            }
+          : null;
+      }
+
+      const selectedItems = getSelectedFurnitureItems(selectedIds);
+      const rotatableIds = selectedItems
+        .filter((item) => !item.locked)
+        .map((item) => item.id);
+      if (rotatableIds.length === 0) {
+        return null;
+      }
+
+      const groupBounds = getCombinedFurnitureBounds(selectedItems);
+      const handlePoint = getGroupRotationHandleScreenPoint(selectedItems);
+      if (!groupBounds || !handlePoint) {
+        return null;
+      }
+
       return distSq(screenPoint, handlePoint) <= ROTATION_HANDLE_RADIUS ** 2
-        ? item
+        ? {
+            center: {
+              x: (groupBounds.minX + groupBounds.maxX) / 2,
+              y: (groupBounds.minY + groupBounds.maxY) / 2,
+            },
+            ids: rotatableIds,
+            primaryId:
+              selectedId && rotatableIds.includes(selectedId)
+                ? selectedId
+                : (rotatableIds[0] ?? null),
+          }
         : null;
     },
-    [furniture, getRotationHandleScreenPoint, selectedId, selectedIds.length],
+    [
+      furniture,
+      getCombinedFurnitureBounds,
+      getGroupRotationHandleScreenPoint,
+      getRotationHandleScreenPoint,
+      getSelectedFurnitureItems,
+      selectedId,
+      selectedIds,
+    ],
   );
 
   const hitTestResizeHandle = useCallback(
@@ -2044,7 +2178,7 @@ export function Canvas({ planner }: CanvasProps) {
     ): { edge: FurnitureResizeEdge; item: FurnitureItem } | null => {
       if (!selectedId || selectedIds.length !== 1) return null;
       const item = furniture.find((entry) => entry.id === selectedId);
-      if (!item || item.locked || item.type === 'rug') return null;
+      if (!item || item.locked) return null;
 
       for (const edge of ['left', 'right', 'top', 'bottom'] as const) {
         const handlePoint = getResizeHandleScreenPoint(item, edge);
@@ -2174,13 +2308,25 @@ export function Canvas({ planner }: CanvasProps) {
 
       const rotationHandleHit = hitTestRotationHandle(screen);
       if (rotationHandleHit) {
-        setSelectedId(rotationHandleHit.id);
+        if (rotationHandleHit.primaryId && selectedIds.length === 1) {
+          setSelectedId(rotationHandleHit.primaryId);
+        }
         setSelectedWallId(null);
         setSelectedFeature(null);
         setSelectedResizeHandle(null);
         interactionRef.current = {
           mode: 'pending-rotation',
-          id: rotationHandleHit.id,
+          center: rotationHandleHit.center,
+          ids: rotationHandleHit.ids,
+          startAngle: getRotationAngleDegrees(rotationHandleHit.center, world),
+          startTransforms: furniture
+            .filter((item) => rotationHandleHit.ids.includes(item.id))
+            .map((item) => ({
+              id: item.id,
+              x: item.x,
+              y: item.y,
+              rotation: item.rotation,
+            })),
           startScreen: screen,
         };
         setCursor(ROTATE_CURSOR);
@@ -2640,33 +2786,18 @@ export function Canvas({ planner }: CanvasProps) {
 
           interactionRef.current = {
             mode: 'dragging-rotation',
-            id: interaction.id,
+            center: interaction.center,
+            ids: interaction.ids,
+            startAngle: interaction.startAngle,
+            startScreen: interaction.startScreen,
+            startTransforms: interaction.startTransforms,
           };
-
-          const item = furniture.find((entry) => entry.id === interaction.id);
-          if (!item) return;
-          const angle =
-            (Math.atan2(world.y - item.y, world.x - item.x) * 180) / Math.PI +
-            90;
-          const normalizedAngle = ((angle % 360) + 360) % 360;
-          const snappedAngle = e.shiftKey
-            ? Math.round(normalizedAngle / 15) * 15
-            : normalizedAngle;
-          setFurnitureRotation(interaction.id, snappedAngle % 360);
+          applyFurnitureRotation(interaction, world, e.shiftKey);
           return;
         }
 
         case 'dragging-rotation': {
-          const item = furniture.find((entry) => entry.id === interaction.id);
-          if (!item) return;
-          const angle =
-            (Math.atan2(world.y - item.y, world.x - item.x) * 180) / Math.PI +
-            90;
-          const normalizedAngle = ((angle % 360) + 360) % 360;
-          const snappedAngle = e.shiftKey
-            ? Math.round(normalizedAngle / 15) * 15
-            : normalizedAngle;
-          setFurnitureRotation(interaction.id, snappedAngle % 360);
+          applyFurnitureRotation(interaction, world, e.shiftKey);
           return;
         }
 
@@ -2903,10 +3034,10 @@ export function Canvas({ planner }: CanvasProps) {
       hitTestRotationHandle,
       hitTestResizeHandle,
       getFurnitureGroupPlacement,
+      applyFurnitureRotation,
       moveEndpoint,
       moveFurnitureGroup,
       setFurnitureFrame,
-      setFurnitureRotation,
       moveWallFeature,
       moveFeatureToWall,
       setSelectedWallId,
@@ -4022,7 +4153,7 @@ export function Canvas({ planner }: CanvasProps) {
         ctx.globalAlpha = 1;
       }
 
-      if (showSingleItemHandles && !isRug && !item.locked) {
+      if (showSingleItemHandles && !item.locked) {
         ctx.globalAlpha = 1;
         ctx.fillStyle = '#f59e0b';
         const rotationHandleY = -sd / 2 - ROTATION_HANDLE_OFFSET;
@@ -4156,9 +4287,7 @@ export function Canvas({ planner }: CanvasProps) {
     }
 
     if (selectedIds.length > 1) {
-      const selectedItems = furniture.filter((item) =>
-        selectedIds.includes(item.id),
-      );
+      const selectedItems = getSelectedFurnitureItems(selectedIds);
       if (selectedItems.length > 0) {
         const groupBounds = selectedItems.reduce(
           (bounds, item) => {
@@ -4193,6 +4322,31 @@ export function Canvas({ planner }: CanvasProps) {
           bottomRight.y - topLeft.y,
         );
         ctx.setLineDash([]);
+
+        if (selectedItems.some((item) => !item.locked)) {
+          const handlePoint = getGroupRotationHandleScreenPoint(selectedItems);
+          if (handlePoint) {
+            const topCenterX = (topLeft.x + bottomRight.x) / 2;
+
+            ctx.strokeStyle = '#f59e0b';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([3, 3]);
+            ctx.beginPath();
+            ctx.moveTo(topCenterX, topLeft.y);
+            ctx.lineTo(handlePoint.x, handlePoint.y);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            ctx.fillStyle = '#f59e0b';
+            ctx.beginPath();
+            ctx.arc(handlePoint.x, handlePoint.y, 5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+          }
+        }
+
         ctx.restore();
 
         if (showMeasurements) {
@@ -4308,6 +4462,8 @@ export function Canvas({ planner }: CanvasProps) {
     showMeasurements,
     toDisplay,
     unit,
+    getGroupRotationHandleScreenPoint,
+    getSelectedFurnitureItems,
   ]);
 
   // ── Resize observer ──
@@ -4428,15 +4584,20 @@ export function Canvas({ planner }: CanvasProps) {
           planner.removeWall(selectedWallId);
         }
       }
-      if (
-        e.key === 'r' &&
-        selectedId &&
-        selectedIds.length === 1 &&
-        document.activeElement === document.body
-      ) {
-        const item = furniture.find((f) => f.id === selectedId);
+      if (e.key === 'r' && document.activeElement === document.body) {
+        if (selectedIds.length > 1) {
+          planner.rotateFurnitureGroup(selectedIds, 15);
+          return;
+        }
+
+        const singleSelectedId = selectedId ?? selectedIds[0];
+        if (!singleSelectedId) {
+          return;
+        }
+
+        const item = furniture.find((f) => f.id === singleSelectedId);
         if (item && !item.locked) {
-          planner.rotateFurniture(selectedId, (item.rotation + 15) % 360);
+          planner.rotateFurniture(singleSelectedId, (item.rotation + 15) % 360);
         }
       }
       if (e.key === 'd' && (e.metaKey || e.ctrlKey) && selectedIds.length > 0) {

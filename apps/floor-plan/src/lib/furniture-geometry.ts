@@ -619,6 +619,10 @@ function checkCircleRectangleCollision(
 }
 
 export function checkFurnitureCollision(a: FurnitureItem, b: FurnitureItem) {
+  if (a.type === 'rug' || b.type === 'rug') {
+    return false;
+  }
+
   if (a.shape === 'circle' && b.shape === 'circle') {
     return checkCircleCollision(a, b);
   }

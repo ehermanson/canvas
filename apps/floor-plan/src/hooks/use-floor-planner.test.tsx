@@ -361,6 +361,62 @@ describe('useRoomPlanner', () => {
     expect(result.current.furniture).toHaveLength(2);
   });
 
+  it('rotates selected furniture together around their shared bounds center', () => {
+    const { result } = renderHook(() =>
+      useRoomPlanner(
+        createPlannerState({
+          furniture: [
+            {
+              id: 'desk-1',
+              type: 'desk',
+              name: 'Desk One',
+              shape: 'rectangle',
+              width: 60,
+              depth: 30,
+              x: 60,
+              y: 60,
+              rotation: 0,
+              color: '#f59e0b',
+              locked: false,
+            },
+            {
+              id: 'desk-2',
+              type: 'desk',
+              name: 'Desk Two',
+              shape: 'rectangle',
+              width: 60,
+              depth: 30,
+              x: 120,
+              y: 60,
+              rotation: 0,
+              color: '#f59e0b',
+              locked: false,
+            },
+          ],
+        }),
+      ),
+    );
+
+    act(() => {
+      result.current.rotateFurnitureGroup(['desk-1', 'desk-2'], 90);
+    });
+
+    expect(result.current.furniture).toEqual([
+      expect.objectContaining({
+        id: 'desk-1',
+        x: 90,
+        y: 30,
+        rotation: 90,
+      }),
+      expect.objectContaining({
+        id: 'desk-2',
+        x: 90,
+        y: 90,
+        rotation: 90,
+      }),
+    ]);
+  });
+
   it('reorders furniture layers and keeps that order undoable', () => {
     const { result } = renderHook(() => useRoomPlanner());
 
