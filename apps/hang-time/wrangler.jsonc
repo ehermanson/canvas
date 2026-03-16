@@ -1,8 +1,9 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "hang-time",
+  "account_id": "a07b60ec9df20fb0ccc81c98c72fe1ff",
   "main": "src/worker.ts",
-  "compatibility_date": "2024-12-01",
+  "compatibility_date": "2026-03-16",
   "compatibility_flags": ["nodejs_compat"],
 
   // Serve static assets from the Vite build output
