@@ -4191,8 +4191,7 @@ export function Canvas({ planner }: CanvasProps) {
 
   useLayoutEffect(() => {
     const hasCanvasSize =
-      (canvasRef.current?.width ?? 0) > 0 &&
-      (canvasRef.current?.height ?? 0) > 0;
+      (canvasRef.current?.width ?? 0) > 0 && (canvasRef.current?.height ?? 0) > 0;
 
     if (!resizeCanvasToContainer() && !hasCanvasSize) {
       return;

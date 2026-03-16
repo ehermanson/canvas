@@ -53,7 +53,10 @@ function mergeElementProps<T extends Record<string, unknown>, U extends Record<s
   }
 
   if (slotProps.className || childProps.className) {
-    mergedProps.className = cn(slotProps.className, childProps.className);
+    const slotClassName = typeof slotProps.className === "string" ? slotProps.className : undefined;
+    const childClassName =
+      typeof childProps.className === "string" ? childProps.className : undefined;
+    mergedProps.className = cn(slotClassName, childClassName);
   }
 
   if (slotProps.style || childProps.style) {

@@ -210,23 +210,53 @@ export function useCalculator() {
   const layoutPositions: FramePosition[] = useMemo(() => calculateLayoutPositions(state), [state]);
 
   // Setters
-  const setUnit = (value: Unit) => setWall({ u: value });
-  const setWallWidth = (value: number) => setWall({ ww: value });
-  const setWallHeight = (value: number) => setWall({ wh: value });
+  const setUnit = (value: Unit) => {
+    void setWall({ u: value });
+  };
+  const setWallWidth = (value: number) => {
+    void setWall({ ww: value });
+  };
+  const setWallHeight = (value: number) => {
+    void setWall({ wh: value });
+  };
 
-  const setUniformSize = (value: boolean) => setFramesState({ us: value });
-  const setFrameWidth = (value: number) => setFrame({ fw: value });
-  const setFrameHeight = (value: number) => setFrame({ fh: value });
-  const setHangingOffset = (value: number) => setFrame({ ho: value });
-  const setHangingType = (value: HangingType) => setFrame({ ht: value });
-  const setHookInset = (value: number) => setFrame({ hi: value });
-  const setHSpacing = (value: number) => setFrame({ hs: value });
-  const setHDistribution = (value: Distribution) => setFrame({ hd: value });
+  const setUniformSize = (value: boolean) => {
+    void setFramesState({ us: value });
+  };
+  const setFrameWidth = (value: number) => {
+    void setFrame({ fw: value });
+  };
+  const setFrameHeight = (value: number) => {
+    void setFrame({ fh: value });
+  };
+  const setHangingOffset = (value: number) => {
+    void setFrame({ ho: value });
+  };
+  const setHangingType = (value: HangingType) => {
+    void setFrame({ ht: value });
+  };
+  const setHookInset = (value: number) => {
+    void setFrame({ hi: value });
+  };
+  const setHSpacing = (value: number) => {
+    void setFrame({ hs: value });
+  };
+  const setHDistribution = (value: Distribution) => {
+    void setFrame({ hd: value });
+  };
 
-  const setAnchorType = (value: AnchorType) => setPosition({ at: value });
-  const setAnchorValue = (value: number) => setPosition({ av: value });
-  const setHAnchorType = (value: HorizontalAnchorType) => setPosition({ hat: value });
-  const setHAnchorValue = (value: number) => setPosition({ hav: value });
+  const setAnchorType = (value: AnchorType) => {
+    void setPosition({ at: value });
+  };
+  const setAnchorValue = (value: number) => {
+    void setPosition({ av: value });
+  };
+  const setHAnchorType = (value: HorizontalAnchorType) => {
+    void setPosition({ hat: value });
+  };
+  const setHAnchorValue = (value: number) => {
+    void setPosition({ hav: value });
+  };
   const setManualPosition = useCallback(
     ({
       anchorType,
@@ -238,27 +268,40 @@ export function useCalculator() {
       anchorValue: number;
       hAnchorType: HorizontalAnchorType;
       hAnchorValue: number;
-    }) =>
-      setPosition({
+    }) => {
+      void setPosition({
         at: anchorType,
         av: anchorValue,
         hat: hAnchorType,
         hav: hAnchorValue,
-      }),
+      });
+    },
     [setPosition],
   );
 
-  const setFurnitureWidth = (value: number) => setFurniture({ fuw: value });
-  const setFurnitureHeight = (value: number) => setFurniture({ fuh: value });
-  const setFurnitureAnchor = (value: FurnitureAnchor) => setFurniture({ fua: value });
-  const setFurnitureOffset = (value: number) => setFurniture({ fuo: value });
-  const setFrameFurnitureAlign = (value: FrameFurnitureAlignment) => setFurniture({ ffa: value });
-  const setFurnitureVAnchor = (value: FurnitureVerticalAnchor) => setFurniture({ fva: value });
+  const setFurnitureWidth = (value: number) => {
+    void setFurniture({ fuw: value });
+  };
+  const setFurnitureHeight = (value: number) => {
+    void setFurniture({ fuh: value });
+  };
+  const setFurnitureAnchor = (value: FurnitureAnchor) => {
+    void setFurniture({ fua: value });
+  };
+  const setFurnitureOffset = (value: number) => {
+    void setFurniture({ fuo: value });
+  };
+  const setFrameFurnitureAlign = (value: FrameFurnitureAlignment) => {
+    void setFurniture({ ffa: value });
+  };
+  const setFurnitureVAnchor = (value: FurnitureVerticalAnchor) => {
+    void setFurniture({ fva: value });
+  };
 
   // Frame setters
   const setFrames = useCallback(
     (newFrames: GalleryFrame[]) => {
-      setFramesState({ f: serializeFrames(newFrames) });
+      void setFramesState({ f: serializeFrames(newFrames) });
     },
     [setFramesState],
   );
@@ -300,13 +343,17 @@ export function useCalculator() {
     [frames, setFrames],
   );
 
-  const setVAlign = (value: GalleryVAlign) => setLayout({ va: value });
-  const setRowSpacing = (value: number) => setLayout({ rs: value });
+  const setVAlign = (value: GalleryVAlign) => {
+    void setLayout({ va: value });
+  };
+  const setRowSpacing = (value: number) => {
+    void setLayout({ rs: value });
+  };
 
   // Row config setters
   const setRowConfigs = useCallback(
     (configs: GalleryRowConfig[]) => {
-      setLayout({ rc: configs.length > 0 ? JSON.stringify(configs) : "" });
+      void setLayout({ rc: configs.length > 0 ? JSON.stringify(configs) : "" });
     },
     [setLayout],
   );
