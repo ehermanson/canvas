@@ -1548,10 +1548,24 @@ export function Canvas({ planner }: CanvasProps) {
       return false;
     }
 
-    canvas.width = rect.width * dpr;
-    canvas.height = rect.height * dpr;
-    canvas.style.width = `${rect.width}px`;
-    canvas.style.height = `${rect.height}px`;
+    const nextWidth = Math.round(rect.width * dpr);
+    const nextHeight = Math.round(rect.height * dpr);
+    const nextStyleWidth = `${rect.width}px`;
+    const nextStyleHeight = `${rect.height}px`;
+    const sizeChanged =
+      canvas.width !== nextWidth ||
+      canvas.height !== nextHeight ||
+      canvas.style.width !== nextStyleWidth ||
+      canvas.style.height !== nextStyleHeight;
+
+    if (!sizeChanged) {
+      return false;
+    }
+
+    canvas.width = nextWidth;
+    canvas.height = nextHeight;
+    canvas.style.width = nextStyleWidth;
+    canvas.style.height = nextStyleHeight;
     return true;
   }, []);
 
@@ -4147,15 +4161,24 @@ export function Canvas({ planner }: CanvasProps) {
     getSelectedFurnitureItems,
   ]);
 
+  const drawRef = useRef(draw);
+  drawRef.current = draw;
+
   // ── Resize observer ──
   useLayoutEffect(() => {
-    resizeCanvasToContainer();
+    if (resizeCanvasToContainer()) {
+      drawRef.current();
+    }
 
     const container = containerRef.current;
     if (!container) return;
 
     const observer = new ResizeObserver(() => {
-      resizeCanvasToContainer();
+      if (!resizeCanvasToContainer()) {
+        return;
+      }
+
+      drawRef.current();
     });
 
     observer.observe(container);
@@ -4167,11 +4190,16 @@ export function Canvas({ planner }: CanvasProps) {
   fitToViewRef.current = fitToView;
 
   useLayoutEffect(() => {
-    if (!resizeCanvasToContainer()) {
+    const hasCanvasSize =
+      (canvasRef.current?.width ?? 0) > 0 &&
+      (canvasRef.current?.height ?? 0) > 0;
+
+    if (!resizeCanvasToContainer() && !hasCanvasSize) {
       return;
     }
 
     fitToViewRef.current();
+    drawRef.current();
   }, [resizeCanvasToContainer]);
 
   // ── Render loop ──
