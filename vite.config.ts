@@ -1,4 +1,6 @@
-export default {
+import { defineConfig } from "vite-plus";
+
+export default defineConfig({
   staged: {
     "*": "vp check --fix",
   },
@@ -11,4 +13,4 @@ export default {
   test: {
     projects: ["apps/*", "packages/viewport"],
   },
-};
+});

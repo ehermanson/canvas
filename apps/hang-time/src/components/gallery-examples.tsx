@@ -123,7 +123,7 @@ export function GalleryExamples({
                 <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
                   {preset.name}
                 </p>
-                <p className="text-xs text-gray-500 dark:text-white/50 truncate">
+                <p className="text-xs text-gray-500 dark:text-white/40 truncate">
                   {preset.description}
                 </p>
               </div>
