@@ -20,5 +20,17 @@ jobs:
           node-version: 22
           cache: npm
 
-      - run: npm ci
-      - run: npm run ci
+      - name: Install Vite+
+        run: npm install -g vite-plus@latest
+
+      - name: Install dependencies
+        run: vp install
+
+      - name: Check
+        run: vp check
+
+      - name: Test
+        run: vp test
+
+      - name: Build
+        run: vp run -r build
