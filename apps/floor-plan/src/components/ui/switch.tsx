@@ -1,1 +1,1 @@
-export { Switch } from '@canvas-tools/ui';
+export { Switch } from "@canvas-tools/ui";

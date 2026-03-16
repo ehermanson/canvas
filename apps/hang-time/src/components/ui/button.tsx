@@ -1,1 +1,1 @@
-export { Button, buttonVariants } from '@canvas-tools/ui';
+export { Button, buttonVariants } from "@canvas-tools/ui";

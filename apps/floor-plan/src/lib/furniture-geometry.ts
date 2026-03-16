@@ -1,9 +1,9 @@
-import type { Bounds } from '@/lib/room-geometry';
-import { distSq, projectOntoSegment } from '@/lib/room-geometry';
-import type { FurnitureItem, Point } from '@/types';
+import type { Bounds } from "@/lib/room-geometry";
+import { distSq, projectOntoSegment } from "@/lib/room-geometry";
+import type { FurnitureItem, Point } from "@/types";
 
-export type FurnitureResizeEdge = 'bottom' | 'left' | 'right' | 'top';
-export type FurnitureAlignmentReference = 'center' | 'end' | 'start';
+export type FurnitureResizeEdge = "bottom" | "left" | "right" | "top";
+export type FurnitureAlignmentReference = "center" | "end" | "start";
 
 export interface FurnitureAlignmentMatch {
   delta: number;
@@ -78,12 +78,7 @@ function pointInPolygon(point: Point, polygon: Point[]) {
   return inside;
 }
 
-function segmentsProperlyIntersect(
-  aStart: Point,
-  aEnd: Point,
-  bStart: Point,
-  bEnd: Point,
-) {
+function segmentsProperlyIntersect(aStart: Point, aEnd: Point, bStart: Point, bEnd: Point) {
   const abStart = crossProduct(aStart, aEnd, bStart);
   const abEnd = crossProduct(aStart, aEnd, bEnd);
   const baStart = crossProduct(bStart, bEnd, aStart);
@@ -98,17 +93,10 @@ function segmentsProperlyIntersect(
     return false;
   }
 
-  return (
-    Math.sign(abStart) !== Math.sign(abEnd) &&
-    Math.sign(baStart) !== Math.sign(baEnd)
-  );
+  return Math.sign(abStart) !== Math.sign(abEnd) && Math.sign(baStart) !== Math.sign(baEnd);
 }
 
-function rotatePointToLocalSpace(
-  point: Point,
-  origin: Point,
-  rotation: number,
-): Point {
+function rotatePointToLocalSpace(point: Point, origin: Point, rotation: number): Point {
   const radians = (-rotation * Math.PI) / 180;
   const cos = Math.cos(radians);
   const sin = Math.sin(radians);
@@ -163,7 +151,7 @@ function getPolygonEdges(points: Point[]) {
 }
 
 function getFurnitureSnapPoints(item: FurnitureItem) {
-  if (item.shape === 'circle') {
+  if (item.shape === "circle") {
     return getFurnitureEdgePoints(item);
   }
 
@@ -179,22 +167,22 @@ function getPolygonCentroid(points: Point[]) {
 
 function getBoundsReferenceValue(
   bounds: Bounds,
-  axis: 'x' | 'y',
+  axis: "x" | "y",
   reference: FurnitureAlignmentReference,
 ) {
-  if (axis === 'x') {
-    if (reference === 'start') return bounds.minX;
-    if (reference === 'center') return (bounds.minX + bounds.maxX) / 2;
+  if (axis === "x") {
+    if (reference === "start") return bounds.minX;
+    if (reference === "center") return (bounds.minX + bounds.maxX) / 2;
     return bounds.maxX;
   }
 
-  if (reference === 'start') return bounds.minY;
-  if (reference === 'center') return (bounds.minY + bounds.maxY) / 2;
+  if (reference === "start") return bounds.minY;
+  if (reference === "center") return (bounds.minY + bounds.maxY) / 2;
   return bounds.maxY;
 }
 
 export function getFurnitureBounds(item: FurnitureItem) {
-  if (item.shape === 'circle') {
+  if (item.shape === "circle") {
     const radius = item.width / 2;
     return {
       minX: item.x - radius,
@@ -258,40 +246,24 @@ export function resizeFurnitureFromEdge(
   let top = -halfDepth;
   let bottom = halfDepth;
 
-  if (item.shape === 'circle') {
-    if (edge === 'left') {
-      left = Math.min(
-        right - MIN_FURNITURE_SIZE,
-        snapValue(localPointer.x, step),
-      );
-    } else if (edge === 'right') {
-      right = Math.max(
-        left + MIN_FURNITURE_SIZE,
-        snapValue(localPointer.x, step),
-      );
-    } else if (edge === 'top') {
-      top = Math.min(
-        bottom - MIN_FURNITURE_SIZE,
-        snapValue(localPointer.y, step),
-      );
+  if (item.shape === "circle") {
+    if (edge === "left") {
+      left = Math.min(right - MIN_FURNITURE_SIZE, snapValue(localPointer.x, step));
+    } else if (edge === "right") {
+      right = Math.max(left + MIN_FURNITURE_SIZE, snapValue(localPointer.x, step));
+    } else if (edge === "top") {
+      top = Math.min(bottom - MIN_FURNITURE_SIZE, snapValue(localPointer.y, step));
     } else {
-      bottom = Math.max(
-        top + MIN_FURNITURE_SIZE,
-        snapValue(localPointer.y, step),
-      );
+      bottom = Math.max(top + MIN_FURNITURE_SIZE, snapValue(localPointer.y, step));
     }
 
-    const diameter =
-      edge === 'left' || edge === 'right' ? right - left : bottom - top;
+    const diameter = edge === "left" || edge === "right" ? right - left : bottom - top;
     const clampedDiameter = Math.max(MIN_FURNITURE_SIZE, diameter);
     const centerShiftLocal =
-      edge === 'left' || edge === 'right'
+      edge === "left" || edge === "right"
         ? { x: (left + right) / 2, y: 0 }
         : { x: 0, y: (top + bottom) / 2 };
-    const centerShiftWorld = rotateLocalVectorToWorld(
-      centerShiftLocal,
-      item.rotation,
-    );
+    const centerShiftWorld = rotateLocalVectorToWorld(centerShiftLocal, item.rotation);
 
     return {
       x: item.x + centerShiftWorld.x,
@@ -301,26 +273,14 @@ export function resizeFurnitureFromEdge(
     };
   }
 
-  if (edge === 'left') {
-    left = Math.min(
-      right - MIN_FURNITURE_SIZE,
-      snapValue(localPointer.x, step),
-    );
-  } else if (edge === 'right') {
-    right = Math.max(
-      left + MIN_FURNITURE_SIZE,
-      snapValue(localPointer.x, step),
-    );
-  } else if (edge === 'top') {
-    top = Math.min(
-      bottom - MIN_FURNITURE_SIZE,
-      snapValue(localPointer.y, step),
-    );
+  if (edge === "left") {
+    left = Math.min(right - MIN_FURNITURE_SIZE, snapValue(localPointer.x, step));
+  } else if (edge === "right") {
+    right = Math.max(left + MIN_FURNITURE_SIZE, snapValue(localPointer.x, step));
+  } else if (edge === "top") {
+    top = Math.min(bottom - MIN_FURNITURE_SIZE, snapValue(localPointer.y, step));
   } else {
-    bottom = Math.max(
-      top + MIN_FURNITURE_SIZE,
-      snapValue(localPointer.y, step),
-    );
+    bottom = Math.max(top + MIN_FURNITURE_SIZE, snapValue(localPointer.y, step));
   }
 
   const centerShiftWorld = rotateLocalVectorToWorld(
@@ -358,10 +318,7 @@ export function resizeFurnitureByHandleDelta(
   );
 }
 
-export function getNearestFurnitureClearances(
-  item: FurnitureItem,
-  roomBounds: Bounds,
-) {
+export function getNearestFurnitureClearances(item: FurnitureItem, roomBounds: Bounds) {
   const bounds = getFurnitureBounds(item);
 
   return getNearestBoundsClearances(bounds, roomBounds, {
@@ -370,11 +327,7 @@ export function getNearestFurnitureClearances(
   });
 }
 
-export function getNearestBoundsClearances(
-  bounds: Bounds,
-  roomBounds: Bounds,
-  anchor: Point,
-) {
+export function getNearestBoundsClearances(bounds: Bounds, roomBounds: Bounds, anchor: Point) {
   const leftDistance = bounds.minX - roomBounds.minX;
   const rightDistance = roomBounds.maxX - bounds.maxX;
   const topDistance = bounds.minY - roomBounds.minY;
@@ -427,24 +380,16 @@ export function getFurnitureAlignmentMatches(
     };
   }
 
-  const references = ['start', 'center', 'end'] as const;
+  const references = ["start", "center", "end"] as const;
   let bestX: FurnitureAlignmentMatch | null = null;
   let bestY: FurnitureAlignmentMatch | null = null;
 
   for (const candidateBounds of otherBounds) {
     if (axes.x) {
       for (const sourceReference of references) {
-        const sourceValue = getBoundsReferenceValue(
-          bounds,
-          'x',
-          sourceReference,
-        );
+        const sourceValue = getBoundsReferenceValue(bounds, "x", sourceReference);
         for (const targetReference of references) {
-          const targetValue = getBoundsReferenceValue(
-            candidateBounds,
-            'x',
-            targetReference,
-          );
+          const targetValue = getBoundsReferenceValue(candidateBounds, "x", targetReference);
           const delta = targetValue - sourceValue;
           const distance = Math.abs(delta);
           if (distance > threshold + GEOMETRY_EPSILON) {
@@ -466,17 +411,9 @@ export function getFurnitureAlignmentMatches(
 
     if (axes.y) {
       for (const sourceReference of references) {
-        const sourceValue = getBoundsReferenceValue(
-          bounds,
-          'y',
-          sourceReference,
-        );
+        const sourceValue = getBoundsReferenceValue(bounds, "y", sourceReference);
         for (const targetReference of references) {
-          const targetValue = getBoundsReferenceValue(
-            candidateBounds,
-            'y',
-            targetReference,
-          );
+          const targetValue = getBoundsReferenceValue(candidateBounds, "y", targetReference);
           const delta = targetValue - sourceValue;
           const distance = Math.abs(delta);
           if (distance > threshold + GEOMETRY_EPSILON) {
@@ -561,10 +498,7 @@ function projectPointsOntoAxis(points: Point[], axis: Point) {
   return { min, max };
 }
 
-function intervalsOverlap(
-  a: { min: number; max: number },
-  b: { min: number; max: number },
-) {
+function intervalsOverlap(a: { min: number; max: number }, b: { min: number; max: number }) {
   return a.max > b.min && b.max > a.min;
 }
 
@@ -587,10 +521,7 @@ function checkRectangleCollision(a: FurnitureItem, b: FurnitureItem) {
   const axes = [...getRectangleAxes(aCorners), ...getRectangleAxes(bCorners)];
 
   return axes.every((axis) =>
-    intervalsOverlap(
-      projectPointsOntoAxis(aCorners, axis),
-      projectPointsOntoAxis(bCorners, axis),
-    ),
+    intervalsOverlap(projectPointsOntoAxis(aCorners, axis), projectPointsOntoAxis(bCorners, axis)),
   );
 }
 
@@ -599,10 +530,7 @@ function checkCircleCollision(a: FurnitureItem, b: FurnitureItem) {
   return distSq(a, b) < radiusSum ** 2;
 }
 
-function checkCircleRectangleCollision(
-  circle: FurnitureItem,
-  rectangle: FurnitureItem,
-) {
+function checkCircleRectangleCollision(circle: FurnitureItem, rectangle: FurnitureItem) {
   const localCenter = rotatePointToLocalSpace(
     { x: circle.x, y: circle.y },
     { x: rectangle.x, y: rectangle.y },
@@ -619,19 +547,19 @@ function checkCircleRectangleCollision(
 }
 
 export function checkFurnitureCollision(a: FurnitureItem, b: FurnitureItem) {
-  if (a.type === 'rug' || b.type === 'rug') {
+  if (a.type === "rug" || b.type === "rug") {
     return false;
   }
 
-  if (a.shape === 'circle' && b.shape === 'circle') {
+  if (a.shape === "circle" && b.shape === "circle") {
     return checkCircleCollision(a, b);
   }
 
-  if (a.shape === 'circle') {
+  if (a.shape === "circle") {
     return checkCircleRectangleCollision(a, b);
   }
 
-  if (b.shape === 'circle') {
+  if (b.shape === "circle") {
     return checkCircleRectangleCollision(b, a);
   }
 
@@ -734,31 +662,21 @@ export function snapFurnitureToRoomWalls(
     : item;
 }
 
-export function checkFurnitureRoomCollision(
-  item: FurnitureItem,
-  roomPolygon: Point[],
-) {
+export function checkFurnitureRoomCollision(item: FurnitureItem, roomPolygon: Point[]) {
   if (roomPolygon.length < 3) {
     return false;
   }
 
   const roomEdges = getPolygonEdges(roomPolygon);
 
-  if (item.shape === 'circle') {
+  if (item.shape === "circle") {
     const radius = item.width / 2;
     if (!pointInPolygon(item, roomPolygon)) {
       return true;
     }
 
     return roomEdges.some(({ start, end }) => {
-      const projection = projectOntoSegment(
-        item.x,
-        item.y,
-        start.x,
-        start.y,
-        end.x,
-        end.y,
-      );
+      const projection = projectOntoSegment(item.x, item.y, start.x, start.y, end.x, end.y);
       return projection.dist < radius - GEOMETRY_EPSILON;
     });
   }

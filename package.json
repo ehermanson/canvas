@@ -1,15 +1,12 @@
 {
   "name": "canvas-tools-workspace",
-  "private": true,
   "version": "1.0.0",
-  "type": "module",
-  "engines": {
-    "node": "22.x"
-  },
+  "private": true,
   "workspaces": [
     "apps/*",
     "packages/*"
   ],
+  "type": "module",
   "scripts": {
     "dev:hang-time": "npm run dev --workspace @canvas-tools/hang-time",
     "dev:floor-plan": "npm run dev --workspace @canvas-tools/floor-plan",
@@ -22,9 +19,24 @@
     "test:hang-time": "npm run test --workspace @canvas-tools/hang-time",
     "test:floor-plan": "npm run test --workspace @canvas-tools/floor-plan",
     "test:viewport": "npm run test --workspace @canvas-tools/viewport",
-    "lint": "npm run lint --workspace @canvas-tools/hang-time && npm run lint --workspace @canvas-tools/floor-plan",
+    "lint": "vp check",
     "build": "npm run build:hang-time && npm run build:floor-plan",
     "test": "npm run test:viewport && npm run test:hang-time && npm run test:floor-plan",
-    "ci": "npm run lint && npm run test && npm run build"
-  }
+    "ci": "npm run lint && npm run test && npm run build",
+    "prepare": "vp config"
+  },
+  "dependencies": {
+    "@matthamlin/dodo": "0.1.0"
+  },
+  "devDependencies": {
+    "vite-plus": "latest"
+  },
+  "overrides": {
+    "vite": "npm:@voidzero-dev/vite-plus-core@latest",
+    "vitest": "npm:@voidzero-dev/vite-plus-test@latest"
+  },
+  "engines": {
+    "node": "22.x"
+  },
+  "packageManager": "npm@11.11.1"
 }

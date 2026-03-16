@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import type { CalculatorState, GalleryFrame } from '@/types';
+import { describe, expect, it } from "vite-plus/test";
+import type { CalculatorState, GalleryFrame } from "@/types";
 import {
   calculateLayoutPositions,
   formatMeasurement,
@@ -7,32 +7,22 @@ import {
   fromDisplayUnit,
   INCH_TO_CM,
   toDisplayUnit,
-} from './calculations';
+} from "./calculations";
 
 // Helper to create frames
-const createFrame = (
-  width: number,
-  height: number,
-  row?: number,
-): GalleryFrame => ({
+const createFrame = (width: number, height: number, row?: number): GalleryFrame => ({
   id: Math.random().toString(36).substring(7),
   width,
   height,
   row,
 });
 
-const createFrames = (
-  count: number,
-  width: number,
-  height: number,
-): GalleryFrame[] =>
+const createFrames = (count: number, width: number, height: number): GalleryFrame[] =>
   Array.from({ length: count }, () => createFrame(width, height));
 
 // Default state factory for tests
-const createDefaultState = (
-  overrides: Partial<CalculatorState> = {},
-): CalculatorState => ({
-  unit: 'in',
+const createDefaultState = (overrides: Partial<CalculatorState> = {}): CalculatorState => ({
+  unit: "in",
   wallWidth: 120,
   wallHeight: 96,
   frames: createFrames(1, 16, 20),
@@ -40,119 +30,119 @@ const createDefaultState = (
   frameWidth: 16,
   frameHeight: 20,
   hangingOffset: 2,
-  hangingType: 'center',
+  hangingType: "center",
   hookInset: 2,
   hSpacing: 4,
-  hDistribution: 'fixed',
-  anchorType: 'center',
+  hDistribution: "fixed",
+  anchorType: "center",
   anchorValue: 0,
-  hAnchorType: 'center',
+  hAnchorType: "center",
   hAnchorValue: 0,
   furnitureWidth: 48,
   furnitureHeight: 30,
-  furnitureAnchor: 'center',
+  furnitureAnchor: "center",
   furnitureOffset: 0,
-  frameFurnitureAlign: 'center',
-  furnitureVAnchor: 'above-furniture',
-  vAlign: 'center',
+  frameFurnitureAlign: "center",
+  furnitureVAnchor: "above-furniture",
+  vAlign: "center",
   rowSpacing: 3,
   rowConfigs: [],
   ...overrides,
 });
 
-describe('Unit Conversion', () => {
-  describe('toDisplayUnit', () => {
-    it('returns value unchanged for inches', () => {
-      expect(toDisplayUnit(10, 'in')).toBe(10);
+describe("Unit Conversion", () => {
+  describe("toDisplayUnit", () => {
+    it("returns value unchanged for inches", () => {
+      expect(toDisplayUnit(10, "in")).toBe(10);
     });
 
-    it('converts inches to centimeters', () => {
-      expect(toDisplayUnit(10, 'cm')).toBe(10 * INCH_TO_CM);
+    it("converts inches to centimeters", () => {
+      expect(toDisplayUnit(10, "cm")).toBe(10 * INCH_TO_CM);
     });
 
-    it('handles zero', () => {
-      expect(toDisplayUnit(0, 'in')).toBe(0);
-      expect(toDisplayUnit(0, 'cm')).toBe(0);
+    it("handles zero", () => {
+      expect(toDisplayUnit(0, "in")).toBe(0);
+      expect(toDisplayUnit(0, "cm")).toBe(0);
     });
 
-    it('handles decimal values', () => {
-      expect(toDisplayUnit(2.5, 'cm')).toBeCloseTo(6.35);
+    it("handles decimal values", () => {
+      expect(toDisplayUnit(2.5, "cm")).toBeCloseTo(6.35);
     });
   });
 
-  describe('fromDisplayUnit', () => {
-    it('returns value unchanged for inches', () => {
-      expect(fromDisplayUnit(10, 'in')).toBe(10);
+  describe("fromDisplayUnit", () => {
+    it("returns value unchanged for inches", () => {
+      expect(fromDisplayUnit(10, "in")).toBe(10);
     });
 
-    it('converts centimeters to inches', () => {
-      expect(fromDisplayUnit(25.4, 'cm')).toBeCloseTo(10);
+    it("converts centimeters to inches", () => {
+      expect(fromDisplayUnit(25.4, "cm")).toBeCloseTo(10);
     });
 
-    it('handles zero', () => {
-      expect(fromDisplayUnit(0, 'in')).toBe(0);
-      expect(fromDisplayUnit(0, 'cm')).toBe(0);
+    it("handles zero", () => {
+      expect(fromDisplayUnit(0, "in")).toBe(0);
+      expect(fromDisplayUnit(0, "cm")).toBe(0);
     });
 
-    it('roundtrips correctly', () => {
+    it("roundtrips correctly", () => {
       const original = 15;
-      const converted = toDisplayUnit(original, 'cm');
-      const backConverted = fromDisplayUnit(converted, 'cm');
+      const converted = toDisplayUnit(original, "cm");
+      const backConverted = fromDisplayUnit(converted, "cm");
       expect(backConverted).toBeCloseTo(original);
     });
   });
 });
 
-describe('Measurement Formatting', () => {
-  describe('formatMeasurement', () => {
-    it('formats inches with quote suffix', () => {
-      expect(formatMeasurement(10, 'in')).toBe('10"');
+describe("Measurement Formatting", () => {
+  describe("formatMeasurement", () => {
+    it("formats inches with quote suffix", () => {
+      expect(formatMeasurement(10, "in")).toBe('10"');
     });
 
-    it('formats centimeters with cm suffix', () => {
-      expect(formatMeasurement(10, 'cm')).toBe('10 cm');
+    it("formats centimeters with cm suffix", () => {
+      expect(formatMeasurement(10, "cm")).toBe("10 cm");
     });
 
-    it('trims trailing zeros for inches', () => {
-      expect(formatMeasurement(10.5, 'in')).toBe('10.5"');
-      expect(formatMeasurement(10.0, 'in')).toBe('10"');
+    it("trims trailing zeros for inches", () => {
+      expect(formatMeasurement(10.5, "in")).toBe('10.5"');
+      expect(formatMeasurement(10.0, "in")).toBe('10"');
     });
 
-    it('shows up to 3 decimals for inches', () => {
-      expect(formatMeasurement(10.125, 'in')).toBe('10.125"');
-      expect(formatMeasurement(10.1256, 'in')).toBe('10.126"');
+    it("shows up to 3 decimals for inches", () => {
+      expect(formatMeasurement(10.125, "in")).toBe('10.125"');
+      expect(formatMeasurement(10.1256, "in")).toBe('10.126"');
     });
 
-    it('shows up to 1 decimal for centimeters', () => {
-      expect(formatMeasurement(10.5, 'cm')).toBe('10.5 cm');
-      expect(formatMeasurement(10.55, 'cm')).toBe('10.6 cm');
+    it("shows up to 1 decimal for centimeters", () => {
+      expect(formatMeasurement(10.5, "cm")).toBe("10.5 cm");
+      expect(formatMeasurement(10.55, "cm")).toBe("10.6 cm");
     });
 
-    it('handles zero', () => {
-      expect(formatMeasurement(0, 'in')).toBe('0"');
-      expect(formatMeasurement(0, 'cm')).toBe('0 cm');
+    it("handles zero", () => {
+      expect(formatMeasurement(0, "in")).toBe('0"');
+      expect(formatMeasurement(0, "cm")).toBe("0 cm");
     });
   });
 
-  describe('formatShort', () => {
-    it('formats inches with quote suffix (no space)', () => {
-      expect(formatShort(10, 'in')).toBe('10"');
+  describe("formatShort", () => {
+    it("formats inches with quote suffix (no space)", () => {
+      expect(formatShort(10, "in")).toBe('10"');
     });
 
-    it('formats centimeters with cm suffix (no space)', () => {
-      expect(formatShort(10, 'cm')).toBe('10cm');
+    it("formats centimeters with cm suffix (no space)", () => {
+      expect(formatShort(10, "cm")).toBe("10cm");
     });
 
-    it('trims trailing zeros', () => {
-      expect(formatShort(10.0, 'in')).toBe('10"');
-      expect(formatShort(10.0, 'cm')).toBe('10cm');
+    it("trims trailing zeros", () => {
+      expect(formatShort(10.0, "in")).toBe('10"');
+      expect(formatShort(10.0, "cm")).toBe("10cm");
     });
   });
 });
 
-describe('calculateLayoutPositions', () => {
-  describe('Basic Layout', () => {
-    it('returns correct number of frames', () => {
+describe("calculateLayoutPositions", () => {
+  describe("Basic Layout", () => {
+    it("returns correct number of frames", () => {
       const state = createDefaultState({
         frames: createFrames(4, 16, 20),
       });
@@ -160,7 +150,7 @@ describe('calculateLayoutPositions', () => {
       expect(positions).toHaveLength(4);
     });
 
-    it('assigns sequential IDs starting from 1', () => {
+    it("assigns sequential IDs starting from 1", () => {
       const state = createDefaultState({
         frames: createFrames(3, 16, 20),
       });
@@ -168,12 +158,8 @@ describe('calculateLayoutPositions', () => {
       expect(positions.map((p) => p.id)).toEqual([1, 2, 3]);
     });
 
-    it('uses uniform dimensions when uniformSize is true', () => {
-      const frames = [
-        createFrame(10, 10),
-        createFrame(20, 20),
-        createFrame(30, 30),
-      ];
+    it("uses uniform dimensions when uniformSize is true", () => {
+      const frames = [createFrame(10, 10), createFrame(20, 20), createFrame(30, 30)];
       const state = createDefaultState({
         frames,
         uniformSize: true,
@@ -187,12 +173,8 @@ describe('calculateLayoutPositions', () => {
       });
     });
 
-    it('uses individual frame dimensions when uniformSize is false', () => {
-      const frames = [
-        createFrame(10, 12),
-        createFrame(20, 22),
-        createFrame(30, 32),
-      ];
+    it("uses individual frame dimensions when uniformSize is false", () => {
+      const frames = [createFrame(10, 12), createFrame(20, 22), createFrame(30, 32)];
       const state = createDefaultState({
         frames,
         uniformSize: false,
@@ -207,50 +189,50 @@ describe('calculateLayoutPositions', () => {
     });
   });
 
-  describe('Center Hook (default)', () => {
-    it('positions hook at frame center horizontally', () => {
+  describe("Center Hook (default)", () => {
+    it("positions hook at frame center horizontally", () => {
       const state = createDefaultState({
         frames: createFrames(1, 20, 20),
         uniformSize: true,
         frameWidth: 20,
-        hAnchorType: 'left',
+        hAnchorType: "left",
         hAnchorValue: 0,
-        hDistribution: 'fixed',
+        hDistribution: "fixed",
       });
       const positions = calculateLayoutPositions(state);
       expect(positions[0].hookX).toBe(10); // 0 + 20/2
     });
 
-    it('positions hook at hangingOffset from top', () => {
+    it("positions hook at hangingOffset from top", () => {
       const state = createDefaultState({
         frames: createFrames(1, 16, 20),
         hangingOffset: 3,
-        anchorType: 'ceiling',
+        anchorType: "ceiling",
         anchorValue: 0,
       });
       const positions = calculateLayoutPositions(state);
       expect(positions[0].hookY).toBe(3); // y=0 + hangingOffset=3
     });
 
-    it('does not set hookX2 or hookGap', () => {
-      const state = createDefaultState({ hangingType: 'center' });
+    it("does not set hookX2 or hookGap", () => {
+      const state = createDefaultState({ hangingType: "center" });
       const positions = calculateLayoutPositions(state);
       expect(positions[0].hookX2).toBeUndefined();
       expect(positions[0].hookGap).toBeUndefined();
     });
   });
 
-  describe('Dual Hooks', () => {
-    it('positions two hooks with correct inset', () => {
+  describe("Dual Hooks", () => {
+    it("positions two hooks with correct inset", () => {
       const state = createDefaultState({
         frames: createFrames(1, 20, 20),
         uniformSize: true,
         frameWidth: 20,
-        hangingType: 'dual',
+        hangingType: "dual",
         hookInset: 3,
-        hAnchorType: 'left',
+        hAnchorType: "left",
         hAnchorValue: 0,
-        hDistribution: 'fixed',
+        hDistribution: "fixed",
       });
       const positions = calculateLayoutPositions(state);
       expect(positions[0].hookX).toBe(3); // left hook: x + inset
@@ -259,13 +241,9 @@ describe('calculateLayoutPositions', () => {
     });
   });
 
-  describe('Horizontal Distribution Modes', () => {
+  describe("Horizontal Distribution Modes", () => {
     const createDistributionState = (
-      hDistribution:
-        | 'fixed'
-        | 'space-between'
-        | 'space-evenly'
-        | 'space-around',
+      hDistribution: "fixed" | "space-between" | "space-evenly" | "space-around",
     ) =>
       createDefaultState({
         frames: createFrames(3, 20, 20),
@@ -275,8 +253,8 @@ describe('calculateLayoutPositions', () => {
         hDistribution,
       });
 
-    it('space-between: first at edge, last at edge', () => {
-      const state = createDistributionState('space-between');
+    it("space-between: first at edge, last at edge", () => {
+      const state = createDistributionState("space-between");
       const positions = calculateLayoutPositions(state);
       // Available space = 100 - (3*20) = 40
       // Spacing = 40 / (3-1) = 20
@@ -285,8 +263,8 @@ describe('calculateLayoutPositions', () => {
       expect(positions[2].x).toBe(80); // 0 + 2*(20+20)
     });
 
-    it('space-evenly: equal space at edges and between', () => {
-      const state = createDistributionState('space-evenly');
+    it("space-evenly: equal space at edges and between", () => {
+      const state = createDistributionState("space-evenly");
       const positions = calculateLayoutPositions(state);
       // Available space = 100 - (3*20) = 40
       // Spacing = 40 / (3+1) = 10
@@ -295,8 +273,8 @@ describe('calculateLayoutPositions', () => {
       expect(positions[2].x).toBe(70); // 10 + 2*(20+10)
     });
 
-    it('space-around: half space at edges, full between', () => {
-      const state = createDistributionState('space-around');
+    it("space-around: half space at edges, full between", () => {
+      const state = createDistributionState("space-around");
       const positions = calculateLayoutPositions(state);
       // Available space = 100 - (3*20) = 40
       // Spacing = 40 / 3 ≈ 13.33
@@ -306,14 +284,14 @@ describe('calculateLayoutPositions', () => {
       expect(positions[1].x).toBeCloseTo(spacing / 2 + 20 + spacing);
     });
 
-    it('fixed with center anchor: centers group on wall', () => {
+    it("fixed with center anchor: centers group on wall", () => {
       const state = createDefaultState({
         frames: createFrames(3, 20, 20),
         uniformSize: true,
         frameWidth: 20,
         wallWidth: 100,
-        hDistribution: 'fixed',
-        hAnchorType: 'center',
+        hDistribution: "fixed",
+        hAnchorType: "center",
         hSpacing: 4,
       });
       const positions = calculateLayoutPositions(state);
@@ -322,14 +300,14 @@ describe('calculateLayoutPositions', () => {
       expect(positions[0].x).toBe(16);
     });
 
-    it('fixed with left anchor: positions from left edge', () => {
+    it("fixed with left anchor: positions from left edge", () => {
       const state = createDefaultState({
         frames: createFrames(3, 20, 20),
         uniformSize: true,
         frameWidth: 20,
         wallWidth: 100,
-        hDistribution: 'fixed',
-        hAnchorType: 'left',
+        hDistribution: "fixed",
+        hAnchorType: "left",
         hAnchorValue: 10,
         hSpacing: 4,
       });
@@ -337,14 +315,14 @@ describe('calculateLayoutPositions', () => {
       expect(positions[0].x).toBe(10);
     });
 
-    it('fixed with right anchor: positions from right edge', () => {
+    it("fixed with right anchor: positions from right edge", () => {
       const state = createDefaultState({
         frames: createFrames(3, 20, 20),
         uniformSize: true,
         frameWidth: 20,
         wallWidth: 100,
-        hDistribution: 'fixed',
-        hAnchorType: 'right',
+        hDistribution: "fixed",
+        hAnchorType: "right",
         hAnchorValue: 10,
         hSpacing: 4,
       });
@@ -355,39 +333,39 @@ describe('calculateLayoutPositions', () => {
     });
   });
 
-  describe('Vertical Anchor Types', () => {
-    it('center: vertically centers frame', () => {
+  describe("Vertical Anchor Types", () => {
+    it("center: vertically centers frame", () => {
       const state = createDefaultState({
         frames: createFrames(1, 16, 20),
         uniformSize: true,
         frameHeight: 20,
         wallHeight: 100,
-        anchorType: 'center',
+        anchorType: "center",
       });
       const positions = calculateLayoutPositions(state);
       expect(positions[0].y).toBe(40); // (100 - 20) / 2
     });
 
-    it('ceiling: positions from top', () => {
+    it("ceiling: positions from top", () => {
       const state = createDefaultState({
         frames: createFrames(1, 16, 20),
         uniformSize: true,
         frameHeight: 20,
         wallHeight: 100,
-        anchorType: 'ceiling',
+        anchorType: "ceiling",
         anchorValue: 15,
       });
       const positions = calculateLayoutPositions(state);
       expect(positions[0].y).toBe(15);
     });
 
-    it('floor: positions from bottom', () => {
+    it("floor: positions from bottom", () => {
       const state = createDefaultState({
         frames: createFrames(1, 16, 20),
         uniformSize: true,
         frameHeight: 20,
         wallHeight: 100,
-        anchorType: 'floor',
+        anchorType: "floor",
         anchorValue: 10,
       });
       const positions = calculateLayoutPositions(state);
@@ -395,13 +373,13 @@ describe('calculateLayoutPositions', () => {
       expect(positions[0].y).toBe(70);
     });
 
-    it('furniture: positions above furniture', () => {
+    it("furniture: positions above furniture", () => {
       const state = createDefaultState({
         frames: createFrames(1, 16, 20),
         uniformSize: true,
         frameHeight: 20,
         wallHeight: 100,
-        anchorType: 'furniture',
+        anchorType: "furniture",
         anchorValue: 5, // gap above furniture
         furnitureHeight: 30,
       });
@@ -412,8 +390,8 @@ describe('calculateLayoutPositions', () => {
     });
   });
 
-  describe('Multi-Row Layout', () => {
-    it('respects row assignment', () => {
+  describe("Multi-Row Layout", () => {
+    it("respects row assignment", () => {
       const frames = [
         createFrame(16, 20, 0),
         createFrame(16, 20, 1),
@@ -433,8 +411,8 @@ describe('calculateLayoutPositions', () => {
     });
   });
 
-  describe('Vertical Alignment within Rows', () => {
-    it('vAlign top: aligns frames to top of row', () => {
+  describe("Vertical Alignment within Rows", () => {
+    it("vAlign top: aligns frames to top of row", () => {
       const frames = [
         createFrame(16, 10, 0), // short frame
         createFrame(16, 20, 0), // tall frame
@@ -442,8 +420,8 @@ describe('calculateLayoutPositions', () => {
       const state = createDefaultState({
         frames,
         uniformSize: false,
-        vAlign: 'top',
-        anchorType: 'ceiling',
+        vAlign: "top",
+        anchorType: "ceiling",
         anchorValue: 0,
       });
       const positions = calculateLayoutPositions(state);
@@ -452,7 +430,7 @@ describe('calculateLayoutPositions', () => {
       expect(positions[1].y).toBe(0);
     });
 
-    it('vAlign bottom: aligns frames to bottom of row', () => {
+    it("vAlign bottom: aligns frames to bottom of row", () => {
       const frames = [
         createFrame(16, 10, 0), // short frame
         createFrame(16, 20, 0), // tall frame
@@ -460,8 +438,8 @@ describe('calculateLayoutPositions', () => {
       const state = createDefaultState({
         frames,
         uniformSize: false,
-        vAlign: 'bottom',
-        anchorType: 'ceiling',
+        vAlign: "bottom",
+        anchorType: "ceiling",
         anchorValue: 0,
       });
       const positions = calculateLayoutPositions(state);
@@ -472,7 +450,7 @@ describe('calculateLayoutPositions', () => {
       expect(positions[1].y).toBe(0); // tall frame at top
     });
 
-    it('vAlign center: centers frames within row', () => {
+    it("vAlign center: centers frames within row", () => {
       const frames = [
         createFrame(16, 10, 0), // short frame
         createFrame(16, 20, 0), // tall frame
@@ -480,8 +458,8 @@ describe('calculateLayoutPositions', () => {
       const state = createDefaultState({
         frames,
         uniformSize: false,
-        vAlign: 'center',
-        anchorType: 'ceiling',
+        vAlign: "center",
+        anchorType: "ceiling",
         anchorValue: 0,
       });
       const positions = calculateLayoutPositions(state);
@@ -493,32 +471,32 @@ describe('calculateLayoutPositions', () => {
     });
   });
 
-  describe('Distance Calculations', () => {
-    it('calculates fromLeft as distance to hook', () => {
+  describe("Distance Calculations", () => {
+    it("calculates fromLeft as distance to hook", () => {
       const state = createDefaultState({
         frames: createFrames(1, 20, 20),
         uniformSize: true,
         frameWidth: 20,
-        hAnchorType: 'left',
+        hAnchorType: "left",
         hAnchorValue: 30,
-        hDistribution: 'fixed',
+        hDistribution: "fixed",
       });
       const positions = calculateLayoutPositions(state);
       // hookX = x + width/2 = 30 + 10 = 40
       expect(positions[0].fromLeft).toBe(40);
     });
 
-    it('calculates fromRight as distance from right hook', () => {
+    it("calculates fromRight as distance from right hook", () => {
       const state = createDefaultState({
         frames: createFrames(1, 20, 20),
         uniformSize: true,
         frameWidth: 20,
         wallWidth: 100,
-        hangingType: 'dual',
+        hangingType: "dual",
         hookInset: 2,
-        hAnchorType: 'left',
+        hAnchorType: "left",
         hAnchorValue: 30,
-        hDistribution: 'fixed',
+        hDistribution: "fixed",
       });
       const positions = calculateLayoutPositions(state);
       // hookX2 = x + width - inset = 30 + 20 - 2 = 48
@@ -526,12 +504,12 @@ describe('calculateLayoutPositions', () => {
       expect(positions[0].fromRight).toBe(52);
     });
 
-    it('calculates fromFloor correctly', () => {
+    it("calculates fromFloor correctly", () => {
       const state = createDefaultState({
         frames: createFrames(1, 16, 20),
         hangingOffset: 2,
         wallHeight: 100,
-        anchorType: 'ceiling',
+        anchorType: "ceiling",
         anchorValue: 10,
       });
       const positions = calculateLayoutPositions(state);
@@ -540,11 +518,11 @@ describe('calculateLayoutPositions', () => {
       expect(positions[0].fromFloor).toBe(88);
     });
 
-    it('calculates fromCeiling as hookY', () => {
+    it("calculates fromCeiling as hookY", () => {
       const state = createDefaultState({
         frames: createFrames(1, 16, 20),
         hangingOffset: 2,
-        anchorType: 'ceiling',
+        anchorType: "ceiling",
         anchorValue: 10,
       });
       const positions = calculateLayoutPositions(state);
@@ -552,11 +530,11 @@ describe('calculateLayoutPositions', () => {
     });
   });
 
-  describe('Edge Cases', () => {
-    it('handles single frame with space-between (no division by zero)', () => {
+  describe("Edge Cases", () => {
+    it("handles single frame with space-between (no division by zero)", () => {
       const state = createDefaultState({
         frames: createFrames(1, 16, 20),
-        hDistribution: 'space-between',
+        hDistribution: "space-between",
       });
       const positions = calculateLayoutPositions(state);
       expect(positions).toHaveLength(1);
@@ -564,13 +542,13 @@ describe('calculateLayoutPositions', () => {
       expect(positions[0].x).toBe(0);
     });
 
-    it('handles empty frames array', () => {
+    it("handles empty frames array", () => {
       const state = createDefaultState({ frames: [] });
       const positions = calculateLayoutPositions(state);
       expect(positions).toHaveLength(0);
     });
 
-    it('includes frame dimensions in position output', () => {
+    it("includes frame dimensions in position output", () => {
       const state = createDefaultState({
         frames: createFrames(1, 25, 35),
         uniformSize: true,
@@ -582,7 +560,7 @@ describe('calculateLayoutPositions', () => {
       expect(positions[0].height).toBe(35);
     });
 
-    it('includes hangingOffset in position output', () => {
+    it("includes hangingOffset in position output", () => {
       const state = createDefaultState({
         frames: createFrames(1, 16, 20),
         hangingOffset: 5,
@@ -592,8 +570,8 @@ describe('calculateLayoutPositions', () => {
     });
   });
 
-  describe('Out of Bounds Detection', () => {
-    it('marks frame as in bounds when fully within wall', () => {
+  describe("Out of Bounds Detection", () => {
+    it("marks frame as in bounds when fully within wall", () => {
       const state = createDefaultState({
         frames: createFrames(1, 20, 20),
         uniformSize: true,
@@ -601,42 +579,42 @@ describe('calculateLayoutPositions', () => {
         frameHeight: 20,
         wallWidth: 100,
         wallHeight: 100,
-        hAnchorType: 'center',
-        anchorType: 'center',
+        hAnchorType: "center",
+        anchorType: "center",
       });
       const positions = calculateLayoutPositions(state);
       expect(positions[0].isOutOfBounds).toBe(false);
     });
 
-    it('marks frame as out of bounds when extending past left edge', () => {
+    it("marks frame as out of bounds when extending past left edge", () => {
       const state = createDefaultState({
         frames: createFrames(1, 20, 20),
         uniformSize: true,
         frameWidth: 20,
         wallWidth: 100,
-        hDistribution: 'fixed',
-        hAnchorType: 'left',
+        hDistribution: "fixed",
+        hAnchorType: "left",
         hAnchorValue: -5, // Starts 5 units off the left edge
       });
       const positions = calculateLayoutPositions(state);
       expect(positions[0].isOutOfBounds).toBe(true);
     });
 
-    it('marks frame as out of bounds when extending past right edge', () => {
+    it("marks frame as out of bounds when extending past right edge", () => {
       const state = createDefaultState({
         frames: createFrames(1, 20, 20),
         uniformSize: true,
         frameWidth: 20,
         wallWidth: 100,
-        hDistribution: 'fixed',
-        hAnchorType: 'left',
+        hDistribution: "fixed",
+        hAnchorType: "left",
         hAnchorValue: 90, // Starts at 90, ends at 110
       });
       const positions = calculateLayoutPositions(state);
       expect(positions[0].isOutOfBounds).toBe(true);
     });
 
-    it('frame exactly fitting wall is not out of bounds', () => {
+    it("frame exactly fitting wall is not out of bounds", () => {
       const state = createDefaultState({
         frames: createFrames(1, 100, 100),
         uniformSize: true,
@@ -644,9 +622,9 @@ describe('calculateLayoutPositions', () => {
         frameHeight: 100,
         wallWidth: 100,
         wallHeight: 100,
-        hDistribution: 'fixed',
-        hAnchorType: 'center',
-        anchorType: 'center',
+        hDistribution: "fixed",
+        hAnchorType: "center",
+        anchorType: "center",
       });
       const positions = calculateLayoutPositions(state);
       expect(positions[0].isOutOfBounds).toBe(false);

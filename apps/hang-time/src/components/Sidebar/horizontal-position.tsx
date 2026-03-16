@@ -1,10 +1,10 @@
-import { InspectorOptionCard, InspectorSectionHeader } from '@canvas-tools/ui';
-import { MoveHorizontal } from 'lucide-react';
-import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible';
-import { Field, FieldLabel } from '@/components/ui/field';
-import { Input } from '@/components/ui/input';
-import type { UseCalculatorReturn } from '@/hooks/use-calculator';
-import type { HorizontalAnchorType } from '@/types';
+import { InspectorOptionCard, InspectorSectionHeader } from "@canvas-tools/ui";
+import { MoveHorizontal } from "lucide-react";
+import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
+import { Field, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import type { UseCalculatorReturn } from "@/hooks/use-calculator";
+import type { HorizontalAnchorType } from "@/types";
 
 interface Props {
   calculator: UseCalculatorReturn;
@@ -17,34 +17,30 @@ const options: {
   defaultValue: number;
 }[] = [
   {
-    value: 'center',
-    label: 'Center on Wall',
-    desc: 'Horizontally centered',
+    value: "center",
+    label: "Center on Wall",
+    desc: "Horizontally centered",
     defaultValue: 0,
   },
   {
-    value: 'left',
-    label: 'From Left Edge',
-    desc: 'Distance from left wall',
+    value: "left",
+    label: "From Left Edge",
+    desc: "Distance from left wall",
     defaultValue: 12,
   },
   {
-    value: 'right',
-    label: 'From Right Edge',
-    desc: 'Distance from right wall',
+    value: "right",
+    label: "From Right Edge",
+    desc: "Distance from right wall",
     defaultValue: 12,
   },
 ];
 
 export function HorizontalPosition({ calculator }: Props) {
-  const { state, u, fromU, setHAnchorType, setHAnchorValue, setHSpacing } =
-    calculator;
+  const { state, u, fromU, setHAnchorType, setHAnchorValue, setHSpacing } = calculator;
 
   return (
-    <Collapsible
-      defaultOpen
-      className="border-b border-gray-200 dark:border-white/10"
-    >
+    <Collapsible defaultOpen className="border-b border-gray-200 dark:border-white/10">
       <InspectorSectionHeader
         icon={MoveHorizontal}
         iconClassName="text-amber-500"
@@ -53,11 +49,10 @@ export function HorizontalPosition({ calculator }: Props) {
       />
       <CollapsibleContent>
         <div className="space-y-3 pt-2.5 pb-3">
-          {state.hDistribution !== 'fixed' ? (
+          {state.hDistribution !== "fixed" ? (
             <p className="text-xs text-gray-500 dark:text-white/50 italic">
-              Position is automatic for{' '}
-              {state.hDistribution.replace('space-', '')} distribution. Set
-              distribution to "Fixed" to control position and spacing.
+              Position is automatic for {state.hDistribution.replace("space-", "")} distribution.
+              Set distribution to "Fixed" to control position and spacing.
             </p>
           ) : (
             <>
@@ -71,8 +66,7 @@ export function HorizontalPosition({ calculator }: Props) {
                     className="cursor-pointer p-3"
                     onClick={() => {
                       setHAnchorType(opt.value);
-                      if (opt.value !== 'center')
-                        setHAnchorValue(opt.defaultValue);
+                      if (opt.value !== "center") setHAnchorValue(opt.defaultValue);
                     }}
                   >
                     <label>
@@ -86,16 +80,14 @@ export function HorizontalPosition({ calculator }: Props) {
                         <div className="text-sm font-medium text-gray-900 dark:text-white">
                           {opt.label}
                         </div>
-                        <div className="text-xs text-gray-500 dark:text-white/50">
-                          {opt.desc}
-                        </div>
+                        <div className="text-xs text-gray-500 dark:text-white/50">{opt.desc}</div>
                       </div>
                     </label>
                   </InspectorOptionCard>
                 ))}
               </div>
 
-              {state.hAnchorType !== 'center' && (
+              {state.hAnchorType !== "center" && (
                 <Field>
                   <FieldLabel htmlFor="hAnchorValue">
                     Distance from {state.hAnchorType} edge ({state.unit})
@@ -105,26 +97,20 @@ export function HorizontalPosition({ calculator }: Props) {
                     type="number"
                     step="0.125"
                     value={parseFloat(u(state.hAnchorValue).toFixed(3))}
-                    onChange={(e) =>
-                      setHAnchorValue(fromU(parseFloat(e.target.value) || 0))
-                    }
+                    onChange={(e) => setHAnchorValue(fromU(parseFloat(e.target.value) || 0))}
                   />
                 </Field>
               )}
 
               <Field>
-                <FieldLabel htmlFor="hSpacing">
-                  Gap between frames ({state.unit})
-                </FieldLabel>
+                <FieldLabel htmlFor="hSpacing">Gap between frames ({state.unit})</FieldLabel>
                 <Input
                   id="hSpacing"
                   type="number"
                   step="0.125"
                   min={0}
                   value={parseFloat(u(state.hSpacing).toFixed(3))}
-                  onChange={(e) =>
-                    setHSpacing(fromU(parseFloat(e.target.value) || 0))
-                  }
+                  onChange={(e) => setHSpacing(fromU(parseFloat(e.target.value) || 0))}
                 />
               </Field>
             </>

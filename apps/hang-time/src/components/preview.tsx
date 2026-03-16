@@ -1,35 +1,27 @@
-import {
-  ViewportToolbar,
-  ViewportToolbarButton,
-  ViewportToolbarValue,
-} from '@canvas-tools/ui';
-import type { ViewportBounds } from '@canvas-tools/viewport';
-import { useElementSize, useViewportController } from '@canvas-tools/viewport';
-import { HelpCircle, Moon, Settings, Sun } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Label } from '@/components/ui/label';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
+import { ViewportToolbar, ViewportToolbarButton, ViewportToolbarValue } from "@canvas-tools/ui";
+import type { ViewportBounds } from "@canvas-tools/viewport";
+import { useElementSize, useViewportController } from "@canvas-tools/viewport";
+import { HelpCircle, Moon, Settings, Sun } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Label } from "@/components/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import type { UseCalculatorReturn } from '@/hooks/use-calculator';
-import { useTheme } from '@/hooks/use-theme';
-import type { Unit } from '@/types';
+} from "@/components/ui/select";
+import type { UseCalculatorReturn } from "@/hooks/use-calculator";
+import { useTheme } from "@/hooks/use-theme";
+import type { Unit } from "@/types";
 import {
   calculateLayoutPositions,
   formatMeasurement,
   formatShort,
   fromDisplayUnit,
   toDisplayUnit,
-} from '@/utils/calculations';
+} from "@/utils/calculations";
 
 interface PreviewProps {
   calculator: UseCalculatorReturn;
@@ -42,7 +34,7 @@ type HookSelection = {
 
 type PositionedFrame = {
   frameId: string;
-  position: UseCalculatorReturn['layoutPositions'][number];
+  position: UseCalculatorReturn["layoutPositions"][number];
 };
 
 type LayoutBounds = {
@@ -58,9 +50,9 @@ type FrameDragSession = {
   bounds: LayoutBounds;
   frameId: string;
   lastArrangementKey?: string;
-  mode: 'gallery' | 'layout';
+  mode: "gallery" | "layout";
   moved: boolean;
-  originalPosition: UseCalculatorReturn['layoutPositions'][number];
+  originalPosition: UseCalculatorReturn["layoutPositions"][number];
   startClientX: number;
   startClientY: number;
 };
@@ -79,12 +71,8 @@ function getLayoutBounds(frames: PositionedFrame[]): LayoutBounds | null {
 
   const minX = Math.min(...frames.map(({ position }) => position.x));
   const minY = Math.min(...frames.map(({ position }) => position.y));
-  const maxX = Math.max(
-    ...frames.map(({ position }) => position.x + position.width),
-  );
-  const maxY = Math.max(
-    ...frames.map(({ position }) => position.y + position.height),
-  );
+  const maxX = Math.max(...frames.map(({ position }) => position.x + position.width));
+  const maxY = Math.max(...frames.map(({ position }) => position.y + position.height));
 
   return {
     minX,
@@ -117,12 +105,7 @@ function findFrameAtPoint(
     const right = left + position.width * scale;
     const bottom = top + position.height * scale;
 
-    if (
-      point.x >= left &&
-      point.x <= right &&
-      point.y >= top &&
-      point.y <= bottom
-    ) {
+    if (point.x >= left && point.x <= right && point.y >= top && point.y <= bottom) {
       return frame;
     }
   }
@@ -165,7 +148,7 @@ function findHookAtPoint(
 }
 
 function reorderFramesForCanvasDrag(
-  frames: UseCalculatorReturn['state']['frames'],
+  frames: UseCalculatorReturn["state"]["frames"],
   positionedFrames: PositionedFrame[],
   draggedFrameId: string,
   point: { x: number; y: number },
@@ -185,10 +168,8 @@ function reorderFramesForCanvasDrag(
       rowIndex,
       frames: rowFrames,
       centerY:
-        rowFrames.reduce(
-          (sum, frame) => sum + frame.position.y + frame.position.height / 2,
-          0,
-        ) / rowFrames.length,
+        rowFrames.reduce((sum, frame) => sum + frame.position.y + frame.position.height / 2, 0) /
+        rowFrames.length,
     }));
 
   if (rowEntries.length === 0) {
@@ -205,9 +186,7 @@ function reorderFramesForCanvasDrag(
     rowEntries.find((row) => row.rowIndex === currentRowIndex) ?? rowEntries[0];
 
   let targetRowEntry = rowEntries.reduce((best, row) =>
-    Math.abs(row.centerY - point.y) < Math.abs(best.centerY - point.y)
-      ? row
-      : best,
+    Math.abs(row.centerY - point.y) < Math.abs(best.centerY - point.y) ? row : best,
   );
 
   if (targetRowEntry.rowIndex !== currentRowEntry.rowIndex) {
@@ -216,10 +195,7 @@ function reorderFramesForCanvasDrag(
       (targetRowEntry.centerY + currentRowEntry.centerY) / 2 +
       (movingDown ? ROW_SWITCH_HYSTERESIS : -ROW_SWITCH_HYSTERESIS);
 
-    if (
-      (movingDown && point.y < rowBoundary) ||
-      (!movingDown && point.y > rowBoundary)
-    ) {
+    if ((movingDown && point.y < rowBoundary) || (!movingDown && point.y > rowBoundary)) {
       targetRowEntry = currentRowEntry;
     }
   }
@@ -247,10 +223,7 @@ function reorderFramesForCanvasDrag(
     }
   }
 
-  const groupedFrames = new Map<
-    number,
-    UseCalculatorReturn['state']['frames']
-  >();
+  const groupedFrames = new Map<number, UseCalculatorReturn["state"]["frames"]>();
   frames.forEach((frame) => {
     const row = frame.row ?? 0;
     if (!groupedFrames.has(row)) {
@@ -282,7 +255,7 @@ function reorderFramesForCanvasDrag(
 
   const arrangementKey = normalizedFrames
     .map((frame, index) => `${index}:${frame.id}:${frame.row ?? 0}`)
-    .join('|');
+    .join("|");
 
   return {
     arrangementKey,
@@ -290,11 +263,7 @@ function reorderFramesForCanvasDrag(
   };
 }
 
-function CanvasLegendPopover({
-  hasOutOfBoundsItems,
-}: {
-  hasOutOfBoundsItems: boolean;
-}) {
+function CanvasLegendPopover({ hasOutOfBoundsItems }: { hasOutOfBoundsItems: boolean }) {
   return (
     <Popover>
       <PopoverTrigger
@@ -319,9 +288,7 @@ function CanvasLegendPopover({
         <div className="flex flex-col gap-2.5">
           <div className="flex items-center gap-2">
             <div className="h-2.5 w-2.5 shrink-0 rounded-full bg-red-500" />
-            <span className="text-xs text-gray-600 dark:text-white/70">
-              Hook position
-            </span>
+            <span className="text-xs text-gray-600 dark:text-white/70">Hook position</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="h-0.5 w-5 shrink-0 bg-green-500" />
@@ -331,15 +298,11 @@ function CanvasLegendPopover({
           </div>
           <div className="flex items-center gap-2">
             <div className="h-0.5 w-5 shrink-0 bg-cyan-500" />
-            <span className="text-xs text-gray-600 dark:text-white/70">
-              Hook comparison
-            </span>
+            <span className="text-xs text-gray-600 dark:text-white/70">Hook comparison</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="h-3 w-4 shrink-0 rounded-sm border-2 border-red-500" />
-            <span className="text-xs text-gray-600 dark:text-white/70">
-              Frame exceeds wall
-            </span>
+            <span className="text-xs text-gray-600 dark:text-white/70">Frame exceeds wall</span>
           </div>
           <div className="mt-1 border-t border-gray-200 pt-2 dark:border-white/10">
             <p className="text-xs text-gray-500 dark:text-white/50">
@@ -354,24 +317,14 @@ function CanvasLegendPopover({
   );
 }
 
-function CanvasSettingsPopover({
-  setUnit,
-  unit,
-}: {
-  setUnit: (unit: Unit) => void;
-  unit: Unit;
-}) {
+function CanvasSettingsPopover({ setUnit, unit }: { setUnit: (unit: Unit) => void; unit: Unit }) {
   const { theme, toggleTheme } = useTheme();
 
   return (
     <Popover>
       <PopoverTrigger
         render={
-          <ViewportToolbarButton
-            kind="icon"
-            aria-label="Canvas settings"
-            title="Canvas settings"
-          >
+          <ViewportToolbarButton kind="icon" aria-label="Canvas settings" title="Canvas settings">
             <Settings className="size-4" />
           </ViewportToolbarButton>
         }
@@ -381,17 +334,12 @@ function CanvasSettingsPopover({
           <p className="text-[11px] font-semibold tracking-[0.18em] text-gray-500 uppercase dark:text-white/45">
             Canvas Settings
           </p>
-          <p className="text-xs text-gray-500 dark:text-white/45">
-            Measurement preferences
-          </p>
+          <p className="text-xs text-gray-500 dark:text-white/45">Measurement preferences</p>
         </div>
 
         <div className="space-y-1.5">
           <Label className="text-xs">Units</Label>
-          <Select
-            value={unit}
-            onValueChange={(value) => setUnit(value as Unit)}
-          >
+          <Select value={unit} onValueChange={(value) => setUnit(value as Unit)}>
             <SelectTrigger className="h-8 text-xs">
               <SelectValue />
             </SelectTrigger>
@@ -409,7 +357,7 @@ function CanvasSettingsPopover({
             onClick={toggleTheme}
             className="inline-flex h-8 items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-2.5 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-white/70 dark:hover:bg-white/10 dark:hover:text-white"
           >
-            {theme === 'dark' ? (
+            {theme === "dark" ? (
               <>
                 <Sun className="size-3.5" />
                 Light
@@ -428,10 +376,9 @@ function CanvasSettingsPopover({
 }
 
 export function Preview({ calculator }: PreviewProps) {
-  const { layoutPositions, setFrames, setManualPosition, setUnit, state } =
-    calculator;
+  const { layoutPositions, setFrames, setManualPosition, setUnit, state } = calculator;
   const { theme } = useTheme();
-  const isDark = theme === 'dark';
+  const isDark = theme === "dark";
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -440,7 +387,7 @@ export function Preview({ calculator }: PreviewProps) {
   const [isDraggingFrame, setIsDraggingFrame] = useState(false);
   const [selectedFrameId, setSelectedFrameId] = useState<string | null>(null);
   const [dragPreviewFrames, setDragPreviewFrames] = useState<
-    UseCalculatorReturn['state']['frames'] | null
+    UseCalculatorReturn["state"]["frames"] | null
   >(null);
   const [dragPreviewOffset, setDragPreviewOffset] = useState<{
     x: number;
@@ -451,9 +398,7 @@ export function Preview({ calculator }: PreviewProps) {
   const lastManualPositionRef = useRef<{ x: number; y: number } | null>(null);
 
   // Track reference hook (shows wall measurements) and compare hook (shows distance from reference)
-  const [referenceHook, setReferenceHook] = useState<HookSelection | null>(
-    null,
-  );
+  const [referenceHook, setReferenceHook] = useState<HookSelection | null>(null);
   const [compareHook, setCompareHook] = useState<HookSelection | null>(null);
 
   const positionedFrames = useMemo<PositionedFrame[]>(
@@ -499,9 +444,9 @@ export function Preview({ calculator }: PreviewProps) {
 
       lastManualPositionRef.current = { x: clampedX, y: clampedY };
       setManualPosition({
-        anchorType: 'floor',
+        anchorType: "floor",
         anchorValue: state.wallHeight - (clampedY + bounds.height),
-        hAnchorType: 'left',
+        hAnchorType: "left",
         hAnchorValue: clampedX,
       });
     },
@@ -509,8 +454,7 @@ export function Preview({ calculator }: PreviewProps) {
   );
 
   const fmt = useCallback(
-    (val: number) =>
-      formatMeasurement(toDisplayUnit(val, state.unit), state.unit),
+    (val: number) => formatMeasurement(toDisplayUnit(val, state.unit), state.unit),
     [state.unit],
   );
   const fmtShort = useCallback(
@@ -526,18 +470,13 @@ export function Preview({ calculator }: PreviewProps) {
   // Base scale: fits wall to available space
   const baseScale = useMemo(() => {
     // Reserve space for the desktop sidebar only
-    const availableWidth =
-      containerSize.width - reservedSidebarWidth - padding * 2;
+    const availableWidth = containerSize.width - reservedSidebarWidth - padding * 2;
     const availableHeight = containerSize.height - padding * 2;
 
     // Fit wall to available space (scale to fit both dimensions)
     const scaleX = availableWidth / state.wallWidth;
     const scaleY = availableHeight / state.wallHeight;
-    return Math.min(
-      scaleX,
-      scaleY,
-      (containerSize.width - padding * 2) / state.wallWidth,
-    );
+    return Math.min(scaleX, scaleY, (containerSize.width - padding * 2) / state.wallWidth);
   }, [
     containerSize.width,
     containerSize.height,
@@ -547,56 +486,37 @@ export function Preview({ calculator }: PreviewProps) {
     state.wallHeight,
   ]);
 
-  const {
-    fitToView,
-    pan,
-    startPan,
-    stepZoom,
-    stopPan,
-    updatePan,
-    zoom,
-    zoomAtPoint,
-    zoomPercent,
-  } = useViewportController({
-    containerRef,
-    getFitTransform: useCallback(
-      (viewport: ViewportBounds) => {
-        const scaledWallWidth = state.wallWidth * baseScale;
-        const scaledWallHeight = state.wallHeight * baseScale;
-        const contentStartX = reservedSidebarWidth + padding;
-        const contentWidth = Math.max(
-          viewport.width - reservedSidebarWidth - padding * 2,
-          1,
-        );
-        const centeredWallX =
-          contentStartX + (contentWidth - scaledWallWidth) / 2;
-        const maxWallX = viewport.width - padding - scaledWallWidth;
-        const wallX =
-          maxWallX >= contentStartX
-            ? Math.min(Math.max(centeredWallX, contentStartX), maxWallX)
-            : contentStartX;
+  const { fitToView, pan, startPan, stepZoom, stopPan, updatePan, zoom, zoomAtPoint, zoomPercent } =
+    useViewportController({
+      containerRef,
+      getFitTransform: useCallback(
+        (viewport: ViewportBounds) => {
+          const scaledWallWidth = state.wallWidth * baseScale;
+          const scaledWallHeight = state.wallHeight * baseScale;
+          const contentStartX = reservedSidebarWidth + padding;
+          const contentWidth = Math.max(viewport.width - reservedSidebarWidth - padding * 2, 1);
+          const centeredWallX = contentStartX + (contentWidth - scaledWallWidth) / 2;
+          const maxWallX = viewport.width - padding - scaledWallWidth;
+          const wallX =
+            maxWallX >= contentStartX
+              ? Math.min(Math.max(centeredWallX, contentStartX), maxWallX)
+              : contentStartX;
 
-        return {
-          centerX: scaledWallWidth / 2,
-          centerY: scaledWallHeight / 2,
-          pan: {
-            x: wallX,
-            y: padding,
-          },
-          zoom: 1,
-        };
-      },
-      [
-        baseScale,
-        padding,
-        reservedSidebarWidth,
-        state.wallHeight,
-        state.wallWidth,
-      ],
-    ),
-    maxZoom: 10,
-    minZoom: 0.1,
-  });
+          return {
+            centerX: scaledWallWidth / 2,
+            centerY: scaledWallHeight / 2,
+            pan: {
+              x: wallX,
+              y: padding,
+            },
+            zoom: 1,
+          };
+        },
+        [baseScale, padding, reservedSidebarWidth, state.wallHeight, state.wallWidth],
+      ),
+      maxZoom: 10,
+      minZoom: 0.1,
+    });
 
   // Effective scale = base scale * zoom
   const scale = baseScale * zoom;
@@ -637,9 +557,7 @@ export function Preview({ calculator }: PreviewProps) {
         radius: hookRadius,
       });
       if (hookHit) {
-        const frameHit = positionedFrames.find(
-          ({ position }) => position.id === hookHit.frameId,
-        );
+        const frameHit = positionedFrames.find(({ position }) => position.id === hookHit.frameId);
         if (frameHit) {
           setSelectedFrameId(frameHit.frameId);
         }
@@ -694,8 +612,8 @@ export function Preview({ calculator }: PreviewProps) {
     const container = containerRef.current;
     if (!container) return;
 
-    container.addEventListener('wheel', handleWheel, { passive: false });
-    return () => container.removeEventListener('wheel', handleWheel);
+    container.addEventListener("wheel", handleWheel, { passive: false });
+    return () => container.removeEventListener("wheel", handleWheel);
   }, [handleWheel]);
 
   // Pan handlers
@@ -748,8 +666,7 @@ export function Preview({ calculator }: PreviewProps) {
         frameDragRef.current = {
           frameId: frameHit.frameId,
           bounds,
-          mode:
-            e.altKey || positionedFrames.length === 1 ? 'layout' : 'gallery',
+          mode: e.altKey || positionedFrames.length === 1 ? "layout" : "gallery",
           moved: false,
           originalPosition: frameHit.position,
           startClientX: e.clientX,
@@ -793,7 +710,7 @@ export function Preview({ calculator }: PreviewProps) {
 
         setDragPreviewOffset({ x: deltaX, y: deltaY });
 
-        if (dragSession.mode === 'layout') {
+        if (dragSession.mode === "layout") {
           moveLayoutTo(
             dragSession.bounds.minX + deltaX,
             dragSession.bounds.minY + deltaY,
@@ -803,14 +720,8 @@ export function Preview({ calculator }: PreviewProps) {
         }
 
         const dragPoint = {
-          x:
-            dragSession.originalPosition.x +
-            dragSession.originalPosition.width / 2 +
-            deltaX,
-          y:
-            dragSession.originalPosition.y +
-            dragSession.originalPosition.height / 2 +
-            deltaY,
+          x: dragSession.originalPosition.x + dragSession.originalPosition.width / 2 + deltaX,
+          y: dragSession.originalPosition.y + dragSession.originalPosition.height / 2 + deltaY,
         };
         const nextArrangement = reorderFramesForCanvasDrag(
           displayedFrames,
@@ -819,10 +730,7 @@ export function Preview({ calculator }: PreviewProps) {
           dragPoint,
         );
 
-        if (
-          !nextArrangement ||
-          nextArrangement.arrangementKey === dragSession.lastArrangementKey
-        ) {
+        if (!nextArrangement || nextArrangement.arrangementKey === dragSession.lastArrangementKey) {
           return;
         }
 
@@ -833,13 +741,7 @@ export function Preview({ calculator }: PreviewProps) {
 
       updatePan(e.clientX, e.clientY);
     },
-    [
-      displayedFrames,
-      displayedPositionedFrames,
-      moveLayoutTo,
-      scale,
-      updatePan,
-    ],
+    [displayedFrames, displayedPositionedFrames, moveLayoutTo, scale, updatePan],
   );
 
   const handleKeyDown = useCallback(
@@ -858,16 +760,16 @@ export function Preview({ calculator }: PreviewProps) {
       let deltaY = 0;
 
       switch (e.key) {
-        case 'ArrowLeft':
+        case "ArrowLeft":
           deltaX = -step;
           break;
-        case 'ArrowRight':
+        case "ArrowRight":
           deltaX = step;
           break;
-        case 'ArrowUp':
+        case "ArrowUp":
           deltaY = -step;
           break;
-        case 'ArrowDown':
+        case "ArrowDown":
           deltaY = step;
           break;
         default:
@@ -883,7 +785,7 @@ export function Preview({ calculator }: PreviewProps) {
   const handleMouseUp = useCallback(() => {
     const dragSession = frameDragRef.current;
     if (dragSession) {
-      if (dragSession.mode === 'gallery' && dragPreviewFrames) {
+      if (dragSession.mode === "gallery" && dragPreviewFrames) {
         setFrames(dragPreviewFrames);
       }
       frameDragRef.current = null;
@@ -902,7 +804,7 @@ export function Preview({ calculator }: PreviewProps) {
   const handleMouseLeave = useCallback(() => {
     const dragSession = frameDragRef.current;
     if (dragSession) {
-      if (dragSession.mode === 'gallery' && dragPreviewFrames) {
+      if (dragSession.mode === "gallery" && dragPreviewFrames) {
         setFrames(dragPreviewFrames);
       }
       frameDragRef.current = null;
@@ -926,7 +828,7 @@ export function Preview({ calculator }: PreviewProps) {
     canvas.style.width = `${canvasWidth}px`;
     canvas.style.height = `${canvasHeight}px`;
 
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -941,28 +843,22 @@ export function Preview({ calculator }: PreviewProps) {
     // Draw wall background
     const wallWidthPx = state.wallWidth * scale;
     const wallHeightPx = state.wallHeight * scale;
-    ctx.fillStyle = isDark ? '#1e293b' : '#fff';
-    ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(15,23,42,0.12)';
+    ctx.fillStyle = isDark ? "#1e293b" : "#fff";
+    ctx.strokeStyle = isDark ? "rgba(255,255,255,0.08)" : "rgba(15,23,42,0.12)";
     ctx.lineWidth = 2;
     ctx.fillRect(offsetX, offsetY, wallWidthPx, wallHeightPx);
 
-    const majorTickInterval = state.unit === 'in' ? 12 : 30;
-    const minorTickInterval = state.unit === 'in' ? 3 : 10;
+    const majorTickInterval = state.unit === "in" ? 12 : 30;
+    const minorTickInterval = state.unit === "in" ? 3 : 10;
 
     ctx.save();
     ctx.beginPath();
     ctx.rect(offsetX, offsetY, wallWidthPx, wallHeightPx);
     ctx.clip();
 
-    ctx.strokeStyle = isDark
-      ? 'rgba(255,255,255,0.03)'
-      : 'rgba(15,23,42,0.035)';
+    ctx.strokeStyle = isDark ? "rgba(255,255,255,0.03)" : "rgba(15,23,42,0.035)";
     ctx.lineWidth = 1;
-    for (
-      let i = minorTickInterval;
-      i < state.wallWidth;
-      i += minorTickInterval
-    ) {
+    for (let i = minorTickInterval; i < state.wallWidth; i += minorTickInterval) {
       if (i % majorTickInterval === 0) continue;
       const x = Math.round(offsetX + i * scale) + 0.5;
       ctx.beginPath();
@@ -970,11 +866,7 @@ export function Preview({ calculator }: PreviewProps) {
       ctx.lineTo(x, offsetY + wallHeightPx);
       ctx.stroke();
     }
-    for (
-      let i = minorTickInterval;
-      i < state.wallHeight;
-      i += minorTickInterval
-    ) {
+    for (let i = minorTickInterval; i < state.wallHeight; i += minorTickInterval) {
       if (i % majorTickInterval === 0) continue;
       const y = Math.round(offsetY + i * scale) + 0.5;
       ctx.beginPath();
@@ -983,23 +875,15 @@ export function Preview({ calculator }: PreviewProps) {
       ctx.stroke();
     }
 
-    ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(15,23,42,0.08)';
-    for (
-      let i = majorTickInterval;
-      i < state.wallWidth;
-      i += majorTickInterval
-    ) {
+    ctx.strokeStyle = isDark ? "rgba(255,255,255,0.06)" : "rgba(15,23,42,0.08)";
+    for (let i = majorTickInterval; i < state.wallWidth; i += majorTickInterval) {
       const x = Math.round(offsetX + i * scale) + 0.5;
       ctx.beginPath();
       ctx.moveTo(x, offsetY);
       ctx.lineTo(x, offsetY + wallHeightPx);
       ctx.stroke();
     }
-    for (
-      let i = majorTickInterval;
-      i < state.wallHeight;
-      i += majorTickInterval
-    ) {
+    for (let i = majorTickInterval; i < state.wallHeight; i += majorTickInterval) {
       const y = Math.round(offsetY + i * scale) + 0.5;
       ctx.beginPath();
       ctx.moveTo(offsetX, y);
@@ -1011,74 +895,66 @@ export function Preview({ calculator }: PreviewProps) {
     ctx.strokeRect(offsetX, offsetY, wallWidthPx, wallHeightPx);
 
     // Draw ruler marks on top
-    ctx.fillStyle = isDark ? '#94a3b8' : '#666';
-    ctx.font = '10px -apple-system, sans-serif';
-    ctx.textAlign = 'center';
+    ctx.fillStyle = isDark ? "#94a3b8" : "#666";
+    ctx.font = "10px -apple-system, sans-serif";
+    ctx.textAlign = "center";
 
     for (let i = 0; i <= state.wallWidth; i += majorTickInterval) {
       const x = offsetX + i * scale;
       ctx.beginPath();
       ctx.moveTo(x, offsetY - 10);
       ctx.lineTo(x, offsetY);
-      ctx.strokeStyle = isDark
-        ? 'rgba(148,163,184,0.7)'
-        : 'rgba(71,85,105,0.65)';
+      ctx.strokeStyle = isDark ? "rgba(148,163,184,0.7)" : "rgba(71,85,105,0.65)";
       ctx.lineWidth = 1;
       ctx.stroke();
       ctx.fillText(fmtShort(i), x, offsetY - 14);
     }
 
     // Left ruler
-    ctx.textAlign = 'right';
+    ctx.textAlign = "right";
     for (let i = 0; i <= state.wallHeight; i += majorTickInterval) {
       const y = offsetY + (state.wallHeight - i) * scale;
       ctx.beginPath();
       ctx.moveTo(offsetX - 10, y);
       ctx.lineTo(offsetX, y);
-      ctx.strokeStyle = isDark
-        ? 'rgba(148,163,184,0.7)'
-        : 'rgba(71,85,105,0.65)';
+      ctx.strokeStyle = isDark ? "rgba(148,163,184,0.7)" : "rgba(71,85,105,0.65)";
       ctx.lineWidth = 1;
       ctx.stroke();
       ctx.fillText(fmtShort(i), offsetX - 14, y + 4);
     }
 
     // Draw floor label
-    ctx.fillStyle = isDark ? '#94a3b8' : '#666';
-    ctx.font = '11px -apple-system, sans-serif';
-    ctx.textAlign = 'center';
+    ctx.fillStyle = isDark ? "#94a3b8" : "#666";
+    ctx.font = "11px -apple-system, sans-serif";
+    ctx.textAlign = "center";
     ctx.fillText(
-      'FLOOR',
+      "FLOOR",
       offsetX + (state.wallWidth * scale) / 2,
       offsetY + state.wallHeight * scale + 16,
     );
 
     // Draw ceiling indicator
-    ctx.fillStyle = isDark ? '#94a3b8' : '#666';
-    ctx.fillText(
-      'CEILING',
-      offsetX + (state.wallWidth * scale) / 2,
-      offsetY - 30,
-    );
+    ctx.fillStyle = isDark ? "#94a3b8" : "#666";
+    ctx.fillText("CEILING", offsetX + (state.wallWidth * scale) / 2, offsetY - 30);
 
     // Draw anchor reference line
     ctx.setLineDash([5, 5]);
-    ctx.strokeStyle = '#4f46e5';
+    ctx.strokeStyle = "#4f46e5";
     ctx.lineWidth = 1;
 
-    if (state.anchorType === 'center') {
+    if (state.anchorType === "center") {
       const centerY = offsetY + (state.wallHeight / 2) * scale;
       ctx.beginPath();
       ctx.moveTo(offsetX, centerY);
       ctx.lineTo(offsetX + state.wallWidth * scale, centerY);
       ctx.stroke();
-    } else if (state.anchorType === 'ceiling') {
+    } else if (state.anchorType === "ceiling") {
       const lineY = offsetY + state.anchorValue * scale;
       ctx.beginPath();
       ctx.moveTo(offsetX, lineY);
       ctx.lineTo(offsetX + state.wallWidth * scale, lineY);
       ctx.stroke();
-    } else if (state.anchorType === 'furniture') {
+    } else if (state.anchorType === "furniture") {
       const furnitureTop = state.wallHeight - state.furnitureHeight;
       const lineY = offsetY + (furnitureTop - state.anchorValue) * scale;
       ctx.beginPath();
@@ -1095,16 +971,15 @@ export function Preview({ calculator }: PreviewProps) {
     ctx.setLineDash([]);
 
     // Draw furniture
-    if (state.anchorType === 'furniture') {
+    if (state.anchorType === "furniture") {
       // Calculate furniture left edge based on anchor
       let furnitureLeft: number;
-      if (state.furnitureAnchor === 'center') {
+      if (state.furnitureAnchor === "center") {
         furnitureLeft = (state.wallWidth - state.furnitureWidth) / 2;
-      } else if (state.furnitureAnchor === 'left') {
+      } else if (state.furnitureAnchor === "left") {
         furnitureLeft = state.furnitureOffset;
       } else {
-        furnitureLeft =
-          state.wallWidth - state.furnitureWidth - state.furnitureOffset;
+        furnitureLeft = state.wallWidth - state.furnitureWidth - state.furnitureOffset;
       }
       const furnitureTop = state.wallHeight - state.furnitureHeight;
 
@@ -1113,24 +988,24 @@ export function Preview({ calculator }: PreviewProps) {
       const fw = state.furnitureWidth * scale;
       const fh = state.furnitureHeight * scale;
 
-      ctx.fillStyle = isDark ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.08)';
+      ctx.fillStyle = isDark ? "rgba(0,0,0,0.3)" : "rgba(0,0,0,0.08)";
       ctx.fillRect(fx + 2, fy + 2, fw, fh);
-      ctx.fillStyle = isDark ? '#475569' : '#e5e7eb';
+      ctx.fillStyle = isDark ? "#475569" : "#e5e7eb";
       ctx.fillRect(fx, fy, fw, fh);
-      ctx.strokeStyle = isDark ? '#64748b' : '#9ca3af';
+      ctx.strokeStyle = isDark ? "#64748b" : "#9ca3af";
       ctx.lineWidth = 2;
       ctx.strokeRect(fx, fy, fw, fh);
-      ctx.fillStyle = isDark ? '#94a3b8' : '#6b7280';
-      ctx.font = 'bold 11px -apple-system, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('FURNITURE', fx + fw / 2, fy + fh / 2 + 4);
-      ctx.font = '10px -apple-system, sans-serif';
+      ctx.fillStyle = isDark ? "#94a3b8" : "#6b7280";
+      ctx.font = "bold 11px -apple-system, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText("FURNITURE", fx + fw / 2, fy + fh / 2 + 4);
+      ctx.font = "10px -apple-system, sans-serif";
       ctx.fillText(fmtShort(state.furnitureWidth), fx + fw / 2, fy - 6);
     }
 
     const activeDragSession = frameDragRef.current;
     const activeDraggedFrameId =
-      activeDragSession?.mode === 'gallery' ? activeDragSession.frameId : null;
+      activeDragSession?.mode === "gallery" ? activeDragSession.frameId : null;
 
     // Draw frames on canvas
     displayedPositionedFrames.forEach(({ frameId, position: frame }) => {
@@ -1146,37 +1021,32 @@ export function Preview({ calculator }: PreviewProps) {
         ctx.globalAlpha = 0.28;
       }
 
-      ctx.fillStyle = isDark ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.1)';
+      ctx.fillStyle = isDark ? "rgba(0,0,0,0.3)" : "rgba(0,0,0,0.1)";
       ctx.fillRect(fx + 3, fy + 3, fw, fh);
       ctx.fillStyle = frame.isOutOfBounds
         ? isDark
-          ? '#450a0a'
-          : '#fef2f2'
+          ? "#450a0a"
+          : "#fef2f2"
         : isDark
-          ? '#334155'
-          : '#f8f8f8';
+          ? "#334155"
+          : "#f8f8f8";
       ctx.fillRect(fx, fy, fw, fh);
       ctx.strokeStyle = frame.isOutOfBounds
-        ? '#ef4444'
+        ? "#ef4444"
         : isSelected
           ? isDark
-            ? '#67e8f9'
-            : '#0891b2'
+            ? "#67e8f9"
+            : "#0891b2"
           : isDark
-            ? '#64748b'
-            : '#333';
+            ? "#64748b"
+            : "#333";
       ctx.lineWidth = frame.isOutOfBounds ? 3 : isSelected ? 3 : 2;
       ctx.strokeRect(fx, fy, fw, fh);
 
       const matInset = Math.min(fw, fh) * 0.1;
-      ctx.strokeStyle = isDark ? '#475569' : '#ddd';
+      ctx.strokeStyle = isDark ? "#475569" : "#ddd";
       ctx.lineWidth = 1;
-      ctx.strokeRect(
-        fx + matInset,
-        fy + matInset,
-        fw - matInset * 2,
-        fh - matInset * 2,
-      );
+      ctx.strokeRect(fx + matInset, fy + matInset, fw - matInset * 2, fh - matInset * 2);
 
       // Draw hook(s) - use actual positions from frame
       const hookY = fy + frame.hangingOffset * scale;
@@ -1185,9 +1055,9 @@ export function Preview({ calculator }: PreviewProps) {
       // Draw first (or only) hook
       ctx.beginPath();
       ctx.arc(hookX1, hookY, 6, 0, Math.PI * 2);
-      ctx.fillStyle = '#ef4444';
+      ctx.fillStyle = "#ef4444";
       ctx.fill();
-      ctx.strokeStyle = '#fff';
+      ctx.strokeStyle = "#fff";
       ctx.lineWidth = 1;
       ctx.stroke();
 
@@ -1196,20 +1066,20 @@ export function Preview({ calculator }: PreviewProps) {
         const hookX2 = offsetX + frame.hookX2 * scale;
         ctx.beginPath();
         ctx.arc(hookX2, hookY, 6, 0, Math.PI * 2);
-        ctx.fillStyle = '#ef4444';
+        ctx.fillStyle = "#ef4444";
         ctx.fill();
-        ctx.strokeStyle = '#fff';
+        ctx.strokeStyle = "#fff";
         ctx.lineWidth = 1;
         ctx.stroke();
       }
 
-      ctx.fillStyle = isDark ? '#94a3b8' : '#666';
-      ctx.font = 'bold 11px -apple-system, sans-serif';
-      ctx.textAlign = 'center';
+      ctx.fillStyle = isDark ? "#94a3b8" : "#666";
+      ctx.font = "bold 11px -apple-system, sans-serif";
+      ctx.textAlign = "center";
       ctx.fillText(frame.name, fx + fw / 2, fy + fh / 2 + 4);
 
-      ctx.font = '10px -apple-system, sans-serif';
-      ctx.fillStyle = isDark ? '#818cf8' : '#4f46e5';
+      ctx.font = "10px -apple-system, sans-serif";
+      ctx.fillStyle = isDark ? "#818cf8" : "#4f46e5";
       ctx.fillText(fmtShort(frame.width), fx + fw / 2, fy - 6);
 
       ctx.save();
@@ -1224,7 +1094,7 @@ export function Preview({ calculator }: PreviewProps) {
     });
 
     if (
-      activeDragSession?.mode === 'gallery' &&
+      activeDragSession?.mode === "gallery" &&
       dragPreviewOffset &&
       activeDragSession.originalPosition
     ) {
@@ -1235,31 +1105,26 @@ export function Preview({ calculator }: PreviewProps) {
       const fh = frame.height * scale;
 
       ctx.save();
-      ctx.fillStyle = isDark ? 'rgba(0,0,0,0.35)' : 'rgba(0,0,0,0.14)';
+      ctx.fillStyle = isDark ? "rgba(0,0,0,0.35)" : "rgba(0,0,0,0.14)";
       ctx.fillRect(fx + 4, fy + 4, fw, fh);
-      ctx.fillStyle = isDark ? '#334155' : '#f8f8f8';
+      ctx.fillStyle = isDark ? "#334155" : "#f8f8f8";
       ctx.fillRect(fx, fy, fw, fh);
-      ctx.strokeStyle = isDark ? '#67e8f9' : '#0891b2';
+      ctx.strokeStyle = isDark ? "#67e8f9" : "#0891b2";
       ctx.lineWidth = 3;
       ctx.strokeRect(fx, fy, fw, fh);
 
       const matInset = Math.min(fw, fh) * 0.1;
-      ctx.strokeStyle = isDark ? '#475569' : '#ddd';
+      ctx.strokeStyle = isDark ? "#475569" : "#ddd";
       ctx.lineWidth = 1;
-      ctx.strokeRect(
-        fx + matInset,
-        fy + matInset,
-        fw - matInset * 2,
-        fh - matInset * 2,
-      );
+      ctx.strokeRect(fx + matInset, fy + matInset, fw - matInset * 2, fh - matInset * 2);
 
-      ctx.fillStyle = isDark ? '#94a3b8' : '#666';
-      ctx.font = 'bold 11px -apple-system, sans-serif';
-      ctx.textAlign = 'center';
+      ctx.fillStyle = isDark ? "#94a3b8" : "#666";
+      ctx.font = "bold 11px -apple-system, sans-serif";
+      ctx.textAlign = "center";
       ctx.fillText(frame.name, fx + fw / 2, fy + fh / 2 + 4);
 
-      ctx.font = '10px -apple-system, sans-serif';
-      ctx.fillStyle = isDark ? '#818cf8' : '#4f46e5';
+      ctx.font = "10px -apple-system, sans-serif";
+      ctx.fillStyle = isDark ? "#818cf8" : "#4f46e5";
       ctx.fillText(fmtShort(frame.width), fx + fw / 2, fy - 6);
 
       ctx.save();
@@ -1271,16 +1136,12 @@ export function Preview({ calculator }: PreviewProps) {
     }
 
     // Helper to draw full measurements for a specific hook
-    const drawFullMeasurements = (
-      f: (typeof layoutPositions)[0],
-      hookIndex: number,
-    ) => {
-      const hookX =
-        offsetX + (hookIndex === 1 && f.hookX2 ? f.hookX2 : f.hookX) * scale;
+    const drawFullMeasurements = (f: (typeof layoutPositions)[0], hookIndex: number) => {
+      const hookX = offsetX + (hookIndex === 1 && f.hookX2 ? f.hookX2 : f.hookX) * scale;
       const hookY = offsetY + f.hookY * scale;
       const fromLeft = hookIndex === 1 && f.hookX2 ? f.hookX2 : f.fromLeft;
 
-      ctx.strokeStyle = '#22c55e';
+      ctx.strokeStyle = "#22c55e";
       ctx.lineWidth = 1;
       ctx.setLineDash([3, 3]);
 
@@ -1297,41 +1158,35 @@ export function Preview({ calculator }: PreviewProps) {
       ctx.stroke();
 
       ctx.setLineDash([]);
-      ctx.font = 'bold 10px -apple-system, sans-serif';
-      ctx.textAlign = 'center';
+      ctx.font = "bold 10px -apple-system, sans-serif";
+      ctx.textAlign = "center";
 
       // "From left" label with background
       const fromLeftText = fmt(fromLeft);
       const fromLeftX = offsetX + (fromLeft * scale) / 2;
       const fromLeftWidth = ctx.measureText(fromLeftText).width;
-      ctx.fillStyle = isDark ? '#1e293b' : '#fff';
-      ctx.fillRect(
-        fromLeftX - fromLeftWidth / 2 - 2,
-        hookY - 14,
-        fromLeftWidth + 4,
-        12,
-      );
-      ctx.fillStyle = '#22c55e';
+      ctx.fillStyle = isDark ? "#1e293b" : "#fff";
+      ctx.fillRect(fromLeftX - fromLeftWidth / 2 - 2, hookY - 14, fromLeftWidth + 4, 12);
+      ctx.fillStyle = "#22c55e";
       ctx.fillText(fromLeftText, fromLeftX, hookY - 5);
 
       // "From floor" label (rotated)
       ctx.save();
-      ctx.font = 'bold 10px -apple-system, sans-serif';
+      ctx.font = "bold 10px -apple-system, sans-serif";
       const fromFloorText = fmt(f.fromFloor);
-      const fromFloorY =
-        offsetY + state.wallHeight * scale - (f.fromFloor * scale) / 2;
+      const fromFloorY = offsetY + state.wallHeight * scale - (f.fromFloor * scale) / 2;
       ctx.translate(hookX + 10, fromFloorY);
       ctx.rotate(-Math.PI / 2);
       const floorTextWidth = ctx.measureText(fromFloorText).width;
-      ctx.fillStyle = isDark ? '#1e293b' : '#fff';
+      ctx.fillStyle = isDark ? "#1e293b" : "#fff";
       ctx.fillRect(-floorTextWidth / 2 - 2, -9, floorTextWidth + 4, 12);
-      ctx.fillStyle = '#22c55e';
+      ctx.fillStyle = "#22c55e";
       ctx.fillText(fromFloorText, 0, 0);
       ctx.restore();
 
       // When "from ceiling" mode: also draw line and label from ceiling to hook
-      if (state.anchorType === 'ceiling') {
-        ctx.strokeStyle = '#22c55e';
+      if (state.anchorType === "ceiling") {
+        ctx.strokeStyle = "#22c55e";
         ctx.lineWidth = 1;
         ctx.setLineDash([3, 3]);
 
@@ -1344,15 +1199,15 @@ export function Preview({ calculator }: PreviewProps) {
 
         // "From ceiling" label (rotated, on left side of line)
         ctx.save();
-        ctx.font = 'bold 10px -apple-system, sans-serif';
+        ctx.font = "bold 10px -apple-system, sans-serif";
         const fromCeilingText = fmt(f.fromCeiling);
         const fromCeilingY = offsetY + (f.fromCeiling * scale) / 2;
         ctx.translate(hookX - 10, fromCeilingY);
         ctx.rotate(-Math.PI / 2);
         const ceilingTextWidth = ctx.measureText(fromCeilingText).width;
-        ctx.fillStyle = isDark ? '#1e293b' : '#fff';
+        ctx.fillStyle = isDark ? "#1e293b" : "#fff";
         ctx.fillRect(-ceilingTextWidth / 2 - 2, -9, ceilingTextWidth + 4, 12);
-        ctx.fillStyle = '#22c55e';
+        ctx.fillStyle = "#22c55e";
         ctx.fillText(fromCeilingText, 0, 0);
         ctx.restore();
       }
@@ -1365,7 +1220,7 @@ export function Preview({ calculator }: PreviewProps) {
         const hookX2 = offsetX + f.hookX2 * scale;
         const hookY = offsetY + f.hookY * scale;
 
-        ctx.strokeStyle = '#f59e0b'; // Amber for gap
+        ctx.strokeStyle = "#f59e0b"; // Amber for gap
         ctx.lineWidth = 1;
         ctx.setLineDash([3, 3]);
         ctx.beginPath();
@@ -1377,29 +1232,21 @@ export function Preview({ calculator }: PreviewProps) {
         // Hook gap measurement label
         const gapText = fmt(f.hookGap);
         const textX = (hookX + hookX2) / 2;
-        ctx.font = 'bold 10px -apple-system, sans-serif';
+        ctx.font = "bold 10px -apple-system, sans-serif";
         const textWidth = ctx.measureText(gapText).width;
-        ctx.fillStyle = isDark ? '#1e293b' : '#fff';
+        ctx.fillStyle = isDark ? "#1e293b" : "#fff";
         ctx.beginPath();
-        ctx.roundRect(
-          textX - textWidth / 2 - 4,
-          hookY - 7,
-          textWidth + 8,
-          14,
-          3,
-        );
+        ctx.roundRect(textX - textWidth / 2 - 4, hookY - 7, textWidth + 8, 14, 3);
         ctx.fill();
-        ctx.fillStyle = '#f59e0b';
-        ctx.textAlign = 'center';
+        ctx.fillStyle = "#f59e0b";
+        ctx.textAlign = "center";
         ctx.fillText(gapText, textX, hookY + 4);
       }
     });
 
     // Draw full measurements for reference hook (first by default)
     if (referenceHook) {
-      const frame = previewLayoutPositions.find(
-        (f) => f.id === referenceHook.frameId,
-      );
+      const frame = previewLayoutPositions.find((f) => f.id === referenceHook.frameId);
       if (frame) {
         drawFullMeasurements(frame, referenceHook.hookIndex);
 
@@ -1407,14 +1254,11 @@ export function Preview({ calculator }: PreviewProps) {
         if (!compareHook) {
           const hookX =
             offsetX +
-            (referenceHook.hookIndex === 1 && frame.hookX2
-              ? frame.hookX2
-              : frame.hookX) *
-              scale;
+            (referenceHook.hookIndex === 1 && frame.hookX2 ? frame.hookX2 : frame.hookX) * scale;
           const hookY = offsetY + frame.hookY * scale;
 
-          const tooltipText = 'Shift+click another hook to compare';
-          ctx.font = '11px -apple-system, sans-serif';
+          const tooltipText = "Shift+click another hook to compare";
+          ctx.font = "11px -apple-system, sans-serif";
           const textWidth = ctx.measureText(tooltipText).width;
 
           // Position tooltip above the hook
@@ -1422,15 +1266,9 @@ export function Preview({ calculator }: PreviewProps) {
           const tooltipY = hookY - 25;
 
           // Draw tooltip background
-          ctx.fillStyle = isDark ? '#f1f5f9' : '#1f2937';
+          ctx.fillStyle = isDark ? "#f1f5f9" : "#1f2937";
           ctx.beginPath();
-          ctx.roundRect(
-            tooltipX - textWidth / 2 - 8,
-            tooltipY - 12,
-            textWidth + 16,
-            22,
-            4,
-          );
+          ctx.roundRect(tooltipX - textWidth / 2 - 8, tooltipY - 12, textWidth + 16, 22, 4);
           ctx.fill();
 
           // Draw arrow pointing down
@@ -1442,8 +1280,8 @@ export function Preview({ calculator }: PreviewProps) {
           ctx.fill();
 
           // Draw text
-          ctx.fillStyle = isDark ? '#1e293b' : '#fff';
-          ctx.textAlign = 'center';
+          ctx.fillStyle = isDark ? "#1e293b" : "#fff";
+          ctx.textAlign = "center";
           ctx.fillText(tooltipText, tooltipX, tooltipY + 2);
         }
       }
@@ -1461,24 +1299,16 @@ export function Preview({ calculator }: PreviewProps) {
 
     // Draw comparison measurements between reference and compare hooks
     if (referenceHook && compareHook) {
-      const refFrame = previewLayoutPositions.find(
-        (f) => f.id === referenceHook.frameId,
-      );
-      const cmpFrame = previewLayoutPositions.find(
-        (f) => f.id === compareHook.frameId,
-      );
+      const refFrame = previewLayoutPositions.find((f) => f.id === referenceHook.frameId);
+      const cmpFrame = previewLayoutPositions.find((f) => f.id === compareHook.frameId);
 
       if (refFrame && cmpFrame) {
         // Get hook positions
         const refX =
-          referenceHook.hookIndex === 1 && refFrame.hookX2
-            ? refFrame.hookX2
-            : refFrame.hookX;
+          referenceHook.hookIndex === 1 && refFrame.hookX2 ? refFrame.hookX2 : refFrame.hookX;
         const refY = refFrame.hookY;
         const cmpX =
-          compareHook.hookIndex === 1 && cmpFrame.hookX2
-            ? cmpFrame.hookX2
-            : cmpFrame.hookX;
+          compareHook.hookIndex === 1 && cmpFrame.hookX2 ? cmpFrame.hookX2 : cmpFrame.hookX;
         const cmpY = cmpFrame.hookY;
 
         // Screen positions
@@ -1492,7 +1322,7 @@ export function Preview({ calculator }: PreviewProps) {
         const deltaY = cmpY - refY;
 
         // Draw connecting line (cyan/teal for comparison)
-        ctx.strokeStyle = '#06b6d4';
+        ctx.strokeStyle = "#06b6d4";
         ctx.lineWidth = 2;
         ctx.setLineDash([5, 3]);
         ctx.beginPath();
@@ -1502,53 +1332,45 @@ export function Preview({ calculator }: PreviewProps) {
         ctx.setLineDash([]);
 
         // Draw reference hook highlight (ring)
-        ctx.strokeStyle = '#06b6d4';
+        ctx.strokeStyle = "#06b6d4";
         ctx.lineWidth = 3;
         ctx.beginPath();
         ctx.arc(refScreenX, refScreenY, 10, 0, Math.PI * 2);
         ctx.stroke();
 
         // Draw compare hook highlight (filled ring)
-        ctx.strokeStyle = '#06b6d4';
+        ctx.strokeStyle = "#06b6d4";
         ctx.lineWidth = 3;
         ctx.beginPath();
         ctx.arc(cmpScreenX, cmpScreenY, 10, 0, Math.PI * 2);
         ctx.stroke();
 
         // Format distance labels
-        const hText =
-          Math.abs(deltaX) > 0.1 ? `${fmt(Math.abs(deltaX))} horizontal` : '';
-        const vText =
-          Math.abs(deltaY) > 0.1 ? `${fmt(Math.abs(deltaY))} vertical` : '';
+        const hText = Math.abs(deltaX) > 0.1 ? `${fmt(Math.abs(deltaX))} horizontal` : "";
+        const vText = Math.abs(deltaY) > 0.1 ? `${fmt(Math.abs(deltaY))} vertical` : "";
 
         // Draw label at midpoint
         const midX = (refScreenX + cmpScreenX) / 2;
         const midY = (refScreenY + cmpScreenY) / 2;
 
-        ctx.font = 'bold 11px -apple-system, sans-serif';
-        ctx.textAlign = 'center';
+        ctx.font = "bold 11px -apple-system, sans-serif";
+        ctx.textAlign = "center";
 
         // Build label text
         const labels = [hText, vText].filter(Boolean);
-        const labelText = labels.join(', ');
+        const labelText = labels.join(", ");
 
         if (labelText) {
           const textWidth = ctx.measureText(labelText).width;
 
           // Draw background pill
-          ctx.fillStyle = '#06b6d4';
+          ctx.fillStyle = "#06b6d4";
           ctx.beginPath();
-          ctx.roundRect(
-            midX - textWidth / 2 - 8,
-            midY - 10,
-            textWidth + 16,
-            20,
-            4,
-          );
+          ctx.roundRect(midX - textWidth / 2 - 8, midY - 10, textWidth + 16, 20, 4);
           ctx.fill();
 
           // Draw text
-          ctx.fillStyle = '#fff';
+          ctx.fillStyle = "#fff";
           ctx.fillText(labelText, midX, midY + 4);
         }
       }
@@ -1584,43 +1406,30 @@ export function Preview({ calculator }: PreviewProps) {
       onMouseLeave={handleMouseLeave}
       aria-label="Picture layout canvas"
       style={{
-        cursor: isDraggingFrame || isPanning ? 'grabbing' : 'grab',
+        cursor: isDraggingFrame || isPanning ? "grabbing" : "grab",
       }}
     >
-      <div
-        className="relative"
-        style={{ height: canvasHeight, width: canvasWidth }}
-      >
+      <div className="relative" style={{ height: canvasHeight, width: canvasWidth }}>
         <canvas
           ref={canvasRef}
           className="absolute inset-0"
           style={{
-            cursor: isDraggingFrame || isPanning ? 'grabbing' : 'grab',
+            cursor: isDraggingFrame || isPanning ? "grabbing" : "grab",
           }}
           onClick={handleCanvasClick}
         />
       </div>
 
       <ViewportToolbar className="absolute top-4 right-4">
-        <ViewportToolbarButton
-          kind="step"
-          onClick={() => stepZoom('out')}
-          aria-label="Zoom out"
-        >
+        <ViewportToolbarButton kind="step" onClick={() => stepZoom("out")} aria-label="Zoom out">
           -
         </ViewportToolbarButton>
         <ViewportToolbarValue>{zoomPercent}%</ViewportToolbarValue>
-        <ViewportToolbarButton
-          kind="step"
-          onClick={() => stepZoom('in')}
-          aria-label="Zoom in"
-        >
+        <ViewportToolbarButton kind="step" onClick={() => stepZoom("in")} aria-label="Zoom in">
           +
         </ViewportToolbarButton>
         <ViewportToolbarButton onClick={fitToView}>Fit</ViewportToolbarButton>
-        <CanvasLegendPopover
-          hasOutOfBoundsItems={layoutPositions.some((f) => f.isOutOfBounds)}
-        />
+        <CanvasLegendPopover hasOutOfBoundsItems={layoutPositions.some((f) => f.isOutOfBounds)} />
         <CanvasSettingsPopover setUnit={setUnit} unit={state.unit} />
       </ViewportToolbar>
     </div>

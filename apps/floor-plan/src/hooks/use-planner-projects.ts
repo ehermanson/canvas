@@ -1,20 +1,14 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { createId } from '@/lib/id';
-import {
-  getPlannerSnapshotHistoryKey,
-  removePlannerHistoryState,
-} from '@/lib/planner-history';
-import {
-  createDefaultPlannerState,
-  normalizePlannerState,
-} from '@/lib/planner-state';
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createId } from "@/lib/id";
+import { getPlannerSnapshotHistoryKey, removePlannerHistoryState } from "@/lib/planner-history";
+import { createDefaultPlannerState, normalizePlannerState } from "@/lib/planner-state";
 import type {
   PlannerProject,
   PlannerProjectExport,
   PlannerProjectStore,
   PlannerSnapshot,
   RoomPlannerState,
-} from '@/types';
+} from "@/types";
 
 interface LegacyPlannerSession {
   id: string;
@@ -39,26 +33,25 @@ interface PlannerUrlSelection {
   snapshotId: string | null;
 }
 
-type UrlUpdateMode = 'push' | 'replace';
+type UrlUpdateMode = "push" | "replace";
 
-export const LEGACY_PLANNER_STORAGE_KEY = 'floor-planner-state';
-export const LEGACY_ACTIVE_SESSION_STORAGE_KEY = 'floor-planner-active-session';
-export const LEGACY_SESSIONS_STORAGE_KEY = 'floor-planner-sessions';
-export const PLANNER_ACTIVE_PROJECT_STORAGE_KEY =
-  'floor-planner-active-project';
-export const PLANNER_PROJECTS_STORAGE_KEY = 'floor-planner-projects';
+export const LEGACY_PLANNER_STORAGE_KEY = "floor-planner-state";
+export const LEGACY_ACTIVE_SESSION_STORAGE_KEY = "floor-planner-active-session";
+export const LEGACY_SESSIONS_STORAGE_KEY = "floor-planner-sessions";
+export const PLANNER_ACTIVE_PROJECT_STORAGE_KEY = "floor-planner-active-project";
+export const PLANNER_PROJECTS_STORAGE_KEY = "floor-planner-projects";
 export const PLANNER_PROJECTS_STORAGE_VERSION = 1;
 
-const PREVIOUS_PLANNER_STORAGE_KEY = 'room-planner-state';
-const PREVIOUS_ACTIVE_SESSION_STORAGE_KEY = 'room-planner-active-session';
-const PREVIOUS_SESSIONS_STORAGE_KEY = 'room-planner-sessions';
-const PREVIOUS_ACTIVE_PROJECT_STORAGE_KEY = 'room-planner-active-project';
-const PREVIOUS_PROJECTS_STORAGE_KEY = 'room-planner-projects';
+const PREVIOUS_PLANNER_STORAGE_KEY = "room-planner-state";
+const PREVIOUS_ACTIVE_SESSION_STORAGE_KEY = "room-planner-active-session";
+const PREVIOUS_SESSIONS_STORAGE_KEY = "room-planner-sessions";
+const PREVIOUS_ACTIVE_PROJECT_STORAGE_KEY = "room-planner-active-project";
+const PREVIOUS_PROJECTS_STORAGE_KEY = "room-planner-projects";
 
-const DEFAULT_PROJECT_NAME = 'Untitled Room';
-const DEFAULT_SNAPSHOT_NAME = 'Current Layout';
-const PROJECT_ID_QUERY_PARAM = 'projectId';
-const SNAPSHOT_ID_QUERY_PARAM = 'snapshotId';
+const DEFAULT_PROJECT_NAME = "Untitled Room";
+const DEFAULT_SNAPSHOT_NAME = "Current Layout";
+const PROJECT_ID_QUERY_PARAM = "projectId";
+const SNAPSHOT_ID_QUERY_PARAM = "snapshotId";
 
 function nowIso() {
   return new Date().toISOString();
@@ -69,16 +62,10 @@ function clonePlannerState(state: RoomPlannerState) {
 }
 
 function formatUntitledProjectName(index: number) {
-  return index === 1
-    ? DEFAULT_PROJECT_NAME
-    : `${DEFAULT_PROJECT_NAME} ${index}`;
+  return index === 1 ? DEFAULT_PROJECT_NAME : `${DEFAULT_PROJECT_NAME} ${index}`;
 }
 
-function getUniqueName(
-  baseName: string,
-  existingNames: Iterable<string>,
-  fallbackName: string,
-) {
+function getUniqueName(baseName: string, existingNames: Iterable<string>, fallbackName: string) {
   const trimmed = baseName.trim() || fallbackName;
   const names = new Set(existingNames);
 
@@ -94,41 +81,25 @@ function getUniqueName(
   return `${trimmed} (${suffix})`;
 }
 
-function getUniqueProjectName(
-  baseName: string,
-  projects: PlannerProject[],
-  excludeId?: string,
-) {
+function getUniqueProjectName(baseName: string, projects: PlannerProject[], excludeId?: string) {
   return getUniqueName(
     baseName,
-    projects
-      .filter((project) => project.id !== excludeId)
-      .map((project) => project.name),
+    projects.filter((project) => project.id !== excludeId).map((project) => project.name),
     DEFAULT_PROJECT_NAME,
   );
 }
 
-function getUniqueSnapshotName(
-  baseName: string,
-  snapshots: PlannerSnapshot[],
-  excludeId?: string,
-) {
+function getUniqueSnapshotName(baseName: string, snapshots: PlannerSnapshot[], excludeId?: string) {
   return getUniqueName(
     baseName,
-    snapshots
-      .filter((snapshot) => snapshot.id !== excludeId)
-      .map((snapshot) => snapshot.name),
+    snapshots.filter((snapshot) => snapshot.id !== excludeId).map((snapshot) => snapshot.name),
     DEFAULT_SNAPSHOT_NAME,
   );
 }
 
 function getNextUntitledProjectName(projects: PlannerProject[]) {
   let index = 1;
-  while (
-    projects.some(
-      (project) => project.name === formatUntitledProjectName(index),
-    )
-  ) {
+  while (projects.some((project) => project.name === formatUntitledProjectName(index))) {
     index += 1;
   }
   return formatUntitledProjectName(index);
@@ -162,20 +133,18 @@ function normalizeSnapshot(
   snapshot: unknown,
   snapshots: PlannerSnapshot[],
 ): PlannerSnapshot | null {
-  if (!snapshot || typeof snapshot !== 'object') {
+  if (!snapshot || typeof snapshot !== "object") {
     return null;
   }
 
   const parsed = snapshot as Partial<PlannerSnapshot>;
-  const createdAt =
-    typeof parsed.createdAt === 'string' ? parsed.createdAt : nowIso();
-  const updatedAt =
-    typeof parsed.updatedAt === 'string' ? parsed.updatedAt : createdAt;
+  const createdAt = typeof parsed.createdAt === "string" ? parsed.createdAt : nowIso();
+  const updatedAt = typeof parsed.updatedAt === "string" ? parsed.updatedAt : createdAt;
 
   return {
-    id: typeof parsed.id === 'string' ? parsed.id : createId(),
+    id: typeof parsed.id === "string" ? parsed.id : createId(),
     name: getUniqueSnapshotName(
-      typeof parsed.name === 'string' ? parsed.name : DEFAULT_SNAPSHOT_NAME,
+      typeof parsed.name === "string" ? parsed.name : DEFAULT_SNAPSHOT_NAME,
       snapshots,
     ),
     createdAt,
@@ -203,11 +172,7 @@ function createProject(
 }
 
 function createDefaultProject(projects: PlannerProject[]) {
-  return createProject(
-    getNextUntitledProjectName(projects),
-    createDefaultPlannerState(),
-    projects,
-  );
+  return createProject(getNextUntitledProjectName(projects), createDefaultPlannerState(), projects);
 }
 
 function normalizeProjects(projects: unknown) {
@@ -216,7 +181,7 @@ function normalizeProjects(projects: unknown) {
   }
 
   return projects.reduce<PlannerProject[]>((normalizedProjects, project) => {
-    if (!project || typeof project !== 'object') {
+    if (!project || typeof project !== "object") {
       return normalizedProjects;
     }
 
@@ -234,28 +199,18 @@ function normalizeProjects(projects: unknown) {
     const snapshots =
       normalizedSnapshots.length > 0
         ? normalizedSnapshots
-        : [
-            createSnapshot(
-              DEFAULT_SNAPSHOT_NAME,
-              createDefaultPlannerState(),
-              [],
-            ),
-          ];
-    const createdAt =
-      typeof parsed.createdAt === 'string' ? parsed.createdAt : nowIso();
-    const updatedAt =
-      typeof parsed.updatedAt === 'string' ? parsed.updatedAt : createdAt;
+        : [createSnapshot(DEFAULT_SNAPSHOT_NAME, createDefaultPlannerState(), [])];
+    const createdAt = typeof parsed.createdAt === "string" ? parsed.createdAt : nowIso();
+    const updatedAt = typeof parsed.updatedAt === "string" ? parsed.updatedAt : createdAt;
     const nextProject: PlannerProject = {
-      id: typeof parsed.id === 'string' ? parsed.id : createId(),
+      id: typeof parsed.id === "string" ? parsed.id : createId(),
       name: getUniqueProjectName(
-        typeof parsed.name === 'string' ? parsed.name : DEFAULT_PROJECT_NAME,
+        typeof parsed.name === "string" ? parsed.name : DEFAULT_PROJECT_NAME,
         normalizedProjects,
       ),
       createdAt,
       updatedAt,
-      activeSnapshotId: snapshots.some(
-        (snapshot) => snapshot.id === parsed.activeSnapshotId,
-      )
+      activeSnapshotId: snapshots.some((snapshot) => snapshot.id === parsed.activeSnapshotId)
         ? parsed.activeSnapshotId!
         : snapshots[0].id,
       snapshots,
@@ -268,14 +223,13 @@ function normalizeProjects(projects: unknown) {
 
 function getActiveSnapshotForProject(project: PlannerProject) {
   return (
-    project.snapshots.find(
-      (snapshot) => snapshot.id === project.activeSnapshotId,
-    ) ?? project.snapshots[0]
+    project.snapshots.find((snapshot) => snapshot.id === project.activeSnapshotId) ??
+    project.snapshots[0]
   );
 }
 
 function readPlannerUrlSelection(): PlannerUrlSelection {
-  if (typeof window === 'undefined') {
+  if (typeof window === "undefined") {
     return {
       projectId: null,
       snapshotId: null,
@@ -297,8 +251,7 @@ function applyPlannerUrlSelection(
   selection: PlannerUrlSelection,
 ): PlannerProjectsState {
   const fallbackProject =
-    store.projects.find((project) => project.id === store.activeProjectId) ??
-    store.projects[0];
+    store.projects.find((project) => project.id === store.activeProjectId) ?? store.projects[0];
 
   if (!fallbackProject) {
     return store;
@@ -310,9 +263,7 @@ function applyPlannerUrlSelection(
       : null) ?? fallbackProject;
   const activeSnapshot =
     (selection.snapshotId
-      ? activeProject.snapshots.find(
-          (snapshot) => snapshot.id === selection.snapshotId,
-        )
+      ? activeProject.snapshots.find((snapshot) => snapshot.id === selection.snapshotId)
       : null) ?? getActiveSnapshotForProject(activeProject);
 
   if (
@@ -325,8 +276,7 @@ function applyPlannerUrlSelection(
   return {
     activeProjectId: activeProject.id,
     projects: store.projects.map((project) =>
-      project.id === activeProject.id &&
-      project.activeSnapshotId !== activeSnapshot.id
+      project.id === activeProject.id && project.activeSnapshotId !== activeSnapshot.id
         ? {
             ...project,
             activeSnapshotId: activeSnapshot.id,
@@ -336,12 +286,8 @@ function applyPlannerUrlSelection(
   };
 }
 
-function writePlannerUrlSelection(
-  projectId: string,
-  snapshotId: string,
-  mode: UrlUpdateMode,
-) {
-  if (typeof window === 'undefined') {
+function writePlannerUrlSelection(projectId: string, snapshotId: string, mode: UrlUpdateMode) {
+  if (typeof window === "undefined") {
     return;
   }
 
@@ -359,12 +305,12 @@ function writePlannerUrlSelection(
 
   const nextUrl = `${url.pathname}?${url.searchParams.toString()}${url.hash}`;
 
-  if (mode === 'push') {
-    window.history.pushState(null, '', nextUrl);
+  if (mode === "push") {
+    window.history.pushState(null, "", nextUrl);
     return;
   }
 
-  window.history.replaceState(null, '', nextUrl);
+  window.history.replaceState(null, "", nextUrl);
 }
 
 function normalizeLegacySessions(sessions: unknown) {
@@ -372,38 +318,31 @@ function normalizeLegacySessions(sessions: unknown) {
     return [] as LegacyPlannerSession[];
   }
 
-  return sessions.reduce<LegacyPlannerSession[]>(
-    (normalizedSessions, session) => {
-      if (!session || typeof session !== 'object') {
-        return normalizedSessions;
-      }
-
-      const parsed = session as Partial<LegacyPlannerSession>;
-      const createdAt =
-        typeof parsed.createdAt === 'string' ? parsed.createdAt : nowIso();
-      const updatedAt =
-        typeof parsed.updatedAt === 'string' ? parsed.updatedAt : createdAt;
-
-      normalizedSessions.push({
-        id: typeof parsed.id === 'string' ? parsed.id : createId(),
-        name:
-          typeof parsed.name === 'string' && parsed.name.trim().length > 0
-            ? parsed.name
-            : DEFAULT_PROJECT_NAME,
-        createdAt,
-        updatedAt,
-        state: normalizePlannerState(parsed.state),
-      });
-
+  return sessions.reduce<LegacyPlannerSession[]>((normalizedSessions, session) => {
+    if (!session || typeof session !== "object") {
       return normalizedSessions;
-    },
-    [],
-  );
+    }
+
+    const parsed = session as Partial<LegacyPlannerSession>;
+    const createdAt = typeof parsed.createdAt === "string" ? parsed.createdAt : nowIso();
+    const updatedAt = typeof parsed.updatedAt === "string" ? parsed.updatedAt : createdAt;
+
+    normalizedSessions.push({
+      id: typeof parsed.id === "string" ? parsed.id : createId(),
+      name:
+        typeof parsed.name === "string" && parsed.name.trim().length > 0
+          ? parsed.name
+          : DEFAULT_PROJECT_NAME,
+      createdAt,
+      updatedAt,
+      state: normalizePlannerState(parsed.state),
+    });
+
+    return normalizedSessions;
+  }, []);
 }
 
-function migrateLegacySessionsToProjects(
-  sessions: LegacyPlannerSession[],
-): PlannerProject[] {
+function migrateLegacySessionsToProjects(sessions: LegacyPlannerSession[]): PlannerProject[] {
   return sessions.reduce<PlannerProject[]>((projects, session) => {
     const snapshot: PlannerSnapshot = {
       id: createId(),
@@ -438,16 +377,11 @@ function loadPlannerProjectsState(): PlannerProjectsState {
         const storedActiveId =
           localStorage.getItem(PLANNER_ACTIVE_PROJECT_STORAGE_KEY) ??
           localStorage.getItem(PREVIOUS_ACTIVE_PROJECT_STORAGE_KEY);
-        const activeProjectId = projects.some(
-          (project) => project.id === storedActiveId,
-        )
+        const activeProjectId = projects.some((project) => project.id === storedActiveId)
           ? storedActiveId!
           : projects[0].id;
 
-        return applyPlannerUrlSelection(
-          { activeProjectId, projects },
-          readPlannerUrlSelection(),
-        );
+        return applyPlannerUrlSelection({ activeProjectId, projects }, readPlannerUrlSelection());
       }
     }
   } catch {
@@ -459,25 +393,18 @@ function loadPlannerProjectsState(): PlannerProjectsState {
       localStorage.getItem(LEGACY_SESSIONS_STORAGE_KEY) ??
       localStorage.getItem(PREVIOUS_SESSIONS_STORAGE_KEY);
     if (rawSessions) {
-      const parsed = JSON.parse(
-        rawSessions,
-      ) as Partial<LegacyPlannerSessionStore>;
+      const parsed = JSON.parse(rawSessions) as Partial<LegacyPlannerSessionStore>;
       const sessions = normalizeLegacySessions(parsed.sessions);
       if (sessions.length > 0) {
         const projects = migrateLegacySessionsToProjects(sessions);
         const storedActiveSessionId =
           localStorage.getItem(LEGACY_ACTIVE_SESSION_STORAGE_KEY) ??
           localStorage.getItem(PREVIOUS_ACTIVE_SESSION_STORAGE_KEY);
-        const activeProjectId = projects.some(
-          (project) => project.id === storedActiveSessionId,
-        )
+        const activeProjectId = projects.some((project) => project.id === storedActiveSessionId)
           ? storedActiveSessionId!
           : projects[0].id;
 
-        return applyPlannerUrlSelection(
-          { activeProjectId, projects },
-          readPlannerUrlSelection(),
-        );
+        return applyPlannerUrlSelection({ activeProjectId, projects }, readPlannerUrlSelection());
       }
     }
   } catch {
@@ -489,9 +416,7 @@ function loadPlannerProjectsState(): PlannerProjectsState {
       localStorage.getItem(LEGACY_PLANNER_STORAGE_KEY) ??
       localStorage.getItem(PREVIOUS_PLANNER_STORAGE_KEY);
     if (rawLegacyState) {
-      const parsedLegacyState = JSON.parse(
-        rawLegacyState,
-      ) as Partial<RoomPlannerState>;
+      const parsedLegacyState = JSON.parse(rawLegacyState) as Partial<RoomPlannerState>;
       const project = createProject(
         DEFAULT_PROJECT_NAME,
         normalizePlannerState(parsedLegacyState),
@@ -525,14 +450,8 @@ function persistPlannerProjectsState(store: PlannerProjectsState) {
     projects: store.projects,
   };
 
-  localStorage.setItem(
-    PLANNER_PROJECTS_STORAGE_KEY,
-    JSON.stringify(serializedStore),
-  );
-  localStorage.setItem(
-    PLANNER_ACTIVE_PROJECT_STORAGE_KEY,
-    store.activeProjectId,
-  );
+  localStorage.setItem(PLANNER_PROJECTS_STORAGE_KEY, JSON.stringify(serializedStore));
+  localStorage.setItem(PLANNER_ACTIVE_PROJECT_STORAGE_KEY, store.activeProjectId);
   localStorage.removeItem(LEGACY_PLANNER_STORAGE_KEY);
   localStorage.removeItem(LEGACY_SESSIONS_STORAGE_KEY);
   localStorage.removeItem(LEGACY_ACTIVE_SESSION_STORAGE_KEY);
@@ -575,10 +494,7 @@ function duplicateProjectRecord(
     name: getUniqueProjectName(getDuplicateProjectName(source.name), projects),
     createdAt: timestamp,
     updatedAt: timestamp,
-    activeSnapshotId:
-      snapshotIdMap.get(source.activeSnapshotId) ??
-      snapshots[0]?.id ??
-      createId(),
+    activeSnapshotId: snapshotIdMap.get(source.activeSnapshotId) ?? snapshots[0]?.id ?? createId(),
     snapshots,
   };
 }
@@ -607,98 +523,65 @@ function buildImportedProject(
 
   return {
     id: createId(),
-    name: getUniqueProjectName(
-      `${exportedProject.project.name} (Imported)`,
-      projects,
-    ),
+    name: getUniqueProjectName(`${exportedProject.project.name} (Imported)`, projects),
     createdAt: timestamp,
     updatedAt: timestamp,
-    activeSnapshotId:
-      snapshots[activeSnapshotIndex]?.id ?? snapshots[0]?.id ?? createId(),
+    activeSnapshotId: snapshots[activeSnapshotIndex]?.id ?? snapshots[0]?.id ?? createId(),
     snapshots:
       snapshots.length > 0
         ? snapshots
-        : [
-            createSnapshot(
-              DEFAULT_SNAPSHOT_NAME,
-              createDefaultPlannerState(),
-              [],
-            ),
-          ],
+        : [createSnapshot(DEFAULT_SNAPSHOT_NAME, createDefaultPlannerState(), [])],
   };
 }
 
 function parsePlannerProjectExport(raw: string): PlannerProjectExport {
   const parsed = JSON.parse(raw) as Partial<PlannerProjectExport>;
 
-  if (
-    typeof parsed.version !== 'number' ||
-    !parsed.project ||
-    typeof parsed.project !== 'object'
-  ) {
-    throw new Error('Invalid project file.');
+  if (typeof parsed.version !== "number" || !parsed.project || typeof parsed.project !== "object") {
+    throw new Error("Invalid project file.");
   }
 
   if (parsed.version !== PLANNER_PROJECTS_STORAGE_VERSION) {
-    throw new Error('Unsupported project file version.');
+    throw new Error("Unsupported project file version.");
   }
 
   const snapshots = Array.isArray(parsed.project.snapshots)
-    ? parsed.project.snapshots.reduce<PlannerSnapshot[]>(
-        (nextSnapshots, snapshot) => {
-          const normalizedSnapshot = normalizeSnapshot(snapshot, nextSnapshots);
-          if (normalizedSnapshot) {
-            nextSnapshots.push(normalizedSnapshot);
-          }
-          return nextSnapshots;
-        },
-        [],
-      )
+    ? parsed.project.snapshots.reduce<PlannerSnapshot[]>((nextSnapshots, snapshot) => {
+        const normalizedSnapshot = normalizeSnapshot(snapshot, nextSnapshots);
+        if (normalizedSnapshot) {
+          nextSnapshots.push(normalizedSnapshot);
+        }
+        return nextSnapshots;
+      }, [])
     : [];
 
   const createdAt =
-    typeof parsed.project.createdAt === 'string'
-      ? parsed.project.createdAt
-      : nowIso();
+    typeof parsed.project.createdAt === "string" ? parsed.project.createdAt : nowIso();
   const updatedAt =
-    typeof parsed.project.updatedAt === 'string'
-      ? parsed.project.updatedAt
-      : createdAt;
+    typeof parsed.project.updatedAt === "string" ? parsed.project.updatedAt : createdAt;
 
   return {
     version: parsed.version,
-    exportedAt:
-      typeof parsed.exportedAt === 'string' ? parsed.exportedAt : nowIso(),
+    exportedAt: typeof parsed.exportedAt === "string" ? parsed.exportedAt : nowIso(),
     project: {
-      name:
-        typeof parsed.project.name === 'string'
-          ? parsed.project.name
-          : DEFAULT_PROJECT_NAME,
+      name: typeof parsed.project.name === "string" ? parsed.project.name : DEFAULT_PROJECT_NAME,
       createdAt,
       updatedAt,
       activeSnapshotId:
-        snapshots.find(
-          (snapshot) => snapshot.id === parsed.project?.activeSnapshotId,
-        )?.id ??
+        snapshots.find((snapshot) => snapshot.id === parsed.project?.activeSnapshotId)?.id ??
         snapshots[0]?.id ??
         createId(),
       snapshots:
         snapshots.length > 0
           ? snapshots
-          : [
-              createSnapshot(
-                DEFAULT_SNAPSHOT_NAME,
-                createDefaultPlannerState(),
-                [],
-              ),
-            ],
+          : [createSnapshot(DEFAULT_SNAPSHOT_NAME, createDefaultPlannerState(), [])],
     },
   };
 }
 
 export function usePlannerProjects() {
   const [store, setStore] = useState(loadPlannerProjectsState);
-  const nextUrlUpdateModeRef = useRef<UrlUpdateMode>('replace');
+  const nextUrlUpdateModeRef = useRef<UrlUpdateMode>("replace");
 
   useEffect(() => {
     persistPlannerProjectsState(store);
@@ -706,8 +589,7 @@ export function usePlannerProjects() {
 
   const activeProject = useMemo(() => {
     return (
-      store.projects.find((project) => project.id === store.activeProjectId) ??
-      store.projects[0]
+      store.projects.find((project) => project.id === store.activeProjectId) ?? store.projects[0]
     );
   }, [store.activeProjectId, store.projects]);
 
@@ -716,30 +598,24 @@ export function usePlannerProjects() {
   }, [activeProject]);
 
   useEffect(() => {
-    writePlannerUrlSelection(
-      activeProject.id,
-      activeSnapshot.id,
-      nextUrlUpdateModeRef.current,
-    );
-    nextUrlUpdateModeRef.current = 'replace';
+    writePlannerUrlSelection(activeProject.id, activeSnapshot.id, nextUrlUpdateModeRef.current);
+    nextUrlUpdateModeRef.current = "replace";
   }, [activeProject.id, activeSnapshot.id]);
 
   useEffect(() => {
     function handlePopState() {
-      nextUrlUpdateModeRef.current = 'replace';
-      setStore((current) =>
-        applyPlannerUrlSelection(current, readPlannerUrlSelection()),
-      );
+      nextUrlUpdateModeRef.current = "replace";
+      setStore((current) => applyPlannerUrlSelection(current, readPlannerUrlSelection()));
     }
 
-    window.addEventListener('popstate', handlePopState);
+    window.addEventListener("popstate", handlePopState);
     return () => {
-      window.removeEventListener('popstate', handlePopState);
+      window.removeEventListener("popstate", handlePopState);
     };
   }, []);
 
   const selectProject = useCallback((projectId: string) => {
-    nextUrlUpdateModeRef.current = 'push';
+    nextUrlUpdateModeRef.current = "push";
     setStore((current) =>
       current.projects.some((project) => project.id === projectId)
         ? { ...current, activeProjectId: projectId }
@@ -763,7 +639,7 @@ export function usePlannerProjects() {
   }, []);
 
   const createProjectFromDefault = useCallback(() => {
-    nextUrlUpdateModeRef.current = 'push';
+    nextUrlUpdateModeRef.current = "push";
     setStore((current) => {
       const nextProject = createDefaultProject(current.projects);
       return {
@@ -774,11 +650,9 @@ export function usePlannerProjects() {
   }, []);
 
   const duplicateProject = useCallback((projectId: string) => {
-    nextUrlUpdateModeRef.current = 'push';
+    nextUrlUpdateModeRef.current = "push";
     setStore((current) => {
-      const source = current.projects.find(
-        (project) => project.id === projectId,
-      );
+      const source = current.projects.find((project) => project.id === projectId);
       if (!source) {
         return current;
       }
@@ -792,19 +666,15 @@ export function usePlannerProjects() {
   }, []);
 
   const deleteProject = useCallback((projectId: string) => {
-    nextUrlUpdateModeRef.current = 'push';
+    nextUrlUpdateModeRef.current = "push";
     setStore((current) => {
-      const projectIndex = current.projects.findIndex(
-        (project) => project.id === projectId,
-      );
+      const projectIndex = current.projects.findIndex((project) => project.id === projectId);
       if (projectIndex === -1) {
         return current;
       }
 
       current.projects[projectIndex]?.snapshots.forEach((snapshot) => {
-        removePlannerHistoryState(
-          getPlannerSnapshotHistoryKey(projectId, snapshot.id),
-        );
+        removePlannerHistoryState(getPlannerSnapshotHistoryKey(projectId, snapshot.id));
       });
 
       if (current.projects.length === 1) {
@@ -815,9 +685,7 @@ export function usePlannerProjects() {
         };
       }
 
-      const nextProjects = current.projects.filter(
-        (project) => project.id !== projectId,
-      );
+      const nextProjects = current.projects.filter((project) => project.id !== projectId);
       const nextActiveId =
         current.activeProjectId === projectId
           ? nextProjects[Math.min(projectIndex, nextProjects.length - 1)].id
@@ -830,62 +698,49 @@ export function usePlannerProjects() {
     });
   }, []);
 
-  const selectSnapshot = useCallback(
-    (projectId: string, snapshotId: string) => {
-      nextUrlUpdateModeRef.current = 'push';
-      setStore((current) => ({
-        ...current,
-        activeProjectId: current.projects.some(
-          (project) => project.id === projectId,
-        )
-          ? projectId
-          : current.activeProjectId,
-        projects: current.projects.map((project) =>
-          project.id === projectId &&
-          project.snapshots.some((snapshot) => snapshot.id === snapshotId)
-            ? {
-                ...project,
-                activeSnapshotId: snapshotId,
-              }
-            : project,
-        ),
-      }));
-    },
-    [],
-  );
+  const selectSnapshot = useCallback((projectId: string, snapshotId: string) => {
+    nextUrlUpdateModeRef.current = "push";
+    setStore((current) => ({
+      ...current,
+      activeProjectId: current.projects.some((project) => project.id === projectId)
+        ? projectId
+        : current.activeProjectId,
+      projects: current.projects.map((project) =>
+        project.id === projectId && project.snapshots.some((snapshot) => snapshot.id === snapshotId)
+          ? {
+              ...project,
+              activeSnapshotId: snapshotId,
+            }
+          : project,
+      ),
+    }));
+  }, []);
 
-  const renameSnapshot = useCallback(
-    (projectId: string, snapshotId: string, name: string) => {
-      setStore((current) => ({
-        ...current,
-        projects: current.projects.map((project) =>
-          project.id === projectId
-            ? {
-                ...project,
-                updatedAt: nowIso(),
-                snapshots: project.snapshots.map((snapshot) =>
-                  snapshot.id === snapshotId
-                    ? {
-                        ...snapshot,
-                        name: getUniqueSnapshotName(
-                          name,
-                          project.snapshots,
-                          snapshotId,
-                        ),
-                        updatedAt: nowIso(),
-                      }
-                    : snapshot,
-                ),
-              }
-            : project,
-        ),
-      }));
-    },
-    [],
-  );
+  const renameSnapshot = useCallback((projectId: string, snapshotId: string, name: string) => {
+    setStore((current) => ({
+      ...current,
+      projects: current.projects.map((project) =>
+        project.id === projectId
+          ? {
+              ...project,
+              updatedAt: nowIso(),
+              snapshots: project.snapshots.map((snapshot) =>
+                snapshot.id === snapshotId
+                  ? {
+                      ...snapshot,
+                      name: getUniqueSnapshotName(name, project.snapshots, snapshotId),
+                      updatedAt: nowIso(),
+                    }
+                  : snapshot,
+              ),
+            }
+          : project,
+      ),
+    }));
+  }, []);
 
   const createSnapshotFromCurrent = useCallback((projectId: string) => {
-    nextUrlUpdateModeRef.current = 'push';
+    nextUrlUpdateModeRef.current = "push";
     setStore((current) => ({
       ...current,
       activeProjectId: projectId,
@@ -895,9 +750,8 @@ export function usePlannerProjects() {
         }
 
         const source =
-          project.snapshots.find(
-            (snapshot) => snapshot.id === project.activeSnapshotId,
-          ) ?? project.snapshots[0];
+          project.snapshots.find((snapshot) => snapshot.id === project.activeSnapshotId) ??
+          project.snapshots[0];
         const nextSnapshot = createSnapshot(
           getNextVariationName(project.snapshots),
           source.state,
@@ -915,84 +769,69 @@ export function usePlannerProjects() {
     }));
   }, []);
 
-  const duplicateSnapshot = useCallback(
-    (projectId: string, snapshotId: string) => {
-      nextUrlUpdateModeRef.current = 'push';
-      setStore((current) => ({
-        ...current,
-        activeProjectId: projectId,
-        projects: current.projects.map((project) => {
-          if (project.id !== projectId) {
-            return project;
-          }
+  const duplicateSnapshot = useCallback((projectId: string, snapshotId: string) => {
+    nextUrlUpdateModeRef.current = "push";
+    setStore((current) => ({
+      ...current,
+      activeProjectId: projectId,
+      projects: current.projects.map((project) => {
+        if (project.id !== projectId) {
+          return project;
+        }
 
-          const source = project.snapshots.find(
-            (snapshot) => snapshot.id === snapshotId,
-          );
-          if (!source) {
-            return project;
-          }
+        const source = project.snapshots.find((snapshot) => snapshot.id === snapshotId);
+        if (!source) {
+          return project;
+        }
 
-          const nextSnapshot = createSnapshot(
-            getDuplicateSnapshotName(source.name),
-            source.state,
-            project.snapshots,
-          );
-          const timestamp = nowIso();
+        const nextSnapshot = createSnapshot(
+          getDuplicateSnapshotName(source.name),
+          source.state,
+          project.snapshots,
+        );
+        const timestamp = nowIso();
 
-          return {
-            ...project,
-            updatedAt: timestamp,
-            activeSnapshotId: nextSnapshot.id,
-            snapshots: [...project.snapshots, nextSnapshot],
-          };
-        }),
-      }));
-    },
-    [],
-  );
+        return {
+          ...project,
+          updatedAt: timestamp,
+          activeSnapshotId: nextSnapshot.id,
+          snapshots: [...project.snapshots, nextSnapshot],
+        };
+      }),
+    }));
+  }, []);
 
-  const deleteSnapshot = useCallback(
-    (projectId: string, snapshotId: string) => {
-      nextUrlUpdateModeRef.current = 'push';
-      setStore((current) => ({
-        ...current,
-        projects: current.projects.map((project) => {
-          if (project.id !== projectId) {
-            return project;
-          }
+  const deleteSnapshot = useCallback((projectId: string, snapshotId: string) => {
+    nextUrlUpdateModeRef.current = "push";
+    setStore((current) => ({
+      ...current,
+      projects: current.projects.map((project) => {
+        if (project.id !== projectId) {
+          return project;
+        }
 
-          const snapshotIndex = project.snapshots.findIndex(
-            (snapshot) => snapshot.id === snapshotId,
-          );
-          if (snapshotIndex === -1 || project.snapshots.length === 1) {
-            return project;
-          }
+        const snapshotIndex = project.snapshots.findIndex((snapshot) => snapshot.id === snapshotId);
+        if (snapshotIndex === -1 || project.snapshots.length === 1) {
+          return project;
+        }
 
-          removePlannerHistoryState(
-            getPlannerSnapshotHistoryKey(projectId, snapshotId),
-          );
+        removePlannerHistoryState(getPlannerSnapshotHistoryKey(projectId, snapshotId));
 
-          const nextSnapshots = project.snapshots.filter(
-            (snapshot) => snapshot.id !== snapshotId,
-          );
-          const nextActiveSnapshotId =
-            project.activeSnapshotId === snapshotId
-              ? nextSnapshots[Math.min(snapshotIndex, nextSnapshots.length - 1)]
-                  .id
-              : project.activeSnapshotId;
+        const nextSnapshots = project.snapshots.filter((snapshot) => snapshot.id !== snapshotId);
+        const nextActiveSnapshotId =
+          project.activeSnapshotId === snapshotId
+            ? nextSnapshots[Math.min(snapshotIndex, nextSnapshots.length - 1)].id
+            : project.activeSnapshotId;
 
-          return {
-            ...project,
-            updatedAt: nowIso(),
-            activeSnapshotId: nextActiveSnapshotId,
-            snapshots: nextSnapshots,
-          };
-        }),
-      }));
-    },
-    [],
-  );
+        return {
+          ...project,
+          updatedAt: nowIso(),
+          activeSnapshotId: nextActiveSnapshotId,
+          snapshots: nextSnapshots,
+        };
+      }),
+    }));
+  }, []);
 
   const updateSnapshotState = useCallback(
     (projectId: string, snapshotId: string, state: RoomPlannerState) => {
@@ -1052,7 +891,7 @@ export function usePlannerProjects() {
 
   const importProject = useCallback((raw: string) => {
     const imported = parsePlannerProjectExport(raw);
-    nextUrlUpdateModeRef.current = 'push';
+    nextUrlUpdateModeRef.current = "push";
 
     setStore((current) => {
       const nextProject = buildImportedProject(imported, current.projects);

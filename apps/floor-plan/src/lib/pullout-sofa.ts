@@ -1,4 +1,4 @@
-import type { FurnitureItem, PulloutSofaState } from '@/types';
+import type { FurnitureItem, PulloutSofaState } from "@/types";
 
 export function getPulloutSofaDimensions(pulloutSofa: PulloutSofaState) {
   return pulloutSofa.isOpen
@@ -12,13 +12,8 @@ export function getPulloutSofaDimensions(pulloutSofa: PulloutSofaState) {
       };
 }
 
-export function normalizePulloutSofaState(
-  pulloutSofa: PulloutSofaState,
-): PulloutSofaState {
-  const normalizedWidth = Math.max(
-    pulloutSofa.closedWidth,
-    pulloutSofa.openWidth,
-  );
+export function normalizePulloutSofaState(pulloutSofa: PulloutSofaState): PulloutSofaState {
+  const normalizedWidth = Math.max(pulloutSofa.closedWidth, pulloutSofa.openWidth);
 
   return {
     ...pulloutSofa,
@@ -41,12 +36,8 @@ export function syncPulloutSofaItem(
   return {
     ...item,
     ...dimensions,
-    x: shouldPreserveTop
-      ? item.x - Math.sin(rotationRadians) * (depthDelta / 2)
-      : item.x,
-    y: shouldPreserveTop
-      ? item.y + Math.cos(rotationRadians) * (depthDelta / 2)
-      : item.y,
+    x: shouldPreserveTop ? item.x - Math.sin(rotationRadians) * (depthDelta / 2) : item.x,
+    y: shouldPreserveTop ? item.y + Math.cos(rotationRadians) * (depthDelta / 2) : item.y,
     pulloutSofa: normalizedPulloutSofa,
   };
 }

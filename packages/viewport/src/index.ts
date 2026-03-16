@@ -1,4 +1,13 @@
-import { type Dispatch, type RefObject, type SetStateAction, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  type Dispatch,
+  type RefObject,
+  type SetStateAction,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 export interface ViewportPoint {
   x: number;
@@ -42,7 +51,7 @@ export interface ViewportController {
   setPan: Dispatch<SetStateAction<ViewportPoint>>;
   setZoom: Dispatch<SetStateAction<number>>;
   startPan: (clientX: number, clientY: number) => void;
-  stepZoom: (direction: 'in' | 'out') => void;
+  stepZoom: (direction: "in" | "out") => void;
   stopPan: () => void;
   updatePan: (clientX: number, clientY: number) => void;
   viewportBounds: ViewportBounds | null;
@@ -107,8 +116,7 @@ export function fitBoxToViewport(
     return null;
   }
 
-  const { maxZoom = Number.POSITIVE_INFINITY, minZoom = 0, padding = 0 } =
-    options;
+  const { maxZoom = Number.POSITIVE_INFINITY, minZoom = 0, padding = 0 } = options;
   const availableWidth = viewport.width - padding * 2;
   const availableHeight = viewport.height - padding * 2;
 
@@ -152,27 +160,17 @@ export function fitPointsToViewport(
     padding?: number;
   } = {},
 ) {
-  return fitBoxToViewport(
-    viewport,
-    getBoxFromPoints(points, options.fallbackSize),
-    options,
-  );
+  return fitBoxToViewport(viewport, getBoxFromPoints(points, options.fallbackSize), options);
 }
 
-export function screenToWorld(
-  point: ViewportPoint,
-  transform: ViewportTransform,
-): ViewportPoint {
+export function screenToWorld(point: ViewportPoint, transform: ViewportTransform): ViewportPoint {
   return {
     x: (point.x - transform.pan.x) / transform.zoom,
     y: (point.y - transform.pan.y) / transform.zoom,
   };
 }
 
-export function worldToScreen(
-  point: ViewportPoint,
-  transform: ViewportTransform,
-): ViewportPoint {
+export function worldToScreen(point: ViewportPoint, transform: ViewportTransform): ViewportPoint {
   return {
     x: point.x * transform.zoom + transform.pan.x,
     y: point.y * transform.zoom + transform.pan.y,
@@ -187,8 +185,7 @@ export function zoomPanAtPoint(options: {
   screenPoint: ViewportPoint;
   targetZoom: number;
 }): ViewportTransform {
-  const { currentPan, currentZoom, maxZoom, minZoom, screenPoint, targetZoom } =
-    options;
+  const { currentPan, currentZoom, maxZoom, minZoom, screenPoint, targetZoom } = options;
   const zoom = clampZoom(targetZoom, minZoom, maxZoom);
   const worldPoint = screenToWorld(screenPoint, {
     pan: currentPan,
@@ -223,9 +220,7 @@ export function zoomPanAtWorldPoint(options: {
   };
 }
 
-export function useElementSize<T extends HTMLElement>(
-  ref: RefObject<T | null>,
-): ViewportSize {
+export function useElementSize<T extends HTMLElement>(ref: RefObject<T | null>): ViewportSize {
   const [size, setSize] = useState<ViewportSize>({ height: 0, width: 0 });
 
   useEffect(() => {
@@ -274,10 +269,7 @@ export function useViewportController(options: {
     stepFactor = 1.15,
   } = options;
   const containerSize = useElementSize(containerRef);
-  const viewportBounds = useMemo(
-    () => getViewportBounds(containerSize),
-    [containerSize],
-  );
+  const viewportBounds = useMemo(() => getViewportBounds(containerSize), [containerSize]);
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState<ViewportPoint>({ x: 0, y: 0 });
   const [dragAnchor, setDragAnchor] = useState<ViewportPoint | null>(null);
@@ -304,14 +296,7 @@ export function useViewportController(options: {
 
     setZoom(fit.zoom);
     setPan(fit.pan);
-  }, [
-    getFitBox,
-    getFitTransform,
-    maxZoom,
-    minZoom,
-    padding,
-    viewportBounds,
-  ]);
+  }, [getFitBox, getFitTransform, maxZoom, minZoom, padding, viewportBounds]);
 
   useEffect(() => {
     if (!autoFit || hasAutoFitRef.current || !viewportBounds) {
@@ -341,13 +326,12 @@ export function useViewportController(options: {
   );
 
   const stepZoom = useCallback(
-    (direction: 'in' | 'out') => {
+    (direction: "in" | "out") => {
       if (!viewportBounds) {
         return;
       }
 
-      const targetZoom =
-        direction === 'in' ? zoom * stepFactor : zoom / stepFactor;
+      const targetZoom = direction === "in" ? zoom * stepFactor : zoom / stepFactor;
 
       zoomAtPoint(targetZoom, {
         x: viewportBounds.centerX,

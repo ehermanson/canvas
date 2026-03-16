@@ -6,6 +6,7 @@
 **Target**: `Tabs`, `TabsList`, `TabsTrigger`, `TabsContent` from shadcn
 
 Changes in `sidebar.tsx`:
+
 - Remove `activeTab` state and `setActiveTab`
 - Remove `TabType` type
 - Import shadcn Tabs components
@@ -17,6 +18,7 @@ Changes in `sidebar.tsx`:
 ## 2. Labels/Inputs → Field Components
 
 **Current pattern**:
+
 ```tsx
 <div className="space-y-1.5">
   <Label>Name</Label>
@@ -25,6 +27,7 @@ Changes in `sidebar.tsx`:
 ```
 
 **With description**:
+
 ```tsx
 <div className="space-y-1.5">
   <Label>Name</Label>
@@ -34,6 +37,7 @@ Changes in `sidebar.tsx`:
 ```
 
 **Target pattern**:
+
 ```tsx
 <Field>
   <FieldLabel>Name</FieldLabel>
@@ -48,6 +52,7 @@ Changes in `sidebar.tsx`:
 ```
 
 Files to update:
+
 - `wall-dimensions.tsx` - 2 fields
 - `layout-type-selector.tsx` - 1 field (frame count input)
 - `frame-size.tsx` - ~5 fields (size select, width/height, hook offset, hook inset)

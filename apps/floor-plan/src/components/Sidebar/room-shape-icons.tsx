@@ -115,11 +115,11 @@ export function BayWindowIcon({ className }: IconProps) {
 }
 
 export const ROOM_SHAPE_ICONS: Record<string, React.FC<IconProps>> = {
-  'Rectangle (12x10)': RectangleIcon,
-  'Square (12x12)': SquareIcon,
-  'Large (16x14)': LargeRectIcon,
-  'L-Shape': LShapeIcon,
-  'T-Shape': TShapeIcon,
-  'Studio Apartment': StudioIcon,
-  'Bay Window': BayWindowIcon,
+  "Rectangle (12x10)": RectangleIcon,
+  "Square (12x12)": SquareIcon,
+  "Large (16x14)": LargeRectIcon,
+  "L-Shape": LShapeIcon,
+  "T-Shape": TShapeIcon,
+  "Studio Apartment": StudioIcon,
+  "Bay Window": BayWindowIcon,
 };

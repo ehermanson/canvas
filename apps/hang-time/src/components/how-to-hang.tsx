@@ -1,6 +1,6 @@
-import { ListChecks } from 'lucide-react';
-import type { UseCalculatorReturn } from '@/hooks/use-calculator';
-import { formatMeasurement, toDisplayUnit } from '@/utils/calculations';
+import { ListChecks } from "lucide-react";
+import type { UseCalculatorReturn } from "@/hooks/use-calculator";
+import { formatMeasurement, toDisplayUnit } from "@/utils/calculations";
 
 interface HowToHangProps {
   calculator: UseCalculatorReturn;
@@ -9,8 +9,7 @@ interface HowToHangProps {
 export function HowToHang({ calculator }: HowToHangProps) {
   const { state, layoutPositions } = calculator;
 
-  const fmt = (val: number) =>
-    formatMeasurement(toDisplayUnit(val, state.unit), state.unit);
+  const fmt = (val: number) => formatMeasurement(toDisplayUnit(val, state.unit), state.unit);
 
   if (layoutPositions.length === 0) return null;
 
@@ -30,13 +29,11 @@ export function HowToHang({ calculator }: HowToHangProps) {
             1
           </span>
           <span className="text-gray-700 dark:text-white/80">
-            <strong className="text-gray-900 dark:text-white">
-              Measure from the left edge
-            </strong>{' '}
-            of your wall{' '}
+            <strong className="text-gray-900 dark:text-white">Measure from the left edge</strong> of
+            your wall{" "}
             <strong className="text-indigo-600 dark:text-indigo-400">
               {fmt(firstFrame.fromLeft)}
-            </strong>{' '}
+            </strong>{" "}
             and make a small mark.
           </span>
         </li>
@@ -45,17 +42,15 @@ export function HowToHang({ calculator }: HowToHangProps) {
             2
           </span>
           <span className="text-gray-700 dark:text-white/80">
-            <strong className="text-gray-900 dark:text-white">
-              Measure up from the floor
-            </strong>{' '}
+            <strong className="text-gray-900 dark:text-white">Measure up from the floor</strong>{" "}
             <strong className="text-emerald-600 dark:text-emerald-400">
               {fmt(firstFrame.fromFloor)}
-            </strong>{' '}
+            </strong>{" "}
             at that mark.
-            {state.anchorType === 'ceiling' && (
+            {state.anchorType === "ceiling" && (
               <>
-                {' '}
-                Or measure down from the ceiling{' '}
+                {" "}
+                Or measure down from the ceiling{" "}
                 <strong className="text-amber-600 dark:text-amber-400">
                   {fmt(firstFrame.fromCeiling)}
                 </strong>
@@ -69,10 +64,8 @@ export function HowToHang({ calculator }: HowToHangProps) {
             3
           </span>
           <span className="text-gray-700 dark:text-white/80">
-            <strong className="text-gray-900 dark:text-white">
-              Install your hook or nail
-            </strong>{' '}
-            at this intersection point.
+            <strong className="text-gray-900 dark:text-white">Install your hook or nail</strong> at
+            this intersection point.
           </span>
         </li>
         <li className="flex gap-3">
@@ -80,10 +73,8 @@ export function HowToHang({ calculator }: HowToHangProps) {
             4
           </span>
           <span className="text-gray-700 dark:text-white/80">
-            <strong className="text-gray-900 dark:text-white">
-              Hang your frame
-            </strong>{' '}
-            by the wire/bracket and adjust until level.
+            <strong className="text-gray-900 dark:text-white">Hang your frame</strong> by the
+            wire/bracket and adjust until level.
           </span>
         </li>
         {layoutPositions.length > 1 && (
@@ -92,18 +83,16 @@ export function HowToHang({ calculator }: HowToHangProps) {
               5
             </span>
             <span className="text-gray-700 dark:text-white/80">
-              <strong className="text-gray-900 dark:text-white">Repeat</strong>{' '}
-              for the remaining {layoutPositions.length - 1} frame
-              {layoutPositions.length > 2 ? 's' : ''} using the measurements
-              above.
+              <strong className="text-gray-900 dark:text-white">Repeat</strong> for the remaining{" "}
+              {layoutPositions.length - 1} frame
+              {layoutPositions.length > 2 ? "s" : ""} using the measurements above.
             </span>
           </li>
         )}
       </ol>
       <div className="p-3 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-lg text-xs text-amber-800 dark:text-amber-300">
-        <strong>Tip:</strong> Use a level to ensure your marks are straight. For
-        multiple frames, a laser level can help maintain alignment across the
-        wall.
+        <strong>Tip:</strong> Use a level to ensure your marks are straight. For multiple frames, a
+        laser level can help maintain alignment across the wall.
       </div>
     </div>
   );

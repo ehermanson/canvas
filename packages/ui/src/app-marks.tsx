@@ -38,8 +38,6 @@ export function HangTimeAppIcon({ className }: React.SVGProps<SVGSVGElement>) {
   );
 }
 
-export function FloorPlanAppIcon({
-  className,
-}: React.ComponentProps<typeof Home>) {
+export function FloorPlanAppIcon({ className }: React.ComponentProps<typeof Home>) {
   return <Home className={className} />;
 }

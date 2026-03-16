@@ -1,26 +1,22 @@
-export type Unit = 'in' | 'cm';
+export type Unit = "in" | "cm";
 
-export type Theme = 'light' | 'dark';
+export type Theme = "light" | "dark";
 
-export type AnchorType = 'floor' | 'ceiling' | 'center' | 'furniture';
+export type AnchorType = "floor" | "ceiling" | "center" | "furniture";
 
-export type HorizontalAnchorType = 'center' | 'left' | 'right';
+export type HorizontalAnchorType = "center" | "left" | "right";
 
-export type HangingType = 'center' | 'dual';
+export type HangingType = "center" | "dual";
 
-export type Distribution =
-  | 'fixed'
-  | 'space-between'
-  | 'space-evenly'
-  | 'space-around';
+export type Distribution = "fixed" | "space-between" | "space-evenly" | "space-around";
 
-export type FurnitureAnchor = 'left' | 'center' | 'right';
+export type FurnitureAnchor = "left" | "center" | "right";
 
-export type FrameFurnitureAlignment = 'left' | 'center' | 'right' | 'span';
+export type FrameFurnitureAlignment = "left" | "center" | "right" | "span";
 
-export type FurnitureVerticalAnchor = 'center' | 'ceiling' | 'above-furniture';
+export type FurnitureVerticalAnchor = "center" | "ceiling" | "above-furniture";
 
-export type GalleryVAlign = 'center' | 'top' | 'bottom';
+export type GalleryVAlign = "center" | "top" | "bottom";
 
 export interface GalleryFrame {
   id: string;

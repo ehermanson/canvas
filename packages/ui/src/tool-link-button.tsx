@@ -1,17 +1,10 @@
 import { ArrowUpRight } from "lucide-react";
 import * as React from "react";
 import { Button } from "./components/ui/button";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "./components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "./components/ui/tooltip";
 import { cn } from "./lib/utils";
 
-interface ToolLinkButtonProps extends Omit<
-  React.ComponentProps<"a">,
-  "children" | "href"
-> {
+interface ToolLinkButtonProps extends Omit<React.ComponentProps<"a">, "children" | "href"> {
   href: string;
   label: string;
   compact?: boolean;

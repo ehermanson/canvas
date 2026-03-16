@@ -13,16 +13,14 @@ type InspectorTone =
   | "violet";
 
 const insetToneClassNames: Record<InspectorTone, string> = {
-  amber:
-    "border-amber-400/30 bg-amber-500/[0.08] dark:border-amber-400/20 dark:bg-amber-500/[0.1]",
+  amber: "border-amber-400/30 bg-amber-500/[0.08] dark:border-amber-400/20 dark:bg-amber-500/[0.1]",
   blue: "border-blue-400/30 bg-blue-500/[0.08] dark:border-blue-400/20 dark:bg-blue-500/[0.1]",
   cyan: "border-cyan-400/30 bg-cyan-500/[0.08] dark:border-cyan-400/20 dark:bg-cyan-500/[0.1]",
   emerald:
     "border-emerald-400/30 bg-emerald-500/[0.08] dark:border-emerald-400/20 dark:bg-emerald-500/[0.1]",
   indigo:
     "border-indigo-400/30 bg-indigo-500/[0.08] dark:border-indigo-400/20 dark:bg-indigo-500/[0.1]",
-  neutral:
-    "border-gray-200/70 bg-gray-50/80 dark:border-white/10 dark:bg-white/[0.03]",
+  neutral: "border-gray-200/70 bg-gray-50/80 dark:border-white/10 dark:bg-white/[0.03]",
   pink: "border-pink-400/30 bg-pink-500/[0.08] dark:border-pink-400/20 dark:bg-pink-500/[0.1]",
   violet:
     "border-violet-400/30 bg-violet-500/[0.08] dark:border-violet-400/20 dark:bg-violet-500/[0.1]",
@@ -53,8 +51,7 @@ const segmentedToneClassNames: Record<InspectorTone, string> = {
     "border-emerald-400/40 bg-emerald-500/[0.1] text-emerald-700 dark:border-emerald-400/40 dark:bg-emerald-500/[0.16] dark:text-emerald-200",
   indigo:
     "border-indigo-400/40 bg-indigo-500/[0.1] text-indigo-700 dark:border-indigo-400/40 dark:bg-indigo-500/[0.16] dark:text-indigo-200",
-  neutral:
-    "border-transparent bg-white text-gray-900 shadow-sm dark:bg-white/10 dark:text-white",
+  neutral: "border-transparent bg-white text-gray-900 shadow-sm dark:bg-white/10 dark:text-white",
   pink: "border-pink-400/40 bg-pink-500/[0.1] text-pink-700 dark:border-pink-400/40 dark:bg-pink-500/[0.16] dark:text-pink-200",
   violet:
     "border-violet-400/40 bg-violet-500/[0.1] text-violet-700 dark:border-violet-400/40 dark:bg-violet-500/[0.16] dark:text-violet-200",
@@ -85,11 +82,7 @@ const InspectorInset = React.forwardRef<HTMLDivElement, InspectorInsetProps>(
     return (
       <div
         ref={ref}
-        className={cn(
-          "rounded-xl border px-3 py-2.5",
-          insetToneClassNames[tone],
-          className,
-        )}
+        className={cn("rounded-xl border px-3 py-2.5", insetToneClassNames[tone], className)}
         {...props}
       />
     );
@@ -117,9 +110,7 @@ function InspectorOptionCard({
     <Comp
       className={cn(
         "rounded-xl border text-left transition-colors",
-        layout === "column"
-          ? "flex flex-col items-center"
-          : "flex items-start gap-2.5",
+        layout === "column" ? "flex flex-col items-center" : "flex items-start gap-2.5",
         selected
           ? optionToneClassNames[tone]
           : "border-gray-200/80 bg-white/75 text-gray-700 hover:border-gray-300 hover:bg-gray-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-white/70 dark:hover:border-white/20 dark:hover:bg-white/[0.08]",
@@ -161,16 +152,10 @@ function InspectorListRow({
   );
 }
 
-function InspectorSegmentedControl({
-  className,
-  ...props
-}: React.HTMLAttributes<HTMLDivElement>) {
+function InspectorSegmentedControl({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn(
-        "grid gap-1 rounded-xl bg-gray-100/80 p-1 dark:bg-white/[0.04]",
-        className,
-      )}
+      className={cn("grid gap-1 rounded-xl bg-gray-100/80 p-1 dark:bg-white/[0.04]", className)}
       {...props}
     />
   );

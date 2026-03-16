@@ -8,14 +8,14 @@ import {
   ViewportToolbar,
   ViewportToolbarButton,
   ViewportToolbarValue,
-} from '@canvas-tools/ui';
+} from "@canvas-tools/ui";
 import {
   fitPointsToViewport,
   zoomPanAtPoint as getZoomPanAtPoint,
   zoomPanAtWorldPoint as getZoomPanAtWorldPoint,
   screenToWorld as mapScreenToWorld,
   worldToScreen as mapWorldToScreen,
-} from '@canvas-tools/viewport';
+} from "@canvas-tools/viewport";
 import {
   ChevronDown,
   ChevronsDown,
@@ -29,16 +29,9 @@ import {
   Settings,
   Sun,
   Trash2,
-} from 'lucide-react';
-import {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
-import { Button } from '@/components/ui/button';
+} from "lucide-react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -46,28 +39,21 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
-import type { RoomPlannerReturn } from '@/hooks/use-floor-planner';
-import { useTheme } from '@/hooks/use-theme';
-import type {
-  FurnitureAlignmentMatch,
-  FurnitureResizeEdge,
-} from '@/lib/furniture-geometry';
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import type { RoomPlannerReturn } from "@/hooks/use-floor-planner";
+import { useTheme } from "@/hooks/use-theme";
+import type { FurnitureAlignmentMatch, FurnitureResizeEdge } from "@/lib/furniture-geometry";
 import {
   checkFurnitureCollision,
   checkFurnitureRoomCollision,
@@ -80,7 +66,7 @@ import {
   resizeFurnitureFromEdge,
   snapFurnitureToBoundsGrid,
   snapFurnitureToRoomWalls,
-} from '@/lib/furniture-geometry';
+} from "@/lib/furniture-geometry";
 import {
   distSq,
   getBounds,
@@ -89,21 +75,14 @@ import {
   getWallMeasurementSpans,
   projectOntoSegment,
   rotatePointAround,
-} from '@/lib/room-geometry';
-import type {
-  FurnitureItem,
-  Point,
-  Unit,
-  Wall,
-  WallEndpoint,
-  WallFeature,
-} from '@/types';
+} from "@/lib/room-geometry";
+import type { FurnitureItem, Point, Unit, Wall, WallEndpoint, WallFeature } from "@/types";
 
 interface CanvasProps {
   planner: RoomPlannerReturn;
 }
 
-type DisplayFormatter = RoomPlannerReturn['toDisplay'];
+type DisplayFormatter = RoomPlannerReturn["toDisplay"];
 type ViewportBounds = {
   centerX: number;
   centerY: number;
@@ -134,18 +113,18 @@ type WallLabelLayout = {
   bounds: Rect;
   labelCenter: Point;
   labelRect: Rect;
-  orientation: 'column' | 'row';
+  orientation: "column" | "row";
 };
 type FurnitureAlignmentGuide = {
-  axis: 'x' | 'y';
+  axis: "x" | "y";
   end: number;
   position: number;
   start: number;
 };
 type CanvasContextMenuTarget =
-  | { id: string; kind: 'furniture' }
-  | { featureId: string; kind: 'feature'; wallId: string }
-  | { id: string; kind: 'wall' };
+  | { id: string; kind: "furniture" }
+  | { featureId: string; kind: "feature"; wallId: string }
+  | { id: string; kind: "wall" };
 type FurnitureRenameDialogState = {
   draftName: string;
   itemId: string;
@@ -161,9 +140,7 @@ const FIT_TO_VIEW_PADDING = 80;
 const WALL_LABEL_BADGE_RADIUS = 8;
 const WALL_LABEL_GAP = 6;
 const WALL_LABEL_NORMAL_OFFSETS = [24, 36, 48, 64, 80];
-const WALL_LABEL_TANGENT_OFFSETS = [
-  0, 18, -18, 36, -36, 54, -54, 72, -72, 96, -96,
-];
+const WALL_LABEL_TANGENT_OFFSETS = [0, 18, -18, 36, -36, 54, -54, 72, -72, 96, -96];
 
 export function calculateFitViewState(
   viewport: ViewportBounds | null,
@@ -207,8 +184,7 @@ export function getWallInteriorUnitNormal(
   const wallMidX = (start.x + end.x) / 2;
   const wallMidY = (start.y + end.y) / 2;
   const dotToCenter =
-    (roomCentroid.x - wallMidX) * baseNormal.x +
-    (roomCentroid.y - wallMidY) * baseNormal.y;
+    (roomCentroid.x - wallMidX) * baseNormal.x + (roomCentroid.y - wallMidY) * baseNormal.y;
 
   return dotToCenter >= 0
     ? baseNormal
@@ -218,10 +194,7 @@ export function getWallInteriorUnitNormal(
       };
 }
 
-export function shouldDrawSelectedWallMeasurements(
-  wallLength: number,
-  features: WallFeature[],
-) {
+export function shouldDrawSelectedWallMeasurements(wallLength: number, features: WallFeature[]) {
   const spans = getWallMeasurementSpans(wallLength, features);
   if (spans.length !== 1) {
     return spans.length > 0;
@@ -231,12 +204,7 @@ export function shouldDrawSelectedWallMeasurements(
   return span.startOffset !== 0 || span.endOffset !== wallLength;
 }
 
-function createRect(
-  centerX: number,
-  centerY: number,
-  width: number,
-  height: number,
-): Rect {
+function createRect(centerX: number, centerY: number, width: number, height: number): Rect {
   return {
     minX: centerX - width / 2,
     maxX: centerX + width / 2,
@@ -255,14 +223,8 @@ function doRectsOverlap(a: Rect, b: Rect, padding = 0) {
 }
 
 function doesCircleOverlapRect(circle: Circle, rect: Rect, padding = 0) {
-  const closestX = Math.max(
-    rect.minX - padding,
-    Math.min(circle.center.x, rect.maxX + padding),
-  );
-  const closestY = Math.max(
-    rect.minY - padding,
-    Math.min(circle.center.y, rect.maxY + padding),
-  );
+  const closestX = Math.max(rect.minX - padding, Math.min(circle.center.x, rect.maxX + padding));
+  const closestY = Math.max(rect.minY - padding, Math.min(circle.center.y, rect.maxY + padding));
   const dx = circle.center.x - closestX;
   const dy = circle.center.y - closestY;
   return dx * dx + dy * dy <= circle.radius * circle.radius;
@@ -272,7 +234,7 @@ function buildWallLabelLayout(
   center: Point,
   labelWidth: number,
   labelHeight: number,
-  orientation: 'column' | 'row',
+  orientation: "column" | "row",
 ): WallLabelLayout {
   const badgeDiameter = WALL_LABEL_BADGE_RADIUS * 2;
   if (labelWidth <= 0) {
@@ -286,7 +248,7 @@ function buildWallLabelLayout(
     };
   }
 
-  if (orientation === 'column') {
+  if (orientation === "column") {
     const totalWidth = Math.max(badgeDiameter, labelWidth);
     const totalHeight = badgeDiameter + WALL_LABEL_GAP + labelHeight;
     const bounds = createRect(center.x, center.y, totalWidth, totalHeight);
@@ -362,27 +324,16 @@ export function getWallLabelLayout({
   let bestLayout: WallLabelLayout | null = null;
   let bestScore = Number.POSITIVE_INFINITY;
 
-  for (const orientation of ['row', 'column'] as const) {
-    const orientationPenalty = prefersRow === (orientation === 'row') ? 0 : 12;
+  for (const orientation of ["row", "column"] as const) {
+    const orientationPenalty = prefersRow === (orientation === "row") ? 0 : 12;
 
     for (const normalOffset of WALL_LABEL_NORMAL_OFFSETS) {
       for (const tangentOffset of WALL_LABEL_TANGENT_OFFSETS) {
         const center = {
-          x:
-            anchor.x +
-            outwardNormal.x * normalOffset +
-            tangent.x * tangentOffset,
-          y:
-            anchor.y +
-            outwardNormal.y * normalOffset +
-            tangent.y * tangentOffset,
+          x: anchor.x + outwardNormal.x * normalOffset + tangent.x * tangentOffset,
+          y: anchor.y + outwardNormal.y * normalOffset + tangent.y * tangentOffset,
         };
-        const layout = buildWallLabelLayout(
-          center,
-          labelWidth,
-          labelHeight,
-          orientation,
-        );
+        const layout = buildWallLabelLayout(center, labelWidth, labelHeight, orientation);
 
         const rectCollisions = obstacleRects.filter((rect) =>
           doRectsOverlap(layout.bounds, rect, 6),
@@ -419,7 +370,7 @@ export function getWallLabelLayout({
       },
       labelWidth,
       labelHeight,
-      'row',
+      "row",
     )
   );
 }
@@ -539,7 +490,7 @@ function drawDistanceToWalls(
     const from = toScreen(measurement.fromX, measurement.fromY);
     const to = toScreen(measurement.toX, measurement.toY);
 
-    ctx.strokeStyle = isDark ? 'rgba(34,211,238,0.5)' : 'rgba(6,182,212,0.5)';
+    ctx.strokeStyle = isDark ? "rgba(34,211,238,0.5)" : "rgba(6,182,212,0.5)";
     ctx.lineWidth = 1;
     ctx.setLineDash([4, 4]);
     ctx.beginPath();
@@ -550,19 +501,19 @@ function drawDistanceToWalls(
 
     const displayDist = toDisplay(measurement.dist);
     const label =
-      unit === 'cm'
+      unit === "cm"
         ? `${displayDist.toFixed(0)}cm`
         : `${Number.parseFloat(displayDist.toFixed(3))}"`;
     const midX = (from.x + to.x) / 2;
     const midY = (from.y + to.y) / 2;
 
-    ctx.font = '10px -apple-system, BlinkMacSystemFont, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
+    ctx.font = "10px -apple-system, BlinkMacSystemFont, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
     const metrics = ctx.measureText(label);
-    ctx.fillStyle = isDark ? 'rgba(15,23,42,0.9)' : 'rgba(255,255,255,0.95)';
+    ctx.fillStyle = isDark ? "rgba(15,23,42,0.9)" : "rgba(255,255,255,0.95)";
     ctx.fillRect(midX - metrics.width / 2 - 3, midY - 7, metrics.width + 6, 14);
-    ctx.fillStyle = isDark ? '#22d3ee' : '#0891b2';
+    ctx.fillStyle = isDark ? "#22d3ee" : "#0891b2";
     ctx.fillText(label, midX, midY);
   }
   ctx.restore();
@@ -579,16 +530,16 @@ function drawFurnitureAlignmentGuides(
   }
 
   ctx.save();
-  ctx.strokeStyle = isDark ? 'rgba(103,232,249,0.95)' : 'rgba(8,145,178,0.92)';
+  ctx.strokeStyle = isDark ? "rgba(103,232,249,0.95)" : "rgba(8,145,178,0.92)";
   ctx.lineWidth = 1.5;
 
   for (const guide of guides) {
     const start =
-      guide.axis === 'x'
+      guide.axis === "x"
         ? toScreen(guide.position, guide.start)
         : toScreen(guide.start, guide.position);
     const end =
-      guide.axis === 'x'
+      guide.axis === "x"
         ? toScreen(guide.position, guide.end)
         : toScreen(guide.end, guide.position);
 
@@ -624,7 +575,7 @@ function drawScaleIndicator(
   const y = canvasH - 24;
 
   ctx.save();
-  ctx.strokeStyle = isDark ? '#94a3b8' : '#475569';
+  ctx.strokeStyle = isDark ? "#94a3b8" : "#475569";
   ctx.lineWidth = 2;
   ctx.beginPath();
   ctx.moveTo(x, y);
@@ -636,15 +587,12 @@ function drawScaleIndicator(
   ctx.stroke();
 
   const displayUnits = toDisplay(scaleUnits);
-  const label =
-    unit === 'cm'
-      ? `${displayUnits.toFixed(0)} cm`
-      : `${displayUnits.toFixed(0)}"`;
+  const label = unit === "cm" ? `${displayUnits.toFixed(0)} cm` : `${displayUnits.toFixed(0)}"`;
 
-  ctx.font = '11px -apple-system, BlinkMacSystemFont, sans-serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'bottom';
-  ctx.fillStyle = isDark ? '#94a3b8' : '#475569';
+  ctx.font = "11px -apple-system, BlinkMacSystemFont, sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "bottom";
+  ctx.fillStyle = isDark ? "#94a3b8" : "#475569";
   ctx.fillText(label, x + barWidth / 2, y - 4);
   ctx.restore();
 }
@@ -681,12 +629,12 @@ function drawSelectedWallMeasurements(
   };
 
   ctx.save();
-  ctx.strokeStyle = isDark ? 'rgba(34,211,238,0.7)' : 'rgba(6,182,212,0.7)';
-  ctx.fillStyle = isDark ? '#22d3ee' : '#0891b2';
+  ctx.strokeStyle = isDark ? "rgba(34,211,238,0.7)" : "rgba(6,182,212,0.7)";
+  ctx.fillStyle = isDark ? "#22d3ee" : "#0891b2";
   ctx.lineWidth = 1.5;
-  ctx.font = '10px -apple-system, BlinkMacSystemFont, sans-serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
+  ctx.font = "10px -apple-system, BlinkMacSystemFont, sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
 
   for (const span of spans) {
     const startT = span.startOffset / wallLength;
@@ -738,26 +686,22 @@ function drawSelectedWallMeasurements(
     const paddingX = 4;
     const paddingY = 3;
 
-    ctx.fillStyle = isDark ? 'rgba(15,23,42,0.92)' : 'rgba(255,255,255,0.96)';
+    ctx.fillStyle = isDark ? "rgba(15,23,42,0.92)" : "rgba(255,255,255,0.96)";
     ctx.fillRect(
       midX - metrics.width / 2 - paddingX,
       midY - 7 - paddingY,
       metrics.width + paddingX * 2,
       14 + paddingY * 2,
     );
-    ctx.fillStyle = isDark ? '#22d3ee' : '#0891b2';
+    ctx.fillStyle = isDark ? "#22d3ee" : "#0891b2";
     ctx.fillText(label, midX, midY);
   }
 
   ctx.restore();
 }
 
-function formatWallSpanDimension(
-  value: number,
-  toDisplay: DisplayFormatter,
-  unit: Unit,
-) {
-  if (unit === 'cm') {
+function formatWallSpanDimension(value: number, toDisplay: DisplayFormatter, unit: Unit) {
+  if (unit === "cm") {
     return `${toDisplay(value).toFixed(0)}cm`;
   }
 
@@ -785,24 +729,16 @@ function drawBoundsDimensions(
   const horizontalOffset = 18;
   const verticalOffset = 18;
   const tick = 5;
-  const horizontalLabel = formatCanvasDimension(
-    bounds.maxX - bounds.minX,
-    toDisplay,
-    unit,
-  );
-  const verticalLabel = formatCanvasDimension(
-    bounds.maxY - bounds.minY,
-    toDisplay,
-    unit,
-  );
+  const horizontalLabel = formatCanvasDimension(bounds.maxX - bounds.minX, toDisplay, unit);
+  const verticalLabel = formatCanvasDimension(bounds.maxY - bounds.minY, toDisplay, unit);
 
   ctx.save();
-  ctx.strokeStyle = isDark ? 'rgba(34,211,238,0.75)' : 'rgba(8,145,178,0.75)';
-  ctx.fillStyle = isDark ? '#22d3ee' : '#0891b2';
+  ctx.strokeStyle = isDark ? "rgba(34,211,238,0.75)" : "rgba(8,145,178,0.75)";
+  ctx.fillStyle = isDark ? "#22d3ee" : "#0891b2";
   ctx.lineWidth = 1.5;
-  ctx.font = '10px -apple-system, BlinkMacSystemFont, sans-serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
+  ctx.font = "10px -apple-system, BlinkMacSystemFont, sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
 
   if (Math.abs(width) >= 28) {
     const y = topLeft.y - horizontalOffset;
@@ -819,9 +755,9 @@ function drawBoundsDimensions(
 
     const midX = (topLeft.x + topRight.x) / 2;
     const metrics = ctx.measureText(horizontalLabel);
-    ctx.fillStyle = isDark ? 'rgba(15,23,42,0.92)' : 'rgba(255,255,255,0.96)';
+    ctx.fillStyle = isDark ? "rgba(15,23,42,0.92)" : "rgba(255,255,255,0.96)";
     ctx.fillRect(midX - metrics.width / 2 - 4, y - 10, metrics.width + 8, 16);
-    ctx.fillStyle = isDark ? '#22d3ee' : '#0891b2';
+    ctx.fillStyle = isDark ? "#22d3ee" : "#0891b2";
     ctx.fillText(horizontalLabel, midX, y - 1);
   }
 
@@ -840,45 +776,31 @@ function drawBoundsDimensions(
 
     const midY = (topLeft.y + bottomLeft.y) / 2;
     const metrics = ctx.measureText(verticalLabel);
-    ctx.fillStyle = isDark ? 'rgba(15,23,42,0.92)' : 'rgba(255,255,255,0.96)';
+    ctx.fillStyle = isDark ? "rgba(15,23,42,0.92)" : "rgba(255,255,255,0.96)";
     ctx.fillRect(x - metrics.width / 2 - 4, midY - 8, metrics.width + 8, 16);
-    ctx.fillStyle = isDark ? '#22d3ee' : '#0891b2';
+    ctx.fillStyle = isDark ? "#22d3ee" : "#0891b2";
     ctx.fillText(verticalLabel, x, midY);
   }
 
   ctx.restore();
 }
 
-function formatCanvasDimension(
-  value: number,
-  toDisplay: DisplayFormatter,
-  unit: Unit,
-) {
+function formatCanvasDimension(value: number, toDisplay: DisplayFormatter, unit: Unit) {
   const displayValue = toDisplay(value);
-  if (unit === 'cm') {
+  if (unit === "cm") {
     return `${displayValue.toFixed(0)} cm`;
   }
 
   const rounded = Number.parseFloat(displayValue.toFixed(3));
-  const formatted = Number.isInteger(rounded)
-    ? rounded.toFixed(0)
-    : String(rounded);
+  const formatted = Number.isInteger(rounded) ? rounded.toFixed(0) : String(rounded);
   return `${formatted}"`;
 }
 
-function formatFurnitureDimensions(
-  item: FurnitureItem,
-  toDisplay: DisplayFormatter,
-  unit: Unit,
-) {
+function formatFurnitureDimensions(item: FurnitureItem, toDisplay: DisplayFormatter, unit: Unit) {
   return `${formatCanvasDimension(item.width, toDisplay, unit)} X ${formatCanvasDimension(item.depth, toDisplay, unit)}`;
 }
 
-function truncateCanvasText(
-  ctx: CanvasRenderingContext2D,
-  text: string,
-  maxWidth: number,
-) {
+function truncateCanvasText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number) {
   if (ctx.measureText(text).width <= maxWidth) {
     return text;
   }
@@ -904,7 +826,7 @@ function getRenderedFurnitureFillColor(
     return color;
   }
 
-  return isDark ? '#f8fafc' : '#ffffff';
+  return isDark ? "#f8fafc" : "#ffffff";
 }
 
 function getRenderedFurnitureFillOpacity(
@@ -928,7 +850,7 @@ function getRenderedFurnitureLabelColor(
     return getFurnitureLabelColor(color, isDark);
   }
 
-  return isDark ? 'rgba(241,245,249,0.84)' : 'rgba(15,23,42,0.72)';
+  return isDark ? "rgba(241,245,249,0.84)" : "rgba(15,23,42,0.72)";
 }
 
 function getRenderedFurnitureStrokeColor(
@@ -940,18 +862,15 @@ function getRenderedFurnitureStrokeColor(
     return getFurnitureLabelColor(color, isDark);
   }
 
-  return isDark ? 'rgba(241,245,249,0.62)' : 'rgba(15,23,42,0.22)';
+  return isDark ? "rgba(241,245,249,0.62)" : "rgba(15,23,42,0.22)";
 }
 
-function getRenderedFurnitureLabelShadowColor(
-  isDark: boolean,
-  neutralFurnitureColors: boolean,
-) {
+function getRenderedFurnitureLabelShadowColor(isDark: boolean, neutralFurnitureColors: boolean) {
   if (!neutralFurnitureColors) {
-    return 'transparent';
+    return "transparent";
   }
 
-  return isDark ? 'rgba(15,23,42,0.42)' : 'rgba(248,250,252,0.78)';
+  return isDark ? "rgba(15,23,42,0.42)" : "rgba(248,250,252,0.78)";
 }
 
 const ROTATE_CURSOR_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><g fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 8a10 10 0 0 1 12 1"/><path d="M22 6l2 4-4 1"/><path d="M21 24a10 10 0 0 1-12-1"/><path d="M10 26l-2-4 4-1"/></g><g fill="none" stroke="#111827" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 8a10 10 0 0 1 12 1"/><path d="M22 6l2 4-4 1"/><path d="M21 24a10 10 0 0 1-12-1"/><path d="M10 26l-2-4 4-1"/></g></svg>`;
@@ -960,20 +879,19 @@ const ROTATE_CURSOR = `url("data:image/svg+xml,${encodeURIComponent(
 )}") 16 16, grab`;
 
 function getResizeCursor(edge: FurnitureResizeEdge, rotation: number) {
-  const axisRotation =
-    edge === 'left' || edge === 'right' ? rotation : rotation + 90;
+  const axisRotation = edge === "left" || edge === "right" ? rotation : rotation + 90;
   const normalized = ((axisRotation % 180) + 180) % 180;
   const snapped = (Math.round(normalized / 45) * 45) % 180;
 
   switch (snapped) {
     case 45:
-      return 'nesw-resize';
+      return "nesw-resize";
     case 90:
-      return 'ns-resize';
+      return "ns-resize";
     case 135:
-      return 'nwse-resize';
+      return "nwse-resize";
     default:
-      return 'ew-resize';
+      return "ew-resize";
   }
 }
 
@@ -1002,72 +920,72 @@ type FurnitureRotationState = {
   ids: string[];
   startAngle: number;
   startScreen: Point;
-  startTransforms: Array<Pick<FurnitureItem, 'id' | 'rotation' | 'x' | 'y'>>;
+  startTransforms: Array<Pick<FurnitureItem, "id" | "rotation" | "x" | "y">>;
 };
 
 // ── Interaction state ──
 
 type InteractionState =
-  | { mode: 'idle' }
-  | { mode: 'panning'; startMouse: Point; startPan: Point }
+  | { mode: "idle" }
+  | { mode: "panning"; startMouse: Point; startPan: Point }
   | {
-      mode: 'pending-endpoint';
+      mode: "pending-endpoint";
       endpointId: string;
       startScreen: Point;
       startWorld: Point;
       altKey: boolean;
     }
   | {
-      mode: 'pending-furniture';
+      mode: "pending-furniture";
       id: string;
       ids: string[];
       offset: Point;
-      startPositions: Array<Pick<FurnitureItem, 'id' | 'x' | 'y'>>;
+      startPositions: Array<Pick<FurnitureItem, "id" | "x" | "y">>;
       toggleSelection: boolean;
       startScreen: Point;
     }
-  | { mode: 'pending-marquee'; additive: boolean; startScreen: Point }
+  | { mode: "pending-marquee"; additive: boolean; startScreen: Point }
   | {
-      mode: 'pending-resize';
+      mode: "pending-resize";
       id: string;
       edge: FurnitureResizeEdge;
       startScreen: Point;
     }
-  | ({ mode: 'pending-rotation' } & FurnitureRotationState)
+  | ({ mode: "pending-rotation" } & FurnitureRotationState)
   | {
-      mode: 'pending-feature';
+      mode: "pending-feature";
       wallId: string;
       featureId: string;
       startScreen: Point;
     }
-  | { mode: 'selected-endpoint'; endpointId: string }
-  | { mode: 'dragging-endpoint'; endpointId: string; snapTarget: string | null }
+  | { mode: "selected-endpoint"; endpointId: string }
+  | { mode: "dragging-endpoint"; endpointId: string; snapTarget: string | null }
   | {
-      mode: 'dragging-furniture';
+      mode: "dragging-furniture";
       id: string;
       ids: string[];
       offset: Point;
-      startPositions: Array<Pick<FurnitureItem, 'id' | 'x' | 'y'>>;
+      startPositions: Array<Pick<FurnitureItem, "id" | "x" | "y">>;
       startScreen: Point;
       moved: boolean;
     }
   | {
-      mode: 'dragging-marquee';
+      mode: "dragging-marquee";
       additive: boolean;
       currentScreen: Point;
       startScreen: Point;
     }
   | {
-      mode: 'dragging-resize';
+      mode: "dragging-resize";
       id: string;
       edge: FurnitureResizeEdge;
       startScreen: Point;
       moved: boolean;
     }
-  | ({ mode: 'dragging-rotation' } & FurnitureRotationState)
-  | { mode: 'dragging-feature'; wallId: string; featureId: string }
+  | ({ mode: "dragging-rotation" } & FurnitureRotationState)
+  | { mode: "dragging-feature"; wallId: string; featureId: string }
   | {
-      mode: 'drawing-wall';
+      mode: "drawing-wall";
       fromEndpointId: string;
       currentEnd: Point;
       snapTargetId: string | null;
@@ -1080,7 +998,7 @@ const DRAG_INTENT_THRESHOLD = 8;
 const ROTATION_HANDLE_OFFSET = 28;
 const ROTATION_HANDLE_RADIUS = 7;
 const RESIZE_HANDLE_RADIUS = 6;
-const RESIZE_HANDLE_EDGES = ['left', 'right', 'top', 'bottom'] as const;
+const RESIZE_HANDLE_EDGES = ["left", "right", "top", "bottom"] as const;
 const FURNITURE_WALL_SNAP_SCREEN_THRESHOLD = 16;
 const FURNITURE_ALIGNMENT_SNAP_SCREEN_THRESHOLD = 10;
 
@@ -1089,25 +1007,25 @@ function getContextMenuFeatureWidth(defaultWidth: number, wallLength: number) {
 }
 
 function createWallFeatureFromContextMenu(
-  type: WallFeature['type'],
+  type: WallFeature["type"],
   wallLength: number,
-): Omit<WallFeature, 'id'> | null {
+): Omit<WallFeature, "id"> | null {
   if (wallLength <= 0) {
     return null;
   }
 
   switch (type) {
-    case 'door': {
+    case "door": {
       const width = getContextMenuFeatureWidth(36, wallLength);
       return {
         type,
         offset: Math.max(0, (wallLength - width) / 2),
         width,
-        swingDirection: 'inward',
-        swingHand: 'left',
+        swingDirection: "inward",
+        swingHand: "left",
       };
     }
-    case 'window': {
+    case "window": {
       const width = getContextMenuFeatureWidth(36, wallLength);
       return {
         type,
@@ -1117,7 +1035,7 @@ function createWallFeatureFromContextMenu(
         height: 48,
       };
     }
-    case 'opening': {
+    case "opening": {
       const width = getContextMenuFeatureWidth(42, wallLength);
       return {
         type,
@@ -1125,7 +1043,7 @@ function createWallFeatureFromContextMenu(
         width,
       };
     }
-    case 'closet': {
+    case "closet": {
       const width = getContextMenuFeatureWidth(48, wallLength);
       return {
         type,
@@ -1150,16 +1068,16 @@ function CanvasSettingsPopover({
   unit,
 }: Pick<
   RoomPlannerReturn,
-  | 'gridSnap'
-  | 'neutralFurnitureColors'
-  | 'setGridSnap'
-  | 'setNeutralFurnitureColors'
-  | 'setShowGrid'
-  | 'setShowMeasurements'
-  | 'setUnit'
-  | 'showGrid'
-  | 'showMeasurements'
-  | 'unit'
+  | "gridSnap"
+  | "neutralFurnitureColors"
+  | "setGridSnap"
+  | "setNeutralFurnitureColors"
+  | "setShowGrid"
+  | "setShowMeasurements"
+  | "setUnit"
+  | "showGrid"
+  | "showMeasurements"
+  | "unit"
 >) {
   const { theme, toggleTheme } = useTheme();
 
@@ -1167,11 +1085,7 @@ function CanvasSettingsPopover({
     <Popover>
       <PopoverTrigger
         render={
-          <ViewportToolbarButton
-            kind="icon"
-            aria-label="Canvas settings"
-            title="Canvas settings"
-          >
+          <ViewportToolbarButton kind="icon" aria-label="Canvas settings" title="Canvas settings">
             <Settings className="h-3.5 w-3.5" />
           </ViewportToolbarButton>
         }
@@ -1189,10 +1103,7 @@ function CanvasSettingsPopover({
         <div className="space-y-3">
           <div className="space-y-1.5">
             <Label className="text-xs">Units</Label>
-            <Select
-              value={unit}
-              onValueChange={(value) => setUnit(value as Unit)}
-            >
+            <Select value={unit} onValueChange={(value) => setUnit(value as Unit)}>
               <SelectTrigger className="h-8 text-xs">
                 <SelectValue />
               </SelectTrigger>
@@ -1210,34 +1121,23 @@ function CanvasSettingsPopover({
 
           <div className="flex items-center justify-between gap-3">
             <Label className="text-xs">Measurements</Label>
-            <Switch
-              checked={showMeasurements}
-              onCheckedChange={setShowMeasurements}
-            />
+            <Switch checked={showMeasurements} onCheckedChange={setShowMeasurements} />
           </div>
 
           <div className="flex items-center justify-between gap-3">
             <Label className="text-xs">Neutral Colors</Label>
-            <Switch
-              checked={neutralFurnitureColors}
-              onCheckedChange={setNeutralFurnitureColors}
-            />
+            <Switch checked={neutralFurnitureColors} onCheckedChange={setNeutralFurnitureColors} />
           </div>
 
           <div className="space-y-1.5">
             <Label className="text-xs">Grid Snap</Label>
-            <Select
-              value={String(gridSnap)}
-              onValueChange={(value) => setGridSnap(Number(value))}
-            >
+            <Select value={String(gridSnap)} onValueChange={(value) => setGridSnap(Number(value))}>
               <SelectTrigger className="h-8 text-xs">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="0">Off</SelectItem>
-                <SelectItem value="1">
-                  {unit === 'cm' ? '2.5 cm' : '1"'}
-                </SelectItem>
+                <SelectItem value="1">{unit === "cm" ? "2.5 cm" : '1"'}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -1249,7 +1149,7 @@ function CanvasSettingsPopover({
               onClick={toggleTheme}
               className="inline-flex h-8 items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-2.5 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-white/70 dark:hover:bg-white/10 dark:hover:text-white"
             >
-              {theme === 'dark' ? (
+              {theme === "dark" ? (
                 <>
                   <Sun className="h-3.5 w-3.5" />
                   Light
@@ -1270,25 +1170,21 @@ function CanvasSettingsPopover({
 
 function CanvasHelpPopover() {
   const shortcuts = [
-    { keys: 'Shift + Click', label: 'Multiselect furniture or walls' },
-    { keys: 'Space + Drag', label: 'Pan the canvas' },
-    { keys: 'Drag Empty Space', label: 'Draw a selection box' },
-    { keys: 'Scroll', label: 'Zoom in and out' },
-    { keys: 'Delete', label: 'Remove selected items' },
-    { keys: 'Arrows', label: 'Nudge selection' },
-    { keys: 'Ctrl + D', label: 'Duplicate selection' },
-    { keys: 'Ctrl + Z', label: 'Undo the last change' },
+    { keys: "Shift + Click", label: "Multiselect furniture or walls" },
+    { keys: "Space + Drag", label: "Pan the canvas" },
+    { keys: "Drag Empty Space", label: "Draw a selection box" },
+    { keys: "Scroll", label: "Zoom in and out" },
+    { keys: "Delete", label: "Remove selected items" },
+    { keys: "Arrows", label: "Nudge selection" },
+    { keys: "Ctrl + D", label: "Duplicate selection" },
+    { keys: "Ctrl + Z", label: "Undo the last change" },
   ];
 
   return (
     <Popover>
       <PopoverTrigger
         render={
-          <ViewportToolbarButton
-            kind="icon"
-            aria-label="Canvas help"
-            title="Canvas help"
-          >
+          <ViewportToolbarButton kind="icon" aria-label="Canvas help" title="Canvas help">
             <HelpCircle className="h-3.5 w-3.5" />
           </ViewportToolbarButton>
         }
@@ -1305,10 +1201,7 @@ function CanvasHelpPopover() {
 
         <div className="space-y-2.5">
           {shortcuts.map((shortcut) => (
-            <div
-              key={shortcut.keys}
-              className="flex items-start justify-between gap-3"
-            >
+            <div key={shortcut.keys} className="flex items-start justify-between gap-3">
               <span className="rounded-md border border-gray-200 bg-gray-50 px-2 py-1 text-[10px] font-medium text-gray-600 dark:border-white/10 dark:bg-white/5 dark:text-white/65">
                 {shortcut.keys}
               </span>
@@ -1335,19 +1228,17 @@ export function Canvas({ planner }: CanvasProps) {
     edge: FurnitureResizeEdge;
     id: string;
   } | null>(null);
-  const [contextMenuTarget, setContextMenuTarget] =
-    useState<CanvasContextMenuTarget | null>(null);
-  const [renameDialog, setRenameDialog] =
-    useState<FurnitureRenameDialogState | null>(null);
+  const [contextMenuTarget, setContextMenuTarget] = useState<CanvasContextMenuTarget | null>(null);
+  const [renameDialog, setRenameDialog] = useState<FurnitureRenameDialogState | null>(null);
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
 
   // ── View state ──
   const [zoom, setZoom] = useState(1);
   const [panOffset, setPanOffset] = useState<Point>({ x: 0, y: 0 });
-  const [cursor, setCursor] = useState('default');
+  const [cursor, setCursor] = useState("default");
 
   // ── Interaction ──
-  const interactionRef = useRef<InteractionState>({ mode: 'idle' });
+  const interactionRef = useRef<InteractionState>({ mode: "idle" });
   const alignmentGuidesRef = useRef<FurnitureAlignmentGuide[]>([]);
   const mouseScreenRef = useRef<Point>({ x: 0, y: 0 });
   const altKeyRef = useRef(false);
@@ -1417,33 +1308,29 @@ export function Canvas({ planner }: CanvasProps) {
 
   const contextMenuItem = useMemo(
     () =>
-      contextMenuTarget?.kind === 'furniture'
+      contextMenuTarget?.kind === "furniture"
         ? (furniture.find((item) => item.id === contextMenuTarget.id) ?? null)
         : null,
     [contextMenuTarget, furniture],
   );
   const contextMenuWall = useMemo(
     () =>
-      contextMenuTarget?.kind === 'wall'
+      contextMenuTarget?.kind === "wall"
         ? (room.walls.find((wall) => wall.id === contextMenuTarget.id) ?? null)
         : null,
     [contextMenuTarget, room.walls],
   );
   const contextMenuFeature = useMemo(() => {
-    if (contextMenuTarget?.kind !== 'feature') {
+    if (contextMenuTarget?.kind !== "feature") {
       return null;
     }
 
-    const wall = room.walls.find(
-      (entry) => entry.id === contextMenuTarget.wallId,
-    );
+    const wall = room.walls.find((entry) => entry.id === contextMenuTarget.wallId);
     if (!wall) {
       return null;
     }
 
-    const feature =
-      wall.features.find((entry) => entry.id === contextMenuTarget.featureId) ??
-      null;
+    const feature = wall.features.find((entry) => entry.id === contextMenuTarget.featureId) ?? null;
     if (!feature) {
       return null;
     }
@@ -1462,12 +1349,8 @@ export function Canvas({ planner }: CanvasProps) {
       return null;
     }
 
-    const start = room.endpoints.find(
-      (endpoint) => endpoint.id === contextMenuWall.startId,
-    );
-    const end = room.endpoints.find(
-      (endpoint) => endpoint.id === contextMenuWall.endId,
-    );
+    const start = room.endpoints.find((endpoint) => endpoint.id === contextMenuWall.startId);
+    const end = room.endpoints.find((endpoint) => endpoint.id === contextMenuWall.endId);
     if (!start || !end) {
       return null;
     }
@@ -1475,10 +1358,7 @@ export function Canvas({ planner }: CanvasProps) {
     return getWallLength(start, end);
   }, [contextMenuWall, room.endpoints]);
   const contextMenuLayerIndex = useMemo(
-    () =>
-      contextMenuItem
-        ? furniture.findIndex((item) => item.id === contextMenuItem.id)
-        : -1,
+    () => (contextMenuItem ? furniture.findIndex((item) => item.id === contextMenuItem.id) : -1),
     [contextMenuItem, furniture],
   );
   const canMoveContextMenuItemBackward = contextMenuLayerIndex > 0;
@@ -1488,9 +1368,9 @@ export function Canvas({ planner }: CanvasProps) {
   useEffect(() => {
     if (
       contextMenuTarget &&
-      ((contextMenuTarget.kind === 'furniture' && !contextMenuItem) ||
-        (contextMenuTarget.kind === 'feature' && !contextMenuFeature) ||
-        (contextMenuTarget.kind === 'wall' && !contextMenuWall))
+      ((contextMenuTarget.kind === "furniture" && !contextMenuItem) ||
+        (contextMenuTarget.kind === "feature" && !contextMenuFeature) ||
+        (contextMenuTarget.kind === "wall" && !contextMenuWall))
     ) {
       setContextMenuTarget(null);
     }
@@ -1515,15 +1395,12 @@ export function Canvas({ planner }: CanvasProps) {
   }, [deleteTargetId, removeFurniture]);
 
   const handleAddWallFeatureFromContextMenu = useCallback(
-    (type: WallFeature['type']) => {
+    (type: WallFeature["type"]) => {
       if (!contextMenuWall || !contextMenuWallLength) {
         return;
       }
 
-      const feature = createWallFeatureFromContextMenu(
-        type,
-        contextMenuWallLength,
-      );
+      const feature = createWallFeatureFromContextMenu(type, contextMenuWallLength);
       if (!feature) {
         return;
       }
@@ -1538,45 +1415,29 @@ export function Canvas({ planner }: CanvasProps) {
       return;
     }
 
-    removeWallFeature(
-      contextMenuFeature.wall.id,
-      contextMenuFeature.feature.id,
-    );
+    removeWallFeature(contextMenuFeature.wall.id, contextMenuFeature.feature.id);
     setSelectedFeature(null);
   }, [contextMenuFeature, removeWallFeature]);
 
   const handleToggleDoorSwingDirection = useCallback(() => {
-    if (!contextMenuFeature || contextMenuFeature.feature.type !== 'door') {
+    if (!contextMenuFeature || contextMenuFeature.feature.type !== "door") {
       return;
     }
 
-    updateWallFeature(
-      contextMenuFeature.wall.id,
-      contextMenuFeature.feature.id,
-      {
-        swingDirection:
-          (contextMenuFeature.feature.swingDirection ?? 'inward') === 'inward'
-            ? 'outward'
-            : 'inward',
-      },
-    );
+    updateWallFeature(contextMenuFeature.wall.id, contextMenuFeature.feature.id, {
+      swingDirection:
+        (contextMenuFeature.feature.swingDirection ?? "inward") === "inward" ? "outward" : "inward",
+    });
   }, [contextMenuFeature, updateWallFeature]);
 
   const handleToggleDoorHinge = useCallback(() => {
-    if (!contextMenuFeature || contextMenuFeature.feature.type !== 'door') {
+    if (!contextMenuFeature || contextMenuFeature.feature.type !== "door") {
       return;
     }
 
-    updateWallFeature(
-      contextMenuFeature.wall.id,
-      contextMenuFeature.feature.id,
-      {
-        swingHand:
-          (contextMenuFeature.feature.swingHand ?? 'left') === 'left'
-            ? 'right'
-            : 'left',
-      },
-    );
+    updateWallFeature(contextMenuFeature.wall.id, contextMenuFeature.feature.id, {
+      swingHand: (contextMenuFeature.feature.swingHand ?? "left") === "left" ? "right" : "left",
+    });
   }, [contextMenuFeature, updateWallFeature]);
 
   // ── Coordinate transforms ──
@@ -1588,27 +1449,20 @@ export function Canvas({ planner }: CanvasProps) {
 
   const screenToWorld = useCallback(
     (sx: number, sy: number): Point =>
-      mapScreenToWorld(
-        { x: sx, y: sy },
-        { pan: panRef.current, zoom: zoomRef.current },
-      ),
+      mapScreenToWorld({ x: sx, y: sy }, { pan: panRef.current, zoom: zoomRef.current }),
     [],
   );
 
   const worldToScreen = useCallback(
     (wx: number, wy: number): Point =>
-      mapWorldToScreen(
-        { x: wx, y: wy },
-        { pan: panRef.current, zoom: zoomRef.current },
-      ),
+      mapWorldToScreen({ x: wx, y: wy }, { pan: panRef.current, zoom: zoomRef.current }),
     [],
   );
 
   const getRotationHandleScreenPoint = useCallback(
     (item: FurnitureItem): Point => {
       const center = worldToScreen(item.x, item.y);
-      const distance =
-        (item.depth * zoomRef.current) / 2 + ROTATION_HANDLE_OFFSET;
+      const distance = (item.depth * zoomRef.current) / 2 + ROTATION_HANDLE_OFFSET;
       const angle = (item.rotation * Math.PI) / 180 - Math.PI / 2;
       return {
         x: center.x + Math.cos(angle) * distance,
@@ -1627,22 +1481,10 @@ export function Canvas({ planner }: CanvasProps) {
   );
 
   const applyFurnitureRotation = useCallback(
-    (
-      rotationState: FurnitureRotationState,
-      worldPoint: Point,
-      snapToIncrement: boolean,
-    ) => {
-      const currentAngle = getRotationAngleDegrees(
-        rotationState.center,
-        worldPoint,
-      );
-      const rawDelta = getSignedRotationDeltaDegrees(
-        currentAngle,
-        rotationState.startAngle,
-      );
-      const rotationDelta = snapToIncrement
-        ? Math.round(rawDelta / 15) * 15
-        : rawDelta;
+    (rotationState: FurnitureRotationState, worldPoint: Point, snapToIncrement: boolean) => {
+      const currentAngle = getRotationAngleDegrees(rotationState.center, worldPoint);
+      const rawDelta = getSignedRotationDeltaDegrees(currentAngle, rotationState.startAngle);
+      const rotationDelta = snapToIncrement ? Math.round(rawDelta / 15) * 15 : rawDelta;
 
       setFurnitureTransforms(
         rotationState.startTransforms.map((item) => {
@@ -1673,9 +1515,7 @@ export function Canvas({ planner }: CanvasProps) {
     const containerRect = container.getBoundingClientRect();
     const canvasWidth = canvas.width / dpr;
     const canvasHeight = canvas.height / dpr;
-    const openSidebar = document.querySelector<HTMLElement>(
-      '[data-sidebar-panel="open"]',
-    );
+    const openSidebar = document.querySelector<HTMLElement>('[data-sidebar-panel="open"]');
 
     const leftInset = openSidebar
       ? Math.max(
@@ -1724,8 +1564,7 @@ export function Canvas({ planner }: CanvasProps) {
   // ── Fit to view ──
 
   const getFitViewState = useCallback(() => {
-    const points =
-      roomPolygon && roomPolygon.length > 0 ? roomPolygon : room.endpoints;
+    const points = roomPolygon && roomPolygon.length > 0 ? roomPolygon : room.endpoints;
     return calculateFitViewState(getVisibleViewportBounds(), points);
   }, [getVisibleViewportBounds, room.endpoints, roomPolygon]);
 
@@ -1740,29 +1579,22 @@ export function Canvas({ planner }: CanvasProps) {
     });
   }, [getFitViewState]);
 
-  const zoomAtPoint = useCallback(
-    (targetZoom: number, sx: number, sy: number) => {
-      const next = getZoomPanAtPoint({
-        currentPan: panRef.current,
-        currentZoom: zoomRef.current,
-        maxZoom: MAX_CANVAS_ZOOM,
-        minZoom: MIN_CANVAS_ZOOM,
-        screenPoint: { x: sx, y: sy },
-        targetZoom,
-      });
+  const zoomAtPoint = useCallback((targetZoom: number, sx: number, sy: number) => {
+    const next = getZoomPanAtPoint({
+      currentPan: panRef.current,
+      currentZoom: zoomRef.current,
+      maxZoom: MAX_CANVAS_ZOOM,
+      minZoom: MIN_CANVAS_ZOOM,
+      screenPoint: { x: sx, y: sy },
+      targetZoom,
+    });
 
-      setPanOffset(next.pan);
-      setZoom(next.zoom);
-    },
-    [],
-  );
+    setPanOffset(next.pan);
+    setZoom(next.zoom);
+  }, []);
 
   const zoomAtWorldPoint = useCallback(
-    (
-      targetZoom: number,
-      worldPoint: Point,
-      screenAnchor: { x: number; y: number },
-    ) => {
+    (targetZoom: number, worldPoint: Point, screenAnchor: { x: number; y: number }) => {
       const next = getZoomPanAtWorldPoint({
         maxZoom: MAX_CANVAS_ZOOM,
         minZoom: MIN_CANVAS_ZOOM,
@@ -1778,11 +1610,10 @@ export function Canvas({ planner }: CanvasProps) {
   );
 
   const stepZoom = useCallback(
-    (direction: 'in' | 'out') => {
+    (direction: "in" | "out") => {
       const currentZoom = zoomRef.current;
       const factor = 1.15;
-      const targetZoom =
-        direction === 'in' ? currentZoom * factor : currentZoom / factor;
+      const targetZoom = direction === "in" ? currentZoom * factor : currentZoom / factor;
       const fitView = getFitViewState();
       const viewport = getVisibleViewportBounds();
       if (!viewport) return;
@@ -1841,10 +1672,7 @@ export function Canvas({ planner }: CanvasProps) {
         return null;
       }
 
-      const topCenter = worldToScreen(
-        (groupBounds.minX + groupBounds.maxX) / 2,
-        groupBounds.minY,
-      );
+      const topCenter = worldToScreen((groupBounds.minX + groupBounds.maxX) / 2, groupBounds.minY);
       return {
         x: topCenter.x,
         y: topCenter.y - ROTATION_HANDLE_OFFSET,
@@ -1854,13 +1682,8 @@ export function Canvas({ planner }: CanvasProps) {
   );
 
   const getFurnitureItemsAtPositions = useCallback(
-    (
-      ids: string[],
-      positions: Array<Pick<FurnitureItem, 'id' | 'x' | 'y'>>,
-    ): FurnitureItem[] => {
-      const positionById = new Map(
-        positions.map((position) => [position.id, position]),
-      );
+    (ids: string[], positions: Array<Pick<FurnitureItem, "id" | "x" | "y">>): FurnitureItem[] => {
+      const positionById = new Map(positions.map((position) => [position.id, position]));
 
       return furniture
         .filter((item) => ids.includes(item.id))
@@ -1879,14 +1702,9 @@ export function Canvas({ planner }: CanvasProps) {
   );
 
   const canPlaceFurnitureGroup = useCallback(
-    (
-      ids: string[],
-      positions: Array<Pick<FurnitureItem, 'id' | 'x' | 'y'>>,
-    ) => {
+    (ids: string[], positions: Array<Pick<FurnitureItem, "id" | "x" | "y">>) => {
       const movingItems = getFurnitureItemsAtPositions(ids, positions);
-      const stationaryItems = furniture.filter(
-        (item) => !ids.includes(item.id),
-      );
+      const stationaryItems = furniture.filter((item) => !ids.includes(item.id));
 
       if (roomPolygon) {
         for (const item of movingItems) {
@@ -1898,7 +1716,7 @@ export function Canvas({ planner }: CanvasProps) {
 
       for (const item of movingItems) {
         for (const other of stationaryItems) {
-          if (item.type === 'rug' || other.type === 'rug') {
+          if (item.type === "rug" || other.type === "rug") {
             continue;
           }
 
@@ -1933,23 +1751,19 @@ export function Canvas({ planner }: CanvasProps) {
 
       if (matches.x) {
         guides.push({
-          axis: 'x',
+          axis: "x",
           position: matches.x.position,
-          start:
-            Math.min(shiftedBounds.minY, matches.x.targetBounds.minY) - padding,
-          end:
-            Math.max(shiftedBounds.maxY, matches.x.targetBounds.maxY) + padding,
+          start: Math.min(shiftedBounds.minY, matches.x.targetBounds.minY) - padding,
+          end: Math.max(shiftedBounds.maxY, matches.x.targetBounds.maxY) + padding,
         });
       }
 
       if (matches.y) {
         guides.push({
-          axis: 'y',
+          axis: "y",
           position: matches.y.position,
-          start:
-            Math.min(shiftedBounds.minX, matches.y.targetBounds.minX) - padding,
-          end:
-            Math.max(shiftedBounds.maxX, matches.y.targetBounds.maxX) + padding,
+          start: Math.min(shiftedBounds.minX, matches.y.targetBounds.minX) - padding,
+          end: Math.max(shiftedBounds.maxX, matches.y.targetBounds.maxX) + padding,
         });
       }
 
@@ -1959,11 +1773,7 @@ export function Canvas({ planner }: CanvasProps) {
   );
 
   const getSnappedFurniturePlacement = useCallback(
-    (
-      item: FurnitureItem,
-      position: Point,
-      axes: { x?: boolean; y?: boolean },
-    ) => {
+    (item: FurnitureItem, position: Point, axes: { x?: boolean; y?: boolean }) => {
       let nextItem = {
         ...item,
         x: position.x,
@@ -1971,12 +1781,7 @@ export function Canvas({ planner }: CanvasProps) {
       };
 
       if (gridSnap > 0 && roomBounds) {
-        nextItem = snapFurnitureToBoundsGrid(
-          nextItem,
-          roomBounds,
-          gridSnap,
-          axes,
-        );
+        nextItem = snapFurnitureToBoundsGrid(nextItem, roomBounds, gridSnap, axes);
       }
 
       if (roomPolygon && roomPolygon.length >= 3) {
@@ -1996,7 +1801,7 @@ export function Canvas({ planner }: CanvasProps) {
     (
       draggedId: string,
       ids: string[],
-      startPositions: Array<Pick<FurnitureItem, 'id' | 'x' | 'y'>>,
+      startPositions: Array<Pick<FurnitureItem, "id" | "x" | "y">>,
       position: Point,
       axes: { x?: boolean; y?: boolean },
     ) => {
@@ -2005,15 +1810,11 @@ export function Canvas({ planner }: CanvasProps) {
       if (!draggedItem || !draggedStart) {
         return {
           guides: [] as FurnitureAlignmentGuide[],
-          positions: [] as Array<Pick<FurnitureItem, 'id' | 'x' | 'y'>>,
+          positions: [] as Array<Pick<FurnitureItem, "id" | "x" | "y">>,
         };
       }
 
-      const snappedDraggedItem = getSnappedFurniturePlacement(
-        draggedItem,
-        position,
-        axes,
-      );
+      const snappedDraggedItem = getSnappedFurniturePlacement(draggedItem, position, axes);
       const delta = {
         x: snappedDraggedItem.x - draggedStart.x,
         y: snappedDraggedItem.y - draggedStart.y,
@@ -2111,12 +1912,7 @@ export function Canvas({ planner }: CanvasProps) {
           const itemMinY = Math.min(topLeft.y, bottomRight.y);
           const itemMaxY = Math.max(topLeft.y, bottomRight.y);
 
-          return !(
-            itemMaxX < minX ||
-            itemMinX > maxX ||
-            itemMaxY < minY ||
-            itemMinY > maxY
-          );
+          return !(itemMaxX < minX || itemMinX > maxX || itemMaxY < minY || itemMinY > maxY);
         })
         .map((item) => item.id);
     },
@@ -2138,9 +1934,7 @@ export function Canvas({ planner }: CanvasProps) {
   );
 
   const hitTestFeature = useCallback(
-    (
-      worldPoint: Point,
-    ): { wallId: string; featureId: string; wall: Wall } | null => {
+    (worldPoint: Point): { wallId: string; featureId: string; wall: Wall } | null => {
       const epMap = new Map(room.endpoints.map((e) => [e.id, e]));
       for (const wall of room.walls) {
         const a = epMap.get(wall.startId);
@@ -2175,7 +1969,7 @@ export function Canvas({ planner }: CanvasProps) {
         const dy = worldPoint.y - item.y;
         const lx = dx * cos - dy * sin;
         const ly = dx * sin + dy * cos;
-        if (item.shape === 'circle') {
+        if (item.shape === "circle") {
           const r = item.width / 2;
           if (lx * lx + ly * ly <= r * r) return item;
         } else {
@@ -2207,9 +2001,7 @@ export function Canvas({ planner }: CanvasProps) {
       }
 
       const selectedItems = getSelectedFurnitureItems(selectedIds);
-      const rotatableIds = selectedItems
-        .filter((item) => !item.locked)
-        .map((item) => item.id);
+      const rotatableIds = selectedItems.filter((item) => !item.locked).map((item) => item.id);
       if (rotatableIds.length === 0) {
         return null;
       }
@@ -2246,14 +2038,12 @@ export function Canvas({ planner }: CanvasProps) {
   );
 
   const hitTestResizeHandle = useCallback(
-    (
-      screenPoint: Point,
-    ): { edge: FurnitureResizeEdge; item: FurnitureItem } | null => {
+    (screenPoint: Point): { edge: FurnitureResizeEdge; item: FurnitureItem } | null => {
       if (!selectedId || selectedIds.length !== 1) return null;
       const item = furniture.find((entry) => entry.id === selectedId);
       if (!item || item.locked) return null;
 
-      for (const edge of ['left', 'right', 'top', 'bottom'] as const) {
+      for (const edge of ["left", "right", "top", "bottom"] as const) {
         const handlePoint = getResizeHandleScreenPoint(item, edge);
         if (distSq(screenPoint, handlePoint) <= RESIZE_HANDLE_RADIUS ** 2) {
           return { item, edge };
@@ -2273,14 +2063,7 @@ export function Canvas({ planner }: CanvasProps) {
         const a = epMap.get(wall.startId);
         const b = epMap.get(wall.endId);
         if (!a || !b) continue;
-        const proj = projectOntoSegment(
-          worldPoint.x,
-          worldPoint.y,
-          a.x,
-          a.y,
-          b.x,
-          b.y,
-        );
+        const proj = projectOntoSegment(worldPoint.x, worldPoint.y, a.x, a.y, b.x, b.y);
         if (proj.dist <= threshold) return wall;
       }
       return null;
@@ -2323,11 +2106,11 @@ export function Canvas({ planner }: CanvasProps) {
 
       // Drawing mode: place wall on click
       const interaction = interactionRef.current;
-      if (interaction.mode === 'drawing-wall') {
+      if (interaction.mode === "drawing-wall") {
         if (e.button !== 0) {
           // Right-click or other: exit drawing mode
-          interactionRef.current = { mode: 'idle' };
-          setCursor('default');
+          interactionRef.current = { mode: "idle" };
+          setCursor("default");
           rerender();
           return;
         }
@@ -2336,17 +2119,14 @@ export function Canvas({ planner }: CanvasProps) {
         const snap = findSnapEndpoint(screen, interaction.fromEndpointId);
         if (snap) {
           addWallBetweenEndpoints(interaction.fromEndpointId, snap.id);
-          interactionRef.current = { mode: 'idle' };
-          setCursor('default');
+          interactionRef.current = { mode: "idle" };
+          setCursor("default");
           rerender();
         } else {
           const snapped = snapWallPoint(world);
-          const newEpId = addWallToNewPoint(
-            interaction.fromEndpointId,
-            snapped,
-          );
+          const newEpId = addWallToNewPoint(interaction.fromEndpointId, snapped);
           interactionRef.current = {
-            mode: 'drawing-wall',
+            mode: "drawing-wall",
             fromEndpointId: newEpId,
             currentEnd: snapped,
             snapTargetId: null,
@@ -2360,16 +2140,14 @@ export function Canvas({ planner }: CanvasProps) {
       if (
         e.button === 1 ||
         (e.button === 0 &&
-          (e.ctrlKey ||
-            spaceKeyRef.current ||
-            (isHistoryEditingLocked && e.shiftKey)))
+          (e.ctrlKey || spaceKeyRef.current || (isHistoryEditingLocked && e.shiftKey)))
       ) {
         interactionRef.current = {
-          mode: 'panning',
+          mode: "panning",
           startMouse: { x: e.clientX, y: e.clientY },
           startPan: { ...panRef.current },
         };
-        setCursor('grabbing');
+        setCursor("grabbing");
         return;
       }
 
@@ -2388,7 +2166,7 @@ export function Canvas({ planner }: CanvasProps) {
         setSelectedFeature(null);
         setSelectedResizeHandle(null);
         interactionRef.current = {
-          mode: 'pending-rotation',
+          mode: "pending-rotation",
           center: rotationHandleHit.center,
           ids: rotationHandleHit.ids,
           startAngle: getRotationAngleDegrees(rotationHandleHit.center, world),
@@ -2416,14 +2194,12 @@ export function Canvas({ planner }: CanvasProps) {
           edge: resizeHandleHit.edge,
         });
         interactionRef.current = {
-          mode: 'pending-resize',
+          mode: "pending-resize",
           id: resizeHandleHit.item.id,
           edge: resizeHandleHit.edge,
           startScreen: screen,
         };
-        setCursor(
-          getResizeCursor(resizeHandleHit.edge, resizeHandleHit.item.rotation),
-        );
+        setCursor(getResizeCursor(resizeHandleHit.edge, resizeHandleHit.item.rotation));
         return;
       }
 
@@ -2435,7 +2211,7 @@ export function Canvas({ planner }: CanvasProps) {
         setSelectedFeature(null);
         setSelectedResizeHandle(null);
         interactionRef.current = {
-          mode: 'pending-endpoint',
+          mode: "pending-endpoint",
           endpointId: epHit.id,
           startScreen: screen,
           startWorld: { x: epHit.x, y: epHit.y },
@@ -2455,12 +2231,12 @@ export function Canvas({ planner }: CanvasProps) {
         });
         setSelectedResizeHandle(null);
         interactionRef.current = {
-          mode: 'pending-feature',
+          mode: "pending-feature",
           wallId: featureHit.wallId,
           featureId: featureHit.featureId,
           startScreen: screen,
         };
-        setCursor('grabbing');
+        setCursor("grabbing");
         return;
       }
 
@@ -2496,7 +2272,7 @@ export function Canvas({ planner }: CanvasProps) {
         setSelectedFeature(null);
         setSelectedResizeHandle(null);
         interactionRef.current = {
-          mode: 'pending-furniture',
+          mode: "pending-furniture",
           id: furnitureHit.id,
           ids: dragIds,
           offset: {
@@ -2507,7 +2283,7 @@ export function Canvas({ planner }: CanvasProps) {
           toggleSelection: e.shiftKey,
           startScreen: screen,
         };
-        setCursor('grabbing');
+        setCursor("grabbing");
         return;
       }
 
@@ -2517,11 +2293,11 @@ export function Canvas({ planner }: CanvasProps) {
       setSelectedFeature(null);
       setSelectedResizeHandle(null);
       interactionRef.current = {
-        mode: 'pending-marquee',
+        mode: "pending-marquee",
         additive: e.shiftKey,
         startScreen: screen,
       };
-      setCursor('crosshair');
+      setCursor("crosshair");
     },
     [
       screenToWorld,
@@ -2558,7 +2334,7 @@ export function Canvas({ planner }: CanvasProps) {
       const interaction = interactionRef.current;
 
       switch (interaction.mode) {
-        case 'panning': {
+        case "panning": {
           const dx = e.clientX - interaction.startMouse.x;
           const dy = e.clientY - interaction.startMouse.y;
           setPanOffset({
@@ -2568,19 +2344,14 @@ export function Canvas({ planner }: CanvasProps) {
           return;
         }
 
-        case 'pending-endpoint': {
+        case "pending-endpoint": {
           const dx = sx - interaction.startScreen.x;
           const dy = sy - interaction.startScreen.y;
-          if (
-            dx * dx + dy * dy >
-            DRAG_INTENT_THRESHOLD * DRAG_INTENT_THRESHOLD
-          ) {
+          if (dx * dx + dy * dy > DRAG_INTENT_THRESHOLD * DRAG_INTENT_THRESHOLD) {
             // Alt+drag: disconnect endpoint from the wall most aligned with drag direction
             if (interaction.altKey) {
               const connectedWalls = room.walls.filter(
-                (w) =>
-                  w.startId === interaction.endpointId ||
-                  w.endId === interaction.endpointId,
+                (w) => w.startId === interaction.endpointId || w.endId === interaction.endpointId,
               );
               if (connectedWalls.length >= 2) {
                 const epMap = new Map(room.endpoints.map((ep) => [ep.id, ep]));
@@ -2593,8 +2364,7 @@ export function Canvas({ planner }: CanvasProps) {
                 const dragDx = dx / dragLen;
                 const dragDy = dy / dragLen;
                 for (const w of connectedWalls) {
-                  const otherId =
-                    w.startId === interaction.endpointId ? w.endId : w.startId;
+                  const otherId = w.startId === interaction.endpointId ? w.endId : w.startId;
                   const other = epMap.get(otherId);
                   if (!other) continue;
                   const ep = epMap.get(interaction.endpointId);
@@ -2612,39 +2382,36 @@ export function Canvas({ planner }: CanvasProps) {
                 disconnectEndpoint(interaction.endpointId, leastWall.id);
                 // Original endpoint stays on the wall aligned with drag direction
                 interactionRef.current = {
-                  mode: 'dragging-endpoint',
+                  mode: "dragging-endpoint",
                   endpointId: interaction.endpointId,
                   snapTarget: null,
                 };
-                setCursor('grabbing');
+                setCursor("grabbing");
                 return;
               }
             }
             // Normal drag
             interactionRef.current = {
-              mode: 'dragging-endpoint',
+              mode: "dragging-endpoint",
               endpointId: interaction.endpointId,
               snapTarget: null,
             };
-            setCursor('grabbing');
+            setCursor("grabbing");
           }
           return;
         }
 
-        case 'pending-furniture': {
+        case "pending-furniture": {
           if (interaction.toggleSelection) {
             return;
           }
 
-          if (
-            distSq(screen, interaction.startScreen) <=
-            DRAG_INTENT_THRESHOLD ** 2
-          ) {
+          if (distSq(screen, interaction.startScreen) <= DRAG_INTENT_THRESHOLD ** 2) {
             return;
           }
 
           interactionRef.current = {
-            mode: 'dragging-furniture',
+            mode: "dragging-furniture",
             id: interaction.id,
             ids: interaction.ids,
             offset: interaction.offset,
@@ -2680,23 +2447,20 @@ export function Canvas({ planner }: CanvasProps) {
           return;
         }
 
-        case 'dragging-endpoint': {
+        case "dragging-endpoint": {
           let target = snapWallPoint(world);
 
           // Shift: constrain to horizontal/vertical relative to connected endpoints
           if (e.shiftKey) {
             const connectedWalls = room.walls.filter(
-              (w) =>
-                w.startId === interaction.endpointId ||
-                w.endId === interaction.endpointId,
+              (w) => w.startId === interaction.endpointId || w.endId === interaction.endpointId,
             );
             const epMap = new Map(room.endpoints.map((ep) => [ep.id, ep]));
             // Find the neighbor that gives the best axis alignment
             let bestConstrained = target;
             let bestAxisDist = Infinity;
             for (const w of connectedWalls) {
-              const neighborId =
-                w.startId === interaction.endpointId ? w.endId : w.startId;
+              const neighborId = w.startId === interaction.endpointId ? w.endId : w.startId;
               const neighbor = epMap.get(neighborId);
               if (!neighbor) continue;
               const dx = Math.abs(target.x - neighbor.x);
@@ -2733,10 +2497,9 @@ export function Canvas({ planner }: CanvasProps) {
           return;
         }
 
-        case 'dragging-furniture': {
+        case "dragging-furniture": {
           const moved =
-            interaction.moved ||
-            distSq(screen, interaction.startScreen) > CLICK_THRESHOLD ** 2;
+            interaction.moved || distSq(screen, interaction.startScreen) > CLICK_THRESHOLD ** 2;
           if (moved !== interaction.moved) {
             interactionRef.current = {
               ...interaction,
@@ -2770,45 +2533,39 @@ export function Canvas({ planner }: CanvasProps) {
           return;
         }
 
-        case 'pending-marquee': {
-          if (
-            distSq(screen, interaction.startScreen) <=
-            DRAG_INTENT_THRESHOLD ** 2
-          ) {
+        case "pending-marquee": {
+          if (distSq(screen, interaction.startScreen) <= DRAG_INTENT_THRESHOLD ** 2) {
             return;
           }
 
           interactionRef.current = {
-            mode: 'dragging-marquee',
+            mode: "dragging-marquee",
             additive: interaction.additive,
             startScreen: interaction.startScreen,
             currentScreen: screen,
           };
-          setCursor('crosshair');
+          setCursor("crosshair");
           rerender();
           return;
         }
 
-        case 'dragging-marquee': {
+        case "dragging-marquee": {
           interactionRef.current = {
             ...interaction,
             currentScreen: screen,
           };
-          setCursor('crosshair');
+          setCursor("crosshair");
           rerender();
           return;
         }
 
-        case 'pending-resize': {
-          if (
-            distSq(screen, interaction.startScreen) <=
-            DRAG_INTENT_THRESHOLD ** 2
-          ) {
+        case "pending-resize": {
+          if (distSq(screen, interaction.startScreen) <= DRAG_INTENT_THRESHOLD ** 2) {
             return;
           }
 
           interactionRef.current = {
-            mode: 'dragging-resize',
+            mode: "dragging-resize",
             id: interaction.id,
             edge: interaction.edge,
             startScreen: interaction.startScreen,
@@ -2817,48 +2574,34 @@ export function Canvas({ planner }: CanvasProps) {
 
           const item = furniture.find((entry) => entry.id === interaction.id);
           if (!item) return;
-          const nextFrame = resizeFurnitureFromEdge(
-            item,
-            interaction.edge,
-            world,
-            1,
-          );
+          const nextFrame = resizeFurnitureFromEdge(item, interaction.edge, world, 1);
           setFurnitureFrame(interaction.id, nextFrame);
           return;
         }
 
-        case 'dragging-resize': {
+        case "dragging-resize": {
           const item = furniture.find((entry) => entry.id === interaction.id);
           if (!item) return;
           const moved =
-            interaction.moved ||
-            distSq(screen, interaction.startScreen) > CLICK_THRESHOLD ** 2;
+            interaction.moved || distSq(screen, interaction.startScreen) > CLICK_THRESHOLD ** 2;
           if (moved !== interaction.moved) {
             interactionRef.current = {
               ...interaction,
               moved,
             };
           }
-          const nextFrame = resizeFurnitureFromEdge(
-            item,
-            interaction.edge,
-            world,
-            1,
-          );
+          const nextFrame = resizeFurnitureFromEdge(item, interaction.edge, world, 1);
           setFurnitureFrame(interaction.id, nextFrame);
           return;
         }
 
-        case 'pending-rotation': {
-          if (
-            distSq(screen, interaction.startScreen) <=
-            DRAG_INTENT_THRESHOLD ** 2
-          ) {
+        case "pending-rotation": {
+          if (distSq(screen, interaction.startScreen) <= DRAG_INTENT_THRESHOLD ** 2) {
             return;
           }
 
           interactionRef.current = {
-            mode: 'dragging-rotation',
+            mode: "dragging-rotation",
             center: interaction.center,
             ids: interaction.ids,
             startAngle: interaction.startAngle,
@@ -2869,21 +2612,18 @@ export function Canvas({ planner }: CanvasProps) {
           return;
         }
 
-        case 'dragging-rotation': {
+        case "dragging-rotation": {
           applyFurnitureRotation(interaction, world, e.shiftKey);
           return;
         }
 
-        case 'pending-feature': {
-          if (
-            distSq(screen, interaction.startScreen) <=
-            DRAG_INTENT_THRESHOLD ** 2
-          ) {
+        case "pending-feature": {
+          if (distSq(screen, interaction.startScreen) <= DRAG_INTENT_THRESHOLD ** 2) {
             return;
           }
 
           interactionRef.current = {
-            mode: 'dragging-feature',
+            mode: "dragging-feature",
             wallId: interaction.wallId,
             featureId: interaction.featureId,
           };
@@ -2891,9 +2631,7 @@ export function Canvas({ planner }: CanvasProps) {
           const epMap = new Map(room.endpoints.map((ep) => [ep.id, ep]));
           const wall = room.walls.find((w) => w.id === interaction.wallId);
           if (!wall) return;
-          const feature = wall.features.find(
-            (f) => f.id === interaction.featureId,
-          );
+          const feature = wall.features.find((f) => f.id === interaction.featureId);
           if (!feature) return;
 
           let bestWallId = interaction.wallId;
@@ -2904,14 +2642,7 @@ export function Canvas({ planner }: CanvasProps) {
             const wa = epMap.get(w.startId);
             const wb = epMap.get(w.endId);
             if (!wa || !wb) continue;
-            const proj = projectOntoSegment(
-              world.x,
-              world.y,
-              wa.x,
-              wa.y,
-              wb.x,
-              wb.y,
-            );
+            const proj = projectOntoSegment(world.x, world.y, wa.x, wa.y, wb.x, wb.y);
             if (proj.dist < bestDist) {
               bestDist = proj.dist;
               bestWallId = w.id;
@@ -2923,21 +2654,13 @@ export function Canvas({ planner }: CanvasProps) {
           if (bestLen === 0) return;
           const newOffset = Math.max(
             0,
-            Math.min(
-              bestLen - feature.width,
-              bestT * bestLen - feature.width / 2,
-            ),
+            Math.min(bestLen - feature.width, bestT * bestLen - feature.width / 2),
           );
 
           if (bestWallId !== interaction.wallId) {
-            moveFeatureToWall(
-              interaction.wallId,
-              bestWallId,
-              interaction.featureId,
-              newOffset,
-            );
+            moveFeatureToWall(interaction.wallId, bestWallId, interaction.featureId, newOffset);
             interactionRef.current = {
-              mode: 'dragging-feature',
+              mode: "dragging-feature",
               wallId: bestWallId,
               featureId: interaction.featureId,
             };
@@ -2947,22 +2670,16 @@ export function Canvas({ planner }: CanvasProps) {
               featureId: interaction.featureId,
             });
           } else {
-            moveWallFeature(
-              interaction.wallId,
-              interaction.featureId,
-              newOffset,
-            );
+            moveWallFeature(interaction.wallId, interaction.featureId, newOffset);
           }
           return;
         }
 
-        case 'dragging-feature': {
+        case "dragging-feature": {
           const epMap = new Map(room.endpoints.map((ep) => [ep.id, ep]));
           const wall = room.walls.find((w) => w.id === interaction.wallId);
           if (!wall) return;
-          const feature = wall.features.find(
-            (f) => f.id === interaction.featureId,
-          );
+          const feature = wall.features.find((f) => f.id === interaction.featureId);
           if (!feature) return;
 
           // Find closest wall to mouse position
@@ -2974,14 +2691,7 @@ export function Canvas({ planner }: CanvasProps) {
             const wa = epMap.get(w.startId);
             const wb = epMap.get(w.endId);
             if (!wa || !wb) continue;
-            const proj = projectOntoSegment(
-              world.x,
-              world.y,
-              wa.x,
-              wa.y,
-              wb.x,
-              wb.y,
-            );
+            const proj = projectOntoSegment(world.x, world.y, wa.x, wa.y, wb.x, wb.y);
             if (proj.dist < bestDist) {
               bestDist = proj.dist;
               bestWallId = w.id;
@@ -2993,22 +2703,14 @@ export function Canvas({ planner }: CanvasProps) {
           if (bestLen === 0) return;
           const newOffset = Math.max(
             0,
-            Math.min(
-              bestLen - feature.width,
-              bestT * bestLen - feature.width / 2,
-            ),
+            Math.min(bestLen - feature.width, bestT * bestLen - feature.width / 2),
           );
 
           if (bestWallId !== interaction.wallId) {
             // Transfer feature to closest wall
-            moveFeatureToWall(
-              interaction.wallId,
-              bestWallId,
-              interaction.featureId,
-              newOffset,
-            );
+            moveFeatureToWall(interaction.wallId, bestWallId, interaction.featureId, newOffset);
             interactionRef.current = {
-              mode: 'dragging-feature',
+              mode: "dragging-feature",
               wallId: bestWallId,
               featureId: interaction.featureId,
             };
@@ -3018,23 +2720,17 @@ export function Canvas({ planner }: CanvasProps) {
               featureId: interaction.featureId,
             });
           } else {
-            moveWallFeature(
-              interaction.wallId,
-              interaction.featureId,
-              newOffset,
-            );
+            moveWallFeature(interaction.wallId, interaction.featureId, newOffset);
           }
           return;
         }
 
-        case 'drawing-wall': {
+        case "drawing-wall": {
           let snapped = snapWallPoint(world);
 
           // Shift: constrain to horizontal/vertical from source endpoint
           if (e.shiftKey) {
-            const fromEp = room.endpoints.find(
-              (ep) => ep.id === interaction.fromEndpointId,
-            );
+            const fromEp = room.endpoints.find((ep) => ep.id === interaction.fromEndpointId);
             if (fromEp) {
               const dx = Math.abs(snapped.x - fromEp.x);
               const dy = Math.abs(snapped.y - fromEp.y);
@@ -3055,9 +2751,9 @@ export function Canvas({ planner }: CanvasProps) {
           return;
         }
 
-        case 'idle': {
+        case "idle": {
           if (spaceKeyRef.current) {
-            setCursor('grab');
+            setCursor("grab");
             return;
           }
 
@@ -3069,30 +2765,25 @@ export function Canvas({ planner }: CanvasProps) {
           }
           const resizeHandleHit = hitTestResizeHandle(screen);
           if (resizeHandleHit) {
-            setCursor(
-              getResizeCursor(
-                resizeHandleHit.edge,
-                resizeHandleHit.item.rotation,
-              ),
-            );
+            setCursor(getResizeCursor(resizeHandleHit.edge, resizeHandleHit.item.rotation));
             return;
           }
           const epHit = hitTestEndpoint(screen);
           if (epHit) {
-            setCursor('grab');
+            setCursor("grab");
             return;
           }
           const featureHit = hitTestFeature(world);
           if (featureHit) {
-            setCursor('grab');
+            setCursor("grab");
             return;
           }
           const fHit = hitTestFurniture(world);
           if (fHit && !fHit.locked) {
-            setCursor('grab');
+            setCursor("grab");
             return;
           }
-          setCursor('default');
+          setCursor("default");
           return;
         }
       }
@@ -3128,130 +2819,125 @@ export function Canvas({ planner }: CanvasProps) {
     alignmentGuidesRef.current = [];
 
     switch (interaction.mode) {
-      case 'pending-endpoint': {
+      case "pending-endpoint": {
         if (interaction.altKey) {
           // Alt+click → split shared endpoint apart
           splitEndpoint(interaction.endpointId);
-          interactionRef.current = { mode: 'idle' };
-          setCursor('default');
+          interactionRef.current = { mode: "idle" };
+          setCursor("default");
           rerender();
           return;
         }
         // Was a click (not drag) → select endpoint
         interactionRef.current = {
-          mode: 'selected-endpoint',
+          mode: "selected-endpoint",
           endpointId: interaction.endpointId,
         };
-        setCursor('default');
+        setCursor("default");
         rerender();
         return;
       }
 
-      case 'pending-furniture': {
+      case "pending-furniture": {
         if (interaction.toggleSelection) {
           toggleSelectedId(interaction.id);
         } else if (!selectedIds.includes(interaction.id)) {
           setSelectedId(interaction.id);
         }
-        interactionRef.current = { mode: 'idle' };
-        setCursor('default');
+        interactionRef.current = { mode: "idle" };
+        setCursor("default");
         return;
       }
 
-      case 'pending-marquee': {
+      case "pending-marquee": {
         if (!interaction.additive) {
           setSelectedId(null);
         }
-        interactionRef.current = { mode: 'idle' };
-        setCursor('default');
+        interactionRef.current = { mode: "idle" };
+        setCursor("default");
         rerender();
         return;
       }
 
-      case 'pending-resize': {
-        interactionRef.current = { mode: 'idle' };
-        setCursor('default');
+      case "pending-resize": {
+        interactionRef.current = { mode: "idle" };
+        setCursor("default");
         return;
       }
 
-      case 'pending-rotation': {
-        interactionRef.current = { mode: 'idle' };
-        setCursor('default');
+      case "pending-rotation": {
+        interactionRef.current = { mode: "idle" };
+        setCursor("default");
         return;
       }
 
-      case 'pending-feature': {
-        interactionRef.current = { mode: 'idle' };
-        setCursor('default');
+      case "pending-feature": {
+        interactionRef.current = { mode: "idle" };
+        setCursor("default");
         return;
       }
 
-      case 'dragging-endpoint': {
+      case "dragging-endpoint": {
         // If snapped to another endpoint, merge them
         if (interaction.snapTarget) {
           mergeEndpoints(interaction.endpointId, interaction.snapTarget);
         } else {
           commitEndpointMove();
         }
-        interactionRef.current = { mode: 'idle' };
-        setCursor('default');
+        interactionRef.current = { mode: "idle" };
+        setCursor("default");
         return;
       }
 
-      case 'dragging-furniture': {
+      case "dragging-furniture": {
         if (interaction.moved) {
           commitFurnitureMove();
         }
-        interactionRef.current = { mode: 'idle' };
-        setCursor('default');
+        interactionRef.current = { mode: "idle" };
+        setCursor("default");
         return;
       }
 
-      case 'dragging-marquee': {
-        const nextIds = getMarqueeSelectionIds(
-          interaction.startScreen,
-          interaction.currentScreen,
-        );
+      case "dragging-marquee": {
+        const nextIds = getMarqueeSelectionIds(interaction.startScreen, interaction.currentScreen);
         setSelectedWallId(null);
         setSelectedFeature(null);
         setSelectedResizeHandle(null);
         setSelectedIds(
-          interaction.additive
-            ? Array.from(new Set([...selectedIds, ...nextIds]))
-            : nextIds,
+          interaction.additive ? Array.from(new Set([...selectedIds, ...nextIds])) : nextIds,
         );
-        interactionRef.current = { mode: 'idle' };
-        setCursor('default');
+        interactionRef.current = { mode: "idle" };
+        setCursor("default");
         rerender();
         return;
       }
 
-      case 'dragging-rotation': {
+      case "dragging-rotation": {
         commitFurnitureMove();
-        interactionRef.current = { mode: 'idle' };
-        setCursor('default');
+        interactionRef.current = { mode: "idle" };
+        setCursor("default");
         return;
       }
 
-      case 'dragging-resize': {
+      case "dragging-resize": {
         if (interaction.moved) {
           commitFurnitureMove();
         }
-        interactionRef.current = { mode: 'idle' };
-        setCursor('default');
+        interactionRef.current = { mode: "idle" };
+        setCursor("default");
         return;
       }
 
-      case 'dragging-feature': {
+      case "dragging-feature": {
         commitFeatureMove();
-        interactionRef.current = { mode: 'idle' };
-        setCursor('default');
+        interactionRef.current = { mode: "idle" };
+        setCursor("default");
         return;
       }
 
-      case 'panning': {
-        interactionRef.current = { mode: 'idle' };
-        setCursor('default');
+      case "panning": {
+        interactionRef.current = { mode: "idle" };
+        setCursor("default");
         return;
       }
     }
@@ -3306,18 +2992,18 @@ export function Canvas({ planner }: CanvasProps) {
       const epHit = hitTestEndpoint(screen);
       if (epHit) {
         interactionRef.current = {
-          mode: 'drawing-wall',
+          mode: "drawing-wall",
           fromEndpointId: epHit.id,
           currentEnd: { x: epHit.x, y: epHit.y },
           snapTargetId: null,
         };
-        setCursor('crosshair');
+        setCursor("crosshair");
         rerender();
         return;
       }
 
       const furnitureHit = hitTestFurniture(world);
-      if (furnitureHit?.type === 'pullout-sofa' && furnitureHit.pulloutSofa) {
+      if (furnitureHit?.type === "pullout-sofa" && furnitureHit.pulloutSofa) {
         togglePulloutSofa(furnitureHit.id);
       }
     },
@@ -3338,10 +3024,10 @@ export function Canvas({ planner }: CanvasProps) {
         return;
       }
 
-      if (interactionRef.current.mode === 'drawing-wall') {
+      if (interactionRef.current.mode === "drawing-wall") {
         e.preventDefault();
-        interactionRef.current = { mode: 'idle' };
-        setCursor('default');
+        interactionRef.current = { mode: "idle" };
+        setCursor("default");
         setContextMenuTarget(null);
         rerender();
         return;
@@ -3362,25 +3048,25 @@ export function Canvas({ planner }: CanvasProps) {
       const wallHit = hitTestWallSegment(world);
 
       if (furnitureHit) {
-        interactionRef.current = { mode: 'idle' };
+        interactionRef.current = { mode: "idle" };
         alignmentGuidesRef.current = [];
-        setCursor('default');
+        setCursor("default");
         setSelectedId(furnitureHit.id);
         setSelectedIds([furnitureHit.id]);
         setSelectedWallId(null);
         setSelectedFeature(null);
         setSelectedResizeHandle(null);
         setContextMenuTarget({
-          kind: 'furniture',
+          kind: "furniture",
           id: furnitureHit.id,
         });
         return;
       }
 
       if (featureHit) {
-        interactionRef.current = { mode: 'idle' };
+        interactionRef.current = { mode: "idle" };
         alignmentGuidesRef.current = [];
-        setCursor('default');
+        setCursor("default");
         setSelectedId(null);
         setSelectedIds([]);
         setSelectedWallId(featureHit.wallId);
@@ -3390,7 +3076,7 @@ export function Canvas({ planner }: CanvasProps) {
         });
         setSelectedResizeHandle(null);
         setContextMenuTarget({
-          kind: 'feature',
+          kind: "feature",
           wallId: featureHit.wallId,
           featureId: featureHit.featureId,
         });
@@ -3398,16 +3084,16 @@ export function Canvas({ planner }: CanvasProps) {
       }
 
       if (wallHit) {
-        interactionRef.current = { mode: 'idle' };
+        interactionRef.current = { mode: "idle" };
         alignmentGuidesRef.current = [];
-        setCursor('default');
+        setCursor("default");
         setSelectedId(null);
         setSelectedIds([]);
         setSelectedWallId(wallHit.id);
         setSelectedFeature(null);
         setSelectedResizeHandle(null);
         setContextMenuTarget({
-          kind: 'wall',
+          kind: "wall",
           id: wallHit.id,
         });
         return;
@@ -3434,7 +3120,7 @@ export function Canvas({ planner }: CanvasProps) {
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
     const dpr = window.devicePixelRatio || 1;
@@ -3444,7 +3130,7 @@ export function Canvas({ planner }: CanvasProps) {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, w, h);
 
-    const isDark = theme === 'dark';
+    const isDark = theme === "dark";
     const z = zoomRef.current;
     const pan = panRef.current;
 
@@ -3462,21 +3148,17 @@ export function Canvas({ planner }: CanvasProps) {
       roomPolygon && roomPolygon.length >= 3
         ? roomPolygon.map((point) => toScreen(point.x, point.y))
         : null;
-    const outsideRoomClipPath = createOutsideRoomClipPath(
-      w,
-      h,
-      roomPolygonScreen,
-    );
+    const outsideRoomClipPath = createOutsideRoomClipPath(w, h, roomPolygonScreen);
     const strokeWallSegment = (
       from: Point,
       to: Point,
       strokeStyle: string,
       lineWidth: number,
-      lineCap: CanvasLineCap = 'round',
+      lineCap: CanvasLineCap = "round",
     ) => {
       ctx.save();
       if (outsideRoomClipPath) {
-        ctx.clip(outsideRoomClipPath, 'evenodd');
+        ctx.clip(outsideRoomClipPath, "evenodd");
       }
       ctx.strokeStyle = strokeStyle;
       ctx.lineWidth = lineWidth;
@@ -3500,9 +3182,7 @@ export function Canvas({ planner }: CanvasProps) {
           canvasWidth: w,
           gridSize: minorGridSize,
           skipEvery: MAJOR_GRID_SIZE,
-          strokeStyle: isDark
-            ? 'rgba(255,255,255,0.025)'
-            : 'rgba(15,23,42,0.035)',
+          strokeStyle: isDark ? "rgba(255,255,255,0.025)" : "rgba(15,23,42,0.035)",
           toScreen,
           viewportBottomRight: bottomRight,
           viewportTopLeft: topLeft,
@@ -3513,7 +3193,7 @@ export function Canvas({ planner }: CanvasProps) {
         canvasHeight: h,
         canvasWidth: w,
         gridSize: MAJOR_GRID_SIZE,
-        strokeStyle: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(15,23,42,0.08)',
+        strokeStyle: isDark ? "rgba(255,255,255,0.05)" : "rgba(15,23,42,0.08)",
         toScreen,
         viewportBottomRight: bottomRight,
         viewportTopLeft: topLeft,
@@ -3534,7 +3214,7 @@ export function Canvas({ planner }: CanvasProps) {
         ctx.lineTo(p.x, p.y);
       }
       ctx.closePath();
-      ctx.fillStyle = isDark ? 'rgba(30,41,59,0.45)' : 'rgba(255,255,255,0.45)';
+      ctx.fillStyle = isDark ? "rgba(30,41,59,0.45)" : "rgba(255,255,255,0.45)";
       ctx.fill();
       ctx.restore();
     }
@@ -3554,7 +3234,7 @@ export function Canvas({ planner }: CanvasProps) {
         strokeWallSegment(
           s1,
           s2,
-          isDark ? 'rgba(129,140,248,0.3)' : 'rgba(99,102,241,0.25)',
+          isDark ? "rgba(129,140,248,0.3)" : "rgba(99,102,241,0.25)",
           wallThickness + 6,
         );
       }
@@ -3562,13 +3242,7 @@ export function Canvas({ planner }: CanvasProps) {
       strokeWallSegment(
         s1,
         s2,
-        isSelected
-          ? isDark
-            ? '#a5b4fc'
-            : '#6366f1'
-          : isDark
-            ? '#94a3b8'
-            : '#334155',
+        isSelected ? (isDark ? "#a5b4fc" : "#6366f1") : isDark ? "#94a3b8" : "#334155",
         wallThickness,
       );
     }
@@ -3578,12 +3252,8 @@ export function Canvas({ planner }: CanvasProps) {
     const roomCentroid =
       roomPolygon && roomPolygon.length >= 3
         ? {
-            x:
-              roomPolygon.reduce((sum, point) => sum + point.x, 0) /
-              roomPolygon.length,
-            y:
-              roomPolygon.reduce((sum, point) => sum + point.y, 0) /
-              roomPolygon.length,
+            x: roomPolygon.reduce((sum, point) => sum + point.x, 0) / roomPolygon.length,
+            y: roomPolygon.reduce((sum, point) => sum + point.y, 0) / roomPolygon.length,
           }
         : null;
 
@@ -3614,26 +3284,20 @@ export function Canvas({ planner }: CanvasProps) {
         const s1 = toScreen(startX, startY);
         const s2 = toScreen(endX, endY);
 
-        if (feature.type === 'door') {
+        if (feature.type === "door") {
           // Clear wall behind door
           ctx.save();
-          strokeWallSegment(
-            s1,
-            s2,
-            isDark ? '#1e293b' : '#ffffff',
-            wallThickness + 2,
-          );
+          strokeWallSegment(s1, s2, isDark ? "#1e293b" : "#ffffff", wallThickness + 2);
 
           const doorWidth = feature.width * z;
-          const isRightHinge = feature.swingHand === 'right';
+          const isRightHinge = feature.swingHand === "right";
           const hingeScreen = isRightHinge ? s2 : s1;
 
           // Door baseline angle: from hinge toward the free end along the wall
           const baseAngle = isRightHinge ? angle + Math.PI : angle;
 
           // Swing perpendicular direction: inward or outward relative to room
-          const swingPerp =
-            feature.swingDirection === 'outward' ? -inwardSign : inwardSign;
+          const swingPerp = feature.swingDirection === "outward" ? -inwardSign : inwardSign;
           // Flipping hinge reverses baseAngle by π, so we must also
           // flip the perpendicular rotation to stay on the same side
           const hingeFlip = isRightHinge ? -1 : 1;
@@ -3643,9 +3307,7 @@ export function Canvas({ planner }: CanvasProps) {
           const arcEnd = baseAngle + (hingeFlip * swingPerp * Math.PI) / 2;
 
           // Draw arc
-          ctx.strokeStyle = isDark
-            ? 'rgba(99,102,241,0.5)'
-            : 'rgba(79,70,229,0.4)';
+          ctx.strokeStyle = isDark ? "rgba(99,102,241,0.5)" : "rgba(79,70,229,0.4)";
           ctx.lineWidth = 1.5;
           ctx.beginPath();
           ctx.arc(
@@ -3658,7 +3320,7 @@ export function Canvas({ planner }: CanvasProps) {
           ctx.stroke();
 
           // Draw door leaf (line from hinge to end of arc)
-          ctx.strokeStyle = isDark ? '#6366f1' : '#4f46e5';
+          ctx.strokeStyle = isDark ? "#6366f1" : "#4f46e5";
           ctx.lineWidth = 2;
           ctx.beginPath();
           ctx.moveTo(hingeScreen.x, hingeScreen.y);
@@ -3668,16 +3330,11 @@ export function Canvas({ planner }: CanvasProps) {
           );
           ctx.stroke();
           ctx.restore();
-        } else if (feature.type === 'window') {
+        } else if (feature.type === "window") {
           ctx.save();
-          strokeWallSegment(
-            s1,
-            s2,
-            isDark ? '#1e293b' : '#ffffff',
-            wallThickness + 2,
-          );
+          strokeWallSegment(s1, s2, isDark ? "#1e293b" : "#ffffff", wallThickness + 2);
 
-          ctx.strokeStyle = isDark ? '#38bdf8' : '#0284c7';
+          ctx.strokeStyle = isDark ? "#38bdf8" : "#0284c7";
           ctx.lineWidth = 2;
           const perpX = Math.cos(angle + Math.PI / 2) * 3;
           const perpY = Math.sin(angle + Math.PI / 2) * 3;
@@ -3688,22 +3345,17 @@ export function Canvas({ planner }: CanvasProps) {
           ctx.lineTo(s2.x - perpX, s2.y - perpY);
           ctx.stroke();
           ctx.restore();
-        } else if (feature.type === 'opening') {
+        } else if (feature.type === "opening") {
           ctx.save();
 
           // Clear the wall segment to create a true opening.
-          strokeWallSegment(
-            s1,
-            s2,
-            isDark ? '#1e293b' : '#ffffff',
-            wallThickness + 2,
-          );
+          strokeWallSegment(s1, s2, isDark ? "#1e293b" : "#ffffff", wallThickness + 2);
 
           // Draw short jamb markers at each end so the opening reads intentionally.
           const jambHalf = 6;
           const perpX = Math.cos(angle + Math.PI / 2) * jambHalf;
           const perpY = Math.sin(angle + Math.PI / 2) * jambHalf;
-          ctx.strokeStyle = isDark ? '#10b981' : '#059669';
+          ctx.strokeStyle = isDark ? "#10b981" : "#059669";
           ctx.lineWidth = 2;
           ctx.beginPath();
           ctx.moveTo(s1.x - perpX, s1.y - perpY);
@@ -3712,7 +3364,7 @@ export function Canvas({ planner }: CanvasProps) {
           ctx.lineTo(s2.x + perpX, s2.y + perpY);
           ctx.stroke();
           ctx.restore();
-        } else if (feature.type === 'closet') {
+        } else if (feature.type === "closet") {
           // Draw closet as a subtle box extending outward from the wall
           const closetDepth = 24 * z; // 24 inches deep
           const outX = -inwardNormal.x * closetDepth;
@@ -3721,17 +3373,10 @@ export function Canvas({ planner }: CanvasProps) {
           ctx.save();
 
           // Clear wall segment behind closet (like doors/windows)
-          strokeWallSegment(
-            s1,
-            s2,
-            isDark ? '#1e293b' : '#ffffff',
-            wallThickness + 2,
-          );
+          strokeWallSegment(s1, s2, isDark ? "#1e293b" : "#ffffff", wallThickness + 2);
 
           // Filled background of the closet box
-          ctx.fillStyle = isDark
-            ? 'rgba(255,255,255,0.05)'
-            : 'rgba(0,0,0,0.04)';
+          ctx.fillStyle = isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.04)";
           ctx.beginPath();
           ctx.moveTo(s1.x, s1.y);
           ctx.lineTo(s2.x, s2.y);
@@ -3741,9 +3386,7 @@ export function Canvas({ planner }: CanvasProps) {
           ctx.fill();
 
           // Solid border for the box
-          ctx.strokeStyle = isDark
-            ? 'rgba(255,255,255,0.25)'
-            : 'rgba(0,0,0,0.25)';
+          ctx.strokeStyle = isDark ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.25)";
           ctx.lineWidth = 1.5;
           ctx.setLineDash([]);
           ctx.beginPath();
@@ -3757,9 +3400,7 @@ export function Canvas({ planner }: CanvasProps) {
           // Center divider line (double doors)
           const midWallX = (s1.x + s2.x) / 2;
           const midWallY = (s1.y + s2.y) / 2;
-          ctx.strokeStyle = isDark
-            ? 'rgba(255,255,255,0.15)'
-            : 'rgba(0,0,0,0.15)';
+          ctx.strokeStyle = isDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.15)";
           ctx.lineWidth = 1;
           ctx.beginPath();
           ctx.moveTo(midWallX, midWallY);
@@ -3767,9 +3408,7 @@ export function Canvas({ planner }: CanvasProps) {
           ctx.stroke();
 
           // Wall-line indicator (visible mark along the wall)
-          ctx.strokeStyle = isDark
-            ? 'rgba(168,162,158,0.6)'
-            : 'rgba(120,113,108,0.5)';
+          ctx.strokeStyle = isDark ? "rgba(168,162,158,0.6)" : "rgba(120,113,108,0.5)";
           ctx.lineWidth = 2;
           ctx.setLineDash([4, 3]);
           ctx.beginPath();
@@ -3781,19 +3420,16 @@ export function Canvas({ planner }: CanvasProps) {
           ctx.restore();
         }
 
-        if (
-          selectedFeature?.wallId === wall.id &&
-          selectedFeature.featureId === feature.id
-        ) {
+        if (selectedFeature?.wallId === wall.id && selectedFeature.featureId === feature.id) {
           ctx.save();
           strokeWallSegment(
             s1,
             s2,
-            isDark ? 'rgba(34,211,238,0.75)' : 'rgba(6,182,212,0.75)',
+            isDark ? "rgba(34,211,238,0.75)" : "rgba(6,182,212,0.75)",
             wallThickness + 4,
           );
 
-          ctx.strokeStyle = isDark ? '#67e8f9' : '#0891b2';
+          ctx.strokeStyle = isDark ? "#67e8f9" : "#0891b2";
           ctx.lineWidth = 2;
           ctx.beginPath();
           ctx.moveTo(s1.x, s1.y);
@@ -3885,17 +3521,15 @@ export function Canvas({ planner }: CanvasProps) {
         },
       ];
       const dimLabel = showMeasurements
-        ? unit === 'cm'
+        ? unit === "cm"
           ? `${toDisplay(length).toFixed(0)} cm`
           : `${parseFloat(toDisplay(length).toFixed(3))}"`
         : null;
 
-      ctx.font = '11px -apple-system, BlinkMacSystemFont, sans-serif';
+      ctx.font = "11px -apple-system, BlinkMacSystemFont, sans-serif";
       const labelPad = 4;
       const labelHeight = 14 + labelPad;
-      const labelWidth = dimLabel
-        ? ctx.measureText(dimLabel).width + labelPad * 2
-        : 0;
+      const labelWidth = dimLabel ? ctx.measureText(dimLabel).width + labelPad * 2 : 0;
       const layout = getWallLabelLayout({
         anchor: midScreen,
         canvasBounds,
@@ -3910,97 +3544,82 @@ export function Canvas({ planner }: CanvasProps) {
       placedWallLabelBounds.push(layout.bounds);
       // Wall number badge
       const numLabel = `${index + 1}`;
-      ctx.font = 'bold 10px -apple-system, BlinkMacSystemFont, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
+      ctx.font = "bold 10px -apple-system, BlinkMacSystemFont, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
 
-      ctx.fillStyle = isDark ? 'rgba(99,102,241,0.8)' : 'rgba(79,70,229,0.8)';
+      ctx.fillStyle = isDark ? "rgba(99,102,241,0.8)" : "rgba(79,70,229,0.8)";
       ctx.beginPath();
-      ctx.arc(
-        layout.badgeCenter.x,
-        layout.badgeCenter.y,
-        WALL_LABEL_BADGE_RADIUS,
-        0,
-        Math.PI * 2,
-      );
+      ctx.arc(layout.badgeCenter.x, layout.badgeCenter.y, WALL_LABEL_BADGE_RADIUS, 0, Math.PI * 2);
       ctx.fill();
-      ctx.fillStyle = '#ffffff';
+      ctx.fillStyle = "#ffffff";
       ctx.fillText(numLabel, layout.badgeCenter.x, layout.badgeCenter.y);
 
       // Dimension label
       if (dimLabel) {
-        ctx.fillStyle = isDark
-          ? 'rgba(15,23,42,0.85)'
-          : 'rgba(255,255,255,0.9)';
+        ctx.fillStyle = isDark ? "rgba(15,23,42,0.85)" : "rgba(255,255,255,0.9)";
         ctx.fillRect(
           layout.labelRect.minX,
           layout.labelRect.minY,
           layout.labelRect.maxX - layout.labelRect.minX,
           layout.labelRect.maxY - layout.labelRect.minY,
         );
-        ctx.fillStyle = isDark ? '#94a3b8' : '#475569';
+        ctx.fillStyle = isDark ? "#94a3b8" : "#475569";
         ctx.fillText(dimLabel, layout.labelCenter.x, layout.labelCenter.y);
       }
     }
     ctx.restore();
 
     // ── Endpoint handles ──
-    const isDrawing = interaction.mode === 'drawing-wall';
+    const isDrawing = interaction.mode === "drawing-wall";
 
     ctx.save();
     for (const ep of endpoints) {
       const s = toScreen(ep.x, ep.y);
       const isDragging =
-        (interaction.mode === 'dragging-endpoint' &&
-          interaction.endpointId === ep.id) ||
-        (interaction.mode === 'pending-endpoint' &&
-          interaction.endpointId === ep.id);
+        (interaction.mode === "dragging-endpoint" && interaction.endpointId === ep.id) ||
+        (interaction.mode === "pending-endpoint" && interaction.endpointId === ep.id);
       const isSnapTarget =
-        (interaction.mode === 'dragging-endpoint' &&
-          interaction.snapTarget === ep.id) ||
-        (interaction.mode === 'drawing-wall' &&
-          interaction.snapTargetId === ep.id);
+        (interaction.mode === "dragging-endpoint" && interaction.snapTarget === ep.id) ||
+        (interaction.mode === "drawing-wall" && interaction.snapTargetId === ep.id);
       const isSelected =
-        interaction.mode === 'selected-endpoint' &&
-        interaction.endpointId === ep.id;
+        interaction.mode === "selected-endpoint" && interaction.endpointId === ep.id;
 
       // Count connections for visual hint
-      const connCount = walls.filter(
-        (w) => w.startId === ep.id || w.endId === ep.id,
-      ).length;
+      const connCount = walls.filter((w) => w.startId === ep.id || w.endId === ep.id).length;
 
       let radius = HANDLE_RADIUS;
-      let fillColor = isDark ? '#334155' : '#ffffff';
-      let strokeColor = isDark ? '#64748b' : '#94a3b8';
+      let fillColor = isDark ? "#334155" : "#ffffff";
+      let strokeColor = isDark ? "#64748b" : "#94a3b8";
       let strokeWidth = 2;
 
       if (isDragging) {
         radius = HANDLE_RADIUS + 2;
-        strokeColor = '#f59e0b';
+        strokeColor = "#f59e0b";
         strokeWidth = 2.5;
       } else if (isSnapTarget) {
         radius = HANDLE_RADIUS + 3;
-        fillColor = '#22c55e';
-        strokeColor = '#16a34a';
+        fillColor = "#22c55e";
+        strokeColor = "#16a34a";
         strokeWidth = 2.5;
       } else if (isSelected) {
         radius = HANDLE_RADIUS + 2;
-        fillColor = isDark ? '#312e81' : '#eef2ff';
-        strokeColor = '#6366f1';
+        fillColor = isDark ? "#312e81" : "#eef2ff";
+        strokeColor = "#6366f1";
         strokeWidth = 2.5;
       } else if (isDrawing) {
-        strokeColor = '#6366f1';
+        strokeColor = "#6366f1";
         strokeWidth = 2;
       } else if (connCount === 1) {
         // Open endpoint - highlight as draggable/connectable
-        strokeColor = isDark ? '#818cf8' : '#6366f1';
+        strokeColor = isDark ? "#818cf8" : "#6366f1";
       }
 
       // Selected endpoint: draw outer ring
       if (isSelected) {
         ctx.beginPath();
         ctx.arc(s.x, s.y, radius + 4, 0, Math.PI * 2);
-        ctx.strokeStyle = 'rgba(99, 102, 241, 0.3)';
+        ctx.strokeStyle = "rgba(99, 102, 241, 0.3)";
         ctx.lineWidth = 2;
         ctx.stroke();
       }
@@ -4018,16 +3637,14 @@ export function Canvas({ planner }: CanvasProps) {
     // ── Alt-hover disconnect indicator on shared endpoints ──
     if (
       altKeyRef.current &&
-      (interaction.mode === 'idle' || interaction.mode === 'selected-endpoint')
+      (interaction.mode === "idle" || interaction.mode === "selected-endpoint")
     ) {
       const ms = mouseScreenRef.current;
       const hitR = HANDLE_RADIUS + 2;
       for (const ep of endpoints) {
         const s = toScreen(ep.x, ep.y);
         if (distSq(ms, s) > hitR * hitR) continue;
-        const connCount = walls.filter(
-          (w) => w.startId === ep.id || w.endId === ep.id,
-        ).length;
+        const connCount = walls.filter((w) => w.startId === ep.id || w.endId === ep.id).length;
         if (connCount < 2) continue;
         // Draw disconnect badge: small circle with a minus sign
         const bx = s.x + HANDLE_RADIUS + 6;
@@ -4036,12 +3653,12 @@ export function Canvas({ planner }: CanvasProps) {
         // Badge background
         ctx.beginPath();
         ctx.arc(bx, by, 7, 0, Math.PI * 2);
-        ctx.fillStyle = '#ef4444';
+        ctx.fillStyle = "#ef4444";
         ctx.fill();
         // Minus sign
-        ctx.strokeStyle = '#ffffff';
+        ctx.strokeStyle = "#ffffff";
         ctx.lineWidth = 1.5;
-        ctx.lineCap = 'round';
+        ctx.lineCap = "round";
         ctx.beginPath();
         ctx.moveTo(bx - 3.5, by);
         ctx.lineTo(bx + 3.5, by);
@@ -4052,21 +3669,17 @@ export function Canvas({ planner }: CanvasProps) {
     }
 
     // ── Drawing mode ghost wall ──
-    if (interaction.mode === 'drawing-wall') {
+    if (interaction.mode === "drawing-wall") {
       const fromEp = epMap.get(interaction.fromEndpointId);
       if (fromEp) {
         const s1 = toScreen(fromEp.x, fromEp.y);
         const s2 = toScreen(interaction.currentEnd.x, interaction.currentEnd.y);
 
         ctx.save();
-        ctx.strokeStyle = interaction.snapTargetId
-          ? '#22c55e'
-          : isDark
-            ? '#818cf8'
-            : '#6366f1';
+        ctx.strokeStyle = interaction.snapTargetId ? "#22c55e" : isDark ? "#818cf8" : "#6366f1";
         ctx.lineWidth = interaction.snapTargetId ? 4 : 3;
         ctx.setLineDash(interaction.snapTargetId ? [] : [8, 6]);
-        ctx.lineCap = 'round';
+        ctx.lineCap = "round";
         ctx.beginPath();
         ctx.moveTo(s1.x, s1.y);
         ctx.lineTo(s2.x, s2.y);
@@ -4078,27 +3691,23 @@ export function Canvas({ planner }: CanvasProps) {
         if (length > 1) {
           const displayLen = toDisplay(length);
           const dimLabel =
-            unit === 'cm'
-              ? `${displayLen.toFixed(0)} cm`
-              : `${parseFloat(displayLen.toFixed(3))}"`;
+            unit === "cm" ? `${displayLen.toFixed(0)} cm` : `${parseFloat(displayLen.toFixed(3))}"`;
           const midX = (s1.x + s2.x) / 2;
           const midY = (s1.y + s2.y) / 2 - 14;
 
-          ctx.font = 'bold 11px -apple-system, BlinkMacSystemFont, sans-serif';
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
+          ctx.font = "bold 11px -apple-system, BlinkMacSystemFont, sans-serif";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
           const metrics = ctx.measureText(dimLabel);
           const pad = 5;
 
-          ctx.fillStyle = isDark
-            ? 'rgba(99,102,241,0.9)'
-            : 'rgba(79,70,229,0.9)';
+          ctx.fillStyle = isDark ? "rgba(99,102,241,0.9)" : "rgba(79,70,229,0.9)";
           ctx.beginPath();
           const rx = metrics.width / 2 + pad;
           const ry = 10;
           ctx.roundRect(midX - rx, midY - ry, rx * 2, ry * 2, 4);
           ctx.fill();
-          ctx.fillStyle = '#ffffff';
+          ctx.fillStyle = "#ffffff";
           ctx.fillText(dimLabel, midX, midY);
         }
 
@@ -4106,7 +3715,7 @@ export function Canvas({ planner }: CanvasProps) {
         if (!interaction.snapTargetId) {
           ctx.beginPath();
           ctx.arc(s2.x, s2.y, 5, 0, Math.PI * 2);
-          ctx.fillStyle = isDark ? '#818cf8' : '#6366f1';
+          ctx.fillStyle = isDark ? "#818cf8" : "#6366f1";
           ctx.fill();
         }
 
@@ -4120,7 +3729,7 @@ export function Canvas({ planner }: CanvasProps) {
       const isSelected = selectedIds.includes(item.id);
       const showSingleItemHandles = isSelected && selectedIds.length === 1;
       const isDraggingItem =
-        interaction.mode === 'dragging-furniture' && interaction.id === item.id;
+        interaction.mode === "dragging-furniture" && interaction.id === item.id;
 
       ctx.save();
       ctx.translate(screen.x, screen.y);
@@ -4133,7 +3742,7 @@ export function Canvas({ planner }: CanvasProps) {
         isDark,
         neutralFurnitureColors,
       );
-      const isRug = item.type === 'rug';
+      const isRug = item.type === "rug";
       const renderedFillOpacity = getRenderedFurnitureFillOpacity(
         isDraggingItem,
         isRug,
@@ -4155,7 +3764,7 @@ export function Canvas({ planner }: CanvasProps) {
       );
 
       if (!isDraggingItem) {
-        ctx.shadowColor = 'rgba(0,0,0,0.15)';
+        ctx.shadowColor = "rgba(0,0,0,0.15)";
         ctx.shadowBlur = 4;
         ctx.shadowOffsetX = 2;
         ctx.shadowOffsetY = 2;
@@ -4164,7 +3773,7 @@ export function Canvas({ planner }: CanvasProps) {
       ctx.globalAlpha = renderedFillOpacity;
       ctx.fillStyle = renderedItemColor;
 
-      if (item.shape === 'circle') {
+      if (item.shape === "circle") {
         ctx.beginPath();
         ctx.ellipse(0, 0, sw / 2, sd / 2, 0, 0, Math.PI * 2);
         ctx.fill();
@@ -4172,13 +3781,13 @@ export function Canvas({ planner }: CanvasProps) {
         ctx.fillRect(-sw / 2, -sd / 2, sw, sd);
       }
 
-      ctx.shadowColor = 'transparent';
+      ctx.shadowColor = "transparent";
       ctx.globalAlpha = 1;
 
-      ctx.strokeStyle = isSelected ? '#f59e0b' : renderedStrokeColor;
+      ctx.strokeStyle = isSelected ? "#f59e0b" : renderedStrokeColor;
       ctx.lineWidth = isSelected ? 2.5 : 1;
 
-      if (item.shape === 'circle') {
+      if (item.shape === "circle") {
         ctx.beginPath();
         ctx.ellipse(0, 0, sw / 2, sd / 2, 0, 0, Math.PI * 2);
         ctx.stroke();
@@ -4189,19 +3798,15 @@ export function Canvas({ planner }: CanvasProps) {
       const maxLabelWidth = sw - 12;
       const maxLabelHeight = sd - 12;
       const canShowName = maxLabelWidth > 26 && maxLabelHeight > 18;
-      const canShowDimensions =
-        showMeasurements && maxLabelWidth > 46 && maxLabelHeight > 30;
+      const canShowDimensions = showMeasurements && maxLabelWidth > 46 && maxLabelHeight > 30;
 
       if (canShowName) {
-        const nameFontSize = Math.max(
-          9,
-          Math.min(12, Math.min(sw / 5.8, sd / 4.5)),
-        );
+        const nameFontSize = Math.max(9, Math.min(12, Math.min(sw / 5.8, sd / 4.5)));
         ctx.font = `${nameFontSize}px -apple-system, BlinkMacSystemFont, sans-serif`;
         const nameLabel = truncateCanvasText(ctx, item.name, maxLabelWidth);
         const nameMetrics = ctx.measureText(nameLabel);
 
-        let detailLabel = '';
+        let detailLabel = "";
         let detailMetrics: TextMetrics | null = null;
         const detailFontSize = Math.max(8, nameFontSize - 1);
 
@@ -4219,28 +3824,16 @@ export function Canvas({ planner }: CanvasProps) {
         const labelHeight = canShowDimensions
           ? nameFontSize + detailFontSize + lineGap
           : nameFontSize;
-        const labelWidth = Math.max(
-          nameMetrics.width,
-          detailMetrics?.width ?? 0,
-        );
+        const labelWidth = Math.max(nameMetrics.width, detailMetrics?.width ?? 0);
         const showTwoLineLabel =
-          canShowDimensions &&
-          labelHeight < maxLabelHeight &&
-          labelWidth < maxLabelWidth;
-        const showSingleLineLabel =
-          !showTwoLineLabel && nameMetrics.width < maxLabelWidth;
-        const rugLabelTextColor = isDark
-          ? 'rgba(226,232,240,0.74)'
-          : 'rgba(30,41,59,0.66)';
-        const rugLabelDetailColor = isDark
-          ? 'rgba(203,213,225,0.62)'
-          : 'rgba(51,65,85,0.56)';
-        const rugLabelHaloColor = isDark
-          ? 'rgba(15,23,42,0.58)'
-          : 'rgba(248,250,252,0.82)';
+          canShowDimensions && labelHeight < maxLabelHeight && labelWidth < maxLabelWidth;
+        const showSingleLineLabel = !showTwoLineLabel && nameMetrics.width < maxLabelWidth;
+        const rugLabelTextColor = isDark ? "rgba(226,232,240,0.74)" : "rgba(30,41,59,0.66)";
+        const rugLabelDetailColor = isDark ? "rgba(203,213,225,0.62)" : "rgba(51,65,85,0.56)";
+        const rugLabelHaloColor = isDark ? "rgba(15,23,42,0.58)" : "rgba(248,250,252,0.82)";
 
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
         ctx.globalAlpha = 1;
         ctx.fillStyle = isRug ? rugLabelTextColor : renderedLabelColor;
         ctx.font = `700 ${nameFontSize}px -apple-system, BlinkMacSystemFont, sans-serif`;
@@ -4277,23 +3870,23 @@ export function Canvas({ planner }: CanvasProps) {
           ctx.fillText(nameLabel, 0, 0);
         }
 
-        ctx.shadowColor = 'transparent';
+        ctx.shadowColor = "transparent";
         ctx.shadowBlur = 0;
         ctx.globalAlpha = 1;
       }
 
       if (showSingleItemHandles && !item.locked) {
         ctx.globalAlpha = 1;
-        ctx.fillStyle = '#f59e0b';
+        ctx.fillStyle = "#f59e0b";
         const rotationHandleY = -sd / 2 - ROTATION_HANDLE_OFFSET;
         ctx.beginPath();
         ctx.arc(0, rotationHandleY, 5, 0, Math.PI * 2);
         ctx.fill();
-        ctx.strokeStyle = '#ffffff';
+        ctx.strokeStyle = "#ffffff";
         ctx.lineWidth = 1.5;
         ctx.stroke();
 
-        ctx.strokeStyle = '#f59e0b';
+        ctx.strokeStyle = "#f59e0b";
         ctx.lineWidth = 1;
         ctx.setLineDash([3, 3]);
         ctx.beginPath();
@@ -4309,24 +3902,19 @@ export function Canvas({ planner }: CanvasProps) {
           { x: 0, y: sd / 2 },
         ];
 
-        ctx.fillStyle = isDark ? '#0f172a' : '#ffffff';
-        ctx.strokeStyle = '#f59e0b';
+        ctx.fillStyle = isDark ? "#0f172a" : "#ffffff";
+        ctx.strokeStyle = "#f59e0b";
         ctx.lineWidth = 2;
         for (const [index, handle] of resizeHandles.entries()) {
           const edge = RESIZE_HANDLE_EDGES[index];
           const isActiveResizeHandle =
-            selectedResizeHandle?.id === item.id &&
-            selectedResizeHandle.edge === edge;
+            selectedResizeHandle?.id === item.id && selectedResizeHandle.edge === edge;
 
           ctx.beginPath();
           ctx.arc(handle.x, handle.y, RESIZE_HANDLE_RADIUS, 0, Math.PI * 2);
-          ctx.fillStyle = isActiveResizeHandle
-            ? '#f59e0b'
-            : isDark
-              ? '#0f172a'
-              : '#ffffff';
+          ctx.fillStyle = isActiveResizeHandle ? "#f59e0b" : isDark ? "#0f172a" : "#ffffff";
           ctx.fill();
-          ctx.strokeStyle = isActiveResizeHandle ? '#ffffff' : '#f59e0b';
+          ctx.strokeStyle = isActiveResizeHandle ? "#ffffff" : "#f59e0b";
           ctx.stroke();
         }
       }
@@ -4334,34 +3922,19 @@ export function Canvas({ planner }: CanvasProps) {
       ctx.restore();
     }
 
-    if (interaction.mode === 'dragging-furniture') {
-      drawFurnitureAlignmentGuides(
-        ctx,
-        alignmentGuidesRef.current,
-        toScreen,
-        isDark,
-      );
+    if (interaction.mode === "dragging-furniture") {
+      drawFurnitureAlignmentGuides(ctx, alignmentGuidesRef.current, toScreen, isDark);
     }
 
-    if (interaction.mode === 'dragging-marquee') {
-      const minX = Math.min(
-        interaction.startScreen.x,
-        interaction.currentScreen.x,
-      );
-      const minY = Math.min(
-        interaction.startScreen.y,
-        interaction.currentScreen.y,
-      );
-      const width = Math.abs(
-        interaction.currentScreen.x - interaction.startScreen.x,
-      );
-      const height = Math.abs(
-        interaction.currentScreen.y - interaction.startScreen.y,
-      );
+    if (interaction.mode === "dragging-marquee") {
+      const minX = Math.min(interaction.startScreen.x, interaction.currentScreen.x);
+      const minY = Math.min(interaction.startScreen.y, interaction.currentScreen.y);
+      const width = Math.abs(interaction.currentScreen.x - interaction.startScreen.x);
+      const height = Math.abs(interaction.currentScreen.y - interaction.startScreen.y);
 
       ctx.save();
-      ctx.fillStyle = isDark ? 'rgba(56,189,248,0.10)' : 'rgba(6,182,212,0.12)';
-      ctx.strokeStyle = isDark ? 'rgba(56,189,248,0.8)' : 'rgba(8,145,178,0.8)';
+      ctx.fillStyle = isDark ? "rgba(56,189,248,0.10)" : "rgba(6,182,212,0.12)";
+      ctx.strokeStyle = isDark ? "rgba(56,189,248,0.8)" : "rgba(8,145,178,0.8)";
       ctx.lineWidth = 1.5;
       ctx.setLineDash([6, 4]);
       ctx.fillRect(minX, minY, width, height);
@@ -4376,7 +3949,7 @@ export function Canvas({ planner }: CanvasProps) {
       for (let j = i + 1; j < furniture.length; j++) {
         const a = furniture[i];
         const b = furniture[j];
-        if (a.type === 'rug' || b.type === 'rug') continue;
+        if (a.type === "rug" || b.type === "rug") continue;
         if (checkFurnitureCollision(a, b)) {
           invalidFurnitureIds.add(a.id);
           invalidFurnitureIds.add(b.id);
@@ -4399,12 +3972,12 @@ export function Canvas({ planner }: CanvasProps) {
       ctx.save();
       ctx.translate(screen.x, screen.y);
       ctx.rotate((item.rotation * Math.PI) / 180);
-      ctx.strokeStyle = 'rgba(239,68,68,0.7)';
+      ctx.strokeStyle = "rgba(239,68,68,0.7)";
       ctx.lineWidth = 2;
       ctx.setLineDash([4, 4]);
       const sw = item.width * z;
       const sd = item.depth * z;
-      if (item.shape === 'circle') {
+      if (item.shape === "circle") {
         ctx.beginPath();
         ctx.ellipse(0, 0, sw / 2 + 3, sd / 2 + 3, 0, 0, Math.PI * 2);
         ctx.stroke();
@@ -4439,17 +4012,10 @@ export function Canvas({ planner }: CanvasProps) {
         const bottomRight = toScreen(groupBounds.maxX, groupBounds.maxY);
 
         ctx.save();
-        ctx.strokeStyle = isDark
-          ? 'rgba(34,211,238,0.75)'
-          : 'rgba(8,145,178,0.75)';
+        ctx.strokeStyle = isDark ? "rgba(34,211,238,0.75)" : "rgba(8,145,178,0.75)";
         ctx.lineWidth = 1.5;
         ctx.setLineDash([6, 4]);
-        ctx.strokeRect(
-          topLeft.x,
-          topLeft.y,
-          bottomRight.x - topLeft.x,
-          bottomRight.y - topLeft.y,
-        );
+        ctx.strokeRect(topLeft.x, topLeft.y, bottomRight.x - topLeft.x, bottomRight.y - topLeft.y);
         ctx.setLineDash([]);
 
         if (selectedItems.some((item) => !item.locked)) {
@@ -4457,7 +4023,7 @@ export function Canvas({ planner }: CanvasProps) {
           if (handlePoint) {
             const topCenterX = (topLeft.x + bottomRight.x) / 2;
 
-            ctx.strokeStyle = '#f59e0b';
+            ctx.strokeStyle = "#f59e0b";
             ctx.lineWidth = 1;
             ctx.setLineDash([3, 3]);
             ctx.beginPath();
@@ -4466,11 +4032,11 @@ export function Canvas({ planner }: CanvasProps) {
             ctx.stroke();
             ctx.setLineDash([]);
 
-            ctx.fillStyle = '#f59e0b';
+            ctx.fillStyle = "#f59e0b";
             ctx.beginPath();
             ctx.arc(handlePoint.x, handlePoint.y, 5, 0, Math.PI * 2);
             ctx.fill();
-            ctx.strokeStyle = '#ffffff';
+            ctx.strokeStyle = "#ffffff";
             ctx.lineWidth = 1.5;
             ctx.stroke();
           }
@@ -4479,14 +4045,7 @@ export function Canvas({ planner }: CanvasProps) {
         ctx.restore();
 
         if (showMeasurements) {
-          drawBoundsDimensions(
-            ctx,
-            groupBounds,
-            toScreen,
-            isDark,
-            toDisplay,
-            unit,
-          );
+          drawBoundsDimensions(ctx, groupBounds, toScreen, isDark, toDisplay, unit);
         }
       }
     }
@@ -4509,9 +4068,7 @@ export function Canvas({ planner }: CanvasProps) {
           }
         }
       } else if (selectedIds.length > 1) {
-        const selectedItems = furniture.filter((item) =>
-          selectedIds.includes(item.id),
-        );
+        const selectedItems = furniture.filter((item) => selectedIds.includes(item.id));
         if (selectedItems.length > 0) {
           const roomBounds = getBounds(roomPolygon);
           if (roomBounds) {
@@ -4556,24 +4113,18 @@ export function Canvas({ planner }: CanvasProps) {
     // ── Drawing mode hint ──
     if (isDrawing) {
       ctx.save();
-      ctx.font = '12px -apple-system, BlinkMacSystemFont, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      const hint = 'Click to place wall segments. Right-click or ESC to stop.';
+      ctx.font = "12px -apple-system, BlinkMacSystemFont, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      const hint = "Click to place wall segments. Right-click or ESC to stop.";
       const hx = w / 2;
       const hy = h - 44;
       const metrics = ctx.measureText(hint);
-      ctx.fillStyle = isDark ? 'rgba(99,102,241,0.85)' : 'rgba(79,70,229,0.85)';
+      ctx.fillStyle = isDark ? "rgba(99,102,241,0.85)" : "rgba(79,70,229,0.85)";
       ctx.beginPath();
-      ctx.roundRect(
-        hx - metrics.width / 2 - 12,
-        hy - 14,
-        metrics.width + 24,
-        28,
-        6,
-      );
+      ctx.roundRect(hx - metrics.width / 2 - 12, hy - 14, metrics.width + 24, 28, 6);
       ctx.fill();
-      ctx.fillStyle = '#ffffff';
+      ctx.fillStyle = "#ffffff";
       ctx.fillText(hint, hx, hy);
       ctx.restore();
     }
@@ -4652,21 +4203,17 @@ export function Canvas({ planner }: CanvasProps) {
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Alt') {
+      if (e.key === "Alt") {
         altKeyRef.current = true;
       }
-      if (
-        e.key === ' ' &&
-        document.activeElement === document.body &&
-        !e.repeat
-      ) {
+      if (e.key === " " && document.activeElement === document.body && !e.repeat) {
         e.preventDefault();
         spaceKeyRef.current = true;
-        if (interactionRef.current.mode === 'idle') {
-          setCursor('grab');
+        if (interactionRef.current.mode === "idle") {
+          setCursor("grab");
         }
       }
-      if (e.key === 'Escape') {
+      if (e.key === "Escape") {
         if (renameDialog || deleteTargetId) {
           setRenameDialog(null);
           setDeleteTargetId(null);
@@ -4677,11 +4224,11 @@ export function Canvas({ planner }: CanvasProps) {
           return;
         }
         if (
-          interactionRef.current.mode === 'drawing-wall' ||
-          interactionRef.current.mode === 'selected-endpoint'
+          interactionRef.current.mode === "drawing-wall" ||
+          interactionRef.current.mode === "selected-endpoint"
         ) {
-          interactionRef.current = { mode: 'idle' };
-          setCursor('default');
+          interactionRef.current = { mode: "idle" };
+          setCursor("default");
           rerender();
           return;
         }
@@ -4690,7 +4237,7 @@ export function Canvas({ planner }: CanvasProps) {
         setSelectedFeature(null);
         setSelectedResizeHandle(null);
       }
-      if ((e.metaKey || e.ctrlKey) && e.key === 'z') {
+      if ((e.metaKey || e.ctrlKey) && e.key === "z") {
         e.preventDefault();
         if (e.shiftKey) {
           planner.redo();
@@ -4705,7 +4252,7 @@ export function Canvas({ planner }: CanvasProps) {
       if (planner.isHistoryEditingLocked) {
         return;
       }
-      if (e.key === 'Delete' || e.key === 'Backspace') {
+      if (e.key === "Delete" || e.key === "Backspace") {
         if (document.activeElement !== document.body) return;
         e.preventDefault();
         if (selectedIds.length > 0) {
@@ -4714,7 +4261,7 @@ export function Canvas({ planner }: CanvasProps) {
           planner.removeWall(selectedWallId);
         }
       }
-      if (e.key === 'r' && document.activeElement === document.body) {
+      if (e.key === "r" && document.activeElement === document.body) {
         if (selectedIds.length > 1) {
           planner.rotateFurnitureGroup(selectedIds, 15);
           return;
@@ -4730,7 +4277,7 @@ export function Canvas({ planner }: CanvasProps) {
           planner.rotateFurniture(singleSelectedId, (item.rotation + 15) % 360);
         }
       }
-      if (e.key === 'd' && (e.metaKey || e.ctrlKey) && selectedIds.length > 0) {
+      if (e.key === "d" && (e.metaKey || e.ctrlKey) && selectedIds.length > 0) {
         e.preventDefault();
         if (selectedIds.length === 1 && selectedId) {
           duplicateFurniture(selectedId);
@@ -4740,8 +4287,8 @@ export function Canvas({ planner }: CanvasProps) {
       }
       if (
         document.activeElement === document.body &&
-        interactionRef.current.mode === 'idle' &&
-        ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)
+        interactionRef.current.mode === "idle" &&
+        ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)
       ) {
         const baseStep = gridSnap > 0 ? gridSnap : 1;
         const step = e.shiftKey ? baseStep * 10 : baseStep;
@@ -4751,11 +4298,11 @@ export function Canvas({ planner }: CanvasProps) {
           if (!item || item.locked) return;
 
           const delta =
-            e.key === 'ArrowUp'
+            e.key === "ArrowUp"
               ? { x: 0, y: -step }
-              : e.key === 'ArrowDown'
+              : e.key === "ArrowDown"
                 ? { x: 0, y: step }
-                : e.key === 'ArrowLeft'
+                : e.key === "ArrowLeft"
                   ? { x: -step, y: 0 }
                   : { x: step, y: 0 };
 
@@ -4764,34 +4311,24 @@ export function Canvas({ planner }: CanvasProps) {
           }
 
           e.preventDefault();
-          const nextFrame = resizeFurnitureByHandleDelta(
-            item,
-            selectedResizeHandle.edge,
-            delta,
-            1,
-          );
+          const nextFrame = resizeFurnitureByHandleDelta(item, selectedResizeHandle.edge, delta, 1);
           updateFurnitureFrame(selectedId, nextFrame);
           return;
         }
 
         const delta =
-          e.key === 'ArrowUp'
+          e.key === "ArrowUp"
             ? { x: 0, y: -step }
-            : e.key === 'ArrowDown'
+            : e.key === "ArrowDown"
               ? { x: 0, y: step }
-              : e.key === 'ArrowLeft'
+              : e.key === "ArrowLeft"
                 ? { x: -step, y: 0 }
                 : { x: step, y: 0 };
 
         if (selectedFeature) {
           e.preventDefault();
-          const featureDelta =
-            e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? -step : step;
-          nudgeWallFeature(
-            selectedFeature.wallId,
-            selectedFeature.featureId,
-            featureDelta,
-          );
+          const featureDelta = e.key === "ArrowLeft" || e.key === "ArrowUp" ? -step : step;
+          nudgeWallFeature(selectedFeature.wallId, selectedFeature.featureId, featureDelta);
           return;
         }
 
@@ -4848,22 +4385,22 @@ export function Canvas({ planner }: CanvasProps) {
     };
 
     const handleKeyUp = (e: KeyboardEvent) => {
-      if (e.key === 'Alt') {
+      if (e.key === "Alt") {
         altKeyRef.current = false;
       }
-      if (e.key === ' ') {
+      if (e.key === " ") {
         spaceKeyRef.current = false;
-        if (interactionRef.current.mode === 'idle') {
-          setCursor('default');
+        if (interactionRef.current.mode === "idle") {
+          setCursor("default");
         }
       }
     };
 
-    window.addEventListener('keydown', handler);
-    window.addEventListener('keyup', handleKeyUp);
+    window.addEventListener("keydown", handler);
+    window.addEventListener("keyup", handleKeyUp);
     return () => {
-      window.removeEventListener('keydown', handler);
-      window.removeEventListener('keyup', handleKeyUp);
+      window.removeEventListener("keydown", handler);
+      window.removeEventListener("keyup", handleKeyUp);
     };
   }, [
     selectedId,
@@ -4910,14 +4447,14 @@ export function Canvas({ planner }: CanvasProps) {
             onMouseLeave={() => {
               const mode = interactionRef.current.mode;
               if (
-                mode !== 'drawing-wall' &&
-                mode !== 'idle' &&
-                mode !== 'selected-endpoint' &&
-                mode !== 'pending-endpoint' &&
-                mode !== 'pending-furniture' &&
-                mode !== 'pending-resize' &&
-                mode !== 'pending-rotation' &&
-                mode !== 'pending-feature'
+                mode !== "drawing-wall" &&
+                mode !== "idle" &&
+                mode !== "selected-endpoint" &&
+                mode !== "pending-endpoint" &&
+                mode !== "pending-furniture" &&
+                mode !== "pending-resize" &&
+                mode !== "pending-rotation" &&
+                mode !== "pending-feature"
               ) {
                 handleMouseUp();
               }
@@ -4982,9 +4519,7 @@ export function Canvas({ planner }: CanvasProps) {
               <Pencil className="h-4 w-4" />
               Rename
             </ContextMenuItem>
-            <ContextMenuItem
-              onClick={() => duplicateFurniture(contextMenuItem.id)}
-            >
+            <ContextMenuItem onClick={() => duplicateFurniture(contextMenuItem.id)}>
               <Copy className="h-4 w-4" />
               Duplicate
             </ContextMenuItem>
@@ -5007,48 +4542,37 @@ export function Canvas({ planner }: CanvasProps) {
                 {contextMenuWallLength
                   ? `Segment ${Number.parseFloat(
                       toDisplay(contextMenuWallLength).toFixed(1),
-                    )}${unit === 'cm' ? ' cm' : '"'}`
-                  : 'Wall Segment'}
+                    )}${unit === "cm" ? " cm" : '"'}`
+                  : "Wall Segment"}
               </p>
             </div>
             <ContextMenuSeparator />
-            <ContextMenuItem
-              onClick={() => handleAddWallFeatureFromContextMenu('door')}
-            >
+            <ContextMenuItem onClick={() => handleAddWallFeatureFromContextMenu("door")}>
               Add Door
               <ContextMenuShortcut>
                 {formatCanvasDimension(36, toDisplay, unit)}
               </ContextMenuShortcut>
             </ContextMenuItem>
-            <ContextMenuItem
-              onClick={() => handleAddWallFeatureFromContextMenu('window')}
-            >
+            <ContextMenuItem onClick={() => handleAddWallFeatureFromContextMenu("window")}>
               Add Window
               <ContextMenuShortcut>
                 {formatCanvasDimension(36, toDisplay, unit)}
               </ContextMenuShortcut>
             </ContextMenuItem>
-            <ContextMenuItem
-              onClick={() => handleAddWallFeatureFromContextMenu('opening')}
-            >
+            <ContextMenuItem onClick={() => handleAddWallFeatureFromContextMenu("opening")}>
               Add Opening
               <ContextMenuShortcut>
                 {formatCanvasDimension(42, toDisplay, unit)}
               </ContextMenuShortcut>
             </ContextMenuItem>
-            <ContextMenuItem
-              onClick={() => handleAddWallFeatureFromContextMenu('closet')}
-            >
+            <ContextMenuItem onClick={() => handleAddWallFeatureFromContextMenu("closet")}>
               Add Closet
               <ContextMenuShortcut>
                 {formatCanvasDimension(48, toDisplay, unit)}
               </ContextMenuShortcut>
             </ContextMenuItem>
             <ContextMenuSeparator />
-            <ContextMenuItem
-              variant="destructive"
-              onClick={() => removeWall(contextMenuWall.id)}
-            >
+            <ContextMenuItem variant="destructive" onClick={() => removeWall(contextMenuWall.id)}>
               <Trash2 className="h-4 w-4" />
               Delete Wall
             </ContextMenuItem>
@@ -5063,28 +4587,25 @@ export function Canvas({ planner }: CanvasProps) {
                 {contextMenuFeature.feature.type}
               </p>
             </div>
-            {contextMenuFeature.feature.type === 'door' ? (
+            {contextMenuFeature.feature.type === "door" ? (
               <>
                 <ContextMenuSeparator />
                 <ContextMenuItem onClick={handleToggleDoorSwingDirection}>
                   Flip Swing
                   <ContextMenuShortcut>
-                    {contextMenuFeature.feature.swingDirection ?? 'inward'}
+                    {contextMenuFeature.feature.swingDirection ?? "inward"}
                   </ContextMenuShortcut>
                 </ContextMenuItem>
                 <ContextMenuItem onClick={handleToggleDoorHinge}>
                   Flip Hinge
                   <ContextMenuShortcut>
-                    {contextMenuFeature.feature.swingHand ?? 'left'}
+                    {contextMenuFeature.feature.swingHand ?? "left"}
                   </ContextMenuShortcut>
                 </ContextMenuItem>
               </>
             ) : null}
             <ContextMenuSeparator />
-            <ContextMenuItem
-              variant="destructive"
-              onClick={handleDeleteWallFeatureFromContextMenu}
-            >
+            <ContextMenuItem variant="destructive" onClick={handleDeleteWallFeatureFromContextMenu}>
               <Trash2 className="h-4 w-4" />
               Delete Feature
             </ContextMenuItem>
@@ -5107,7 +4628,7 @@ export function Canvas({ planner }: CanvasProps) {
             </DialogDescription>
           </DialogHeader>
           <Input
-            value={renameDialog?.draftName ?? ''}
+            value={renameDialog?.draftName ?? ""}
             onChange={(event) =>
               setRenameDialog((current) =>
                 current
@@ -5119,7 +4640,7 @@ export function Canvas({ planner }: CanvasProps) {
               )
             }
             onKeyDown={(event) => {
-              if (event.key === 'Enter') {
+              if (event.key === "Enter") {
                 event.preventDefault();
                 handleRenameSubmit();
               }
@@ -5130,10 +4651,7 @@ export function Canvas({ planner }: CanvasProps) {
             <Button variant="outline" onClick={() => setRenameDialog(null)}>
               Cancel
             </Button>
-            <Button
-              onClick={handleRenameSubmit}
-              disabled={!renameDialog?.draftName.trim()}
-            >
+            <Button onClick={handleRenameSubmit} disabled={!renameDialog?.draftName.trim()}>
               Save
             </Button>
           </DialogFooter>
@@ -5153,7 +4671,7 @@ export function Canvas({ planner }: CanvasProps) {
             <DialogDescription>
               {deleteTarget
                 ? `Remove "${deleteTarget.name}" from this layout? This can still be undone.`
-                : 'Remove this furniture item from the layout? This can still be undone.'}
+                : "Remove this furniture item from the layout? This can still be undone."}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -5168,9 +4686,7 @@ export function Canvas({ planner }: CanvasProps) {
       </Dialog>
       {isHistoryEditingLocked ? (
         <div className="absolute top-4 left-1/2 z-10 flex max-w-[min(92vw,40rem)] -translate-x-1/2 items-center gap-2 rounded-full border border-amber-400/30 bg-slate-950/85 px-3 py-1.5 text-[11px] font-medium text-amber-100 shadow-lg backdrop-blur">
-          <span className="whitespace-nowrap">
-            You are viewing an earlier version.
-          </span>
+          <span className="whitespace-nowrap">You are viewing an earlier version.</span>
           <Button
             variant="link"
             size="sm"
@@ -5185,8 +4701,7 @@ export function Canvas({ planner }: CanvasProps) {
             size="sm"
             className="h-auto px-0 py-0 text-[11px] font-medium text-amber-200 underline-offset-2 hover:text-amber-100"
             onClick={() => {
-              const message =
-                'Editing from here will remove the newer changes. Continue?';
+              const message = "Editing from here will remove the newer changes. Continue?";
               if (window.confirm(message)) {
                 discardFutureHistory();
               }
@@ -5197,19 +4712,11 @@ export function Canvas({ planner }: CanvasProps) {
         </div>
       ) : null}
       <ViewportToolbar className="absolute top-4 right-4">
-        <ViewportToolbarButton
-          kind="step"
-          onClick={() => stepZoom('out')}
-          aria-label="Zoom out"
-        >
+        <ViewportToolbarButton kind="step" onClick={() => stepZoom("out")} aria-label="Zoom out">
           -
         </ViewportToolbarButton>
         <ViewportToolbarValue>{zoomPercent}%</ViewportToolbarValue>
-        <ViewportToolbarButton
-          kind="step"
-          onClick={() => stepZoom('in')}
-          aria-label="Zoom in"
-        >
+        <ViewportToolbarButton kind="step" onClick={() => stepZoom("in")} aria-label="Zoom in">
           +
         </ViewportToolbarButton>
         <ViewportToolbarButton onClick={fitToView}>Fit</ViewportToolbarButton>

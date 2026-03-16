@@ -9,4 +9,4 @@ export {
   SelectSeparator,
   SelectTrigger,
   SelectValue,
-} from '@canvas-tools/ui';
+} from "@canvas-tools/ui";

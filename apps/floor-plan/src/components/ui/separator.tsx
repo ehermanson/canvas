@@ -1,1 +1,1 @@
-export { Separator } from '@canvas-tools/ui';
+export { Separator } from "@canvas-tools/ui";

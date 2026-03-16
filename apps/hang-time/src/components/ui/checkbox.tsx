@@ -1,1 +1,1 @@
-export { Checkbox } from '@canvas-tools/ui';
+export { Checkbox } from "@canvas-tools/ui";

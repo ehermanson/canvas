@@ -5,4 +5,4 @@ export {
   CardFooter,
   CardHeader,
   CardTitle,
-} from '@canvas-tools/ui';
+} from "@canvas-tools/ui";

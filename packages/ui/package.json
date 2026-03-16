@@ -1,14 +1,10 @@
 {
   "name": "@canvas-tools/ui",
-  "private": true,
   "version": "1.0.0",
+  "private": true,
   "type": "module",
   "exports": {
     ".": "./src/index.ts"
-  },
-  "peerDependencies": {
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0"
   },
   "dependencies": {
     "@base-ui/react": "^1.3.0",
@@ -16,5 +12,9 @@
     "clsx": "^2.1.1",
     "lucide-react": "^0.562.0",
     "tailwind-merge": "^3.4.0"
+  },
+  "peerDependencies": {
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
   }
 }

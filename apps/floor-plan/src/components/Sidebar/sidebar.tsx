@@ -21,7 +21,7 @@ import {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '@canvas-tools/ui';
+} from "@canvas-tools/ui";
 import {
   ChevronDown,
   ChevronsDown,
@@ -34,7 +34,6 @@ import {
   Home,
   Layers,
   Lock,
-  MoreHorizontal,
   PanelLeftClose,
   PanelLeftOpen,
   Plus,
@@ -46,46 +45,33 @@ import {
   Unlink,
   Unlock,
   Upload,
-} from 'lucide-react';
-import { motion } from 'motion/react';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { Button } from '@/components/ui/button';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
-import {
-  Dialog,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import { ScrollArea } from '@/components/ui/scroll-area';
+} from "lucide-react";
+import { motion } from "motion/react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Dialog, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { SnapshotActionsMenu } from "@/components/ui/snapshot-actions-menu";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Separator } from '@/components/ui/separator';
+} from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
 import {
   FURNITURE_CATEGORIES,
   FURNITURE_PRESETS,
   PULLOUT_SOFA_DEFAULTS,
-} from '@/data/furniture-presets';
-import { ROOM_TEMPLATES } from '@/data/room-templates';
-import type { RoomPlannerReturn } from '@/hooks/use-floor-planner';
-import type { PlannerProjectsReturn } from '@/hooks/use-planner-projects';
-import { cn } from '@/lib/utils';
+} from "@/data/furniture-presets";
+import { ROOM_TEMPLATES } from "@/data/room-templates";
+import type { RoomPlannerReturn } from "@/hooks/use-floor-planner";
+import type { PlannerProjectsReturn } from "@/hooks/use-planner-projects";
+import { cn } from "@/lib/utils";
 import type {
   FurnitureItem,
   FurniturePreset,
@@ -95,10 +81,10 @@ import type {
   Unit,
   Wall,
   WallFeature,
-} from '@/types';
-import { ROOM_SHAPE_ICONS } from './room-shape-icons';
+} from "@/types";
+import { ROOM_SHAPE_ICONS } from "./room-shape-icons";
 
-export const HANG_TIME_URL = 'https://hang-time.app';
+export const HANG_TIME_URL = "https://hang-time.app";
 
 export function OpenHangTimeLink({
   className,
@@ -125,101 +111,98 @@ interface SidebarProps {
   projects: PlannerProjectsReturn;
 }
 
-type Formatter = RoomPlannerReturn['toDisplay'];
-type Parser = RoomPlannerReturn['fromDisplay'];
+type Formatter = RoomPlannerReturn["toDisplay"];
+type Parser = RoomPlannerReturn["fromDisplay"];
 
-type RoomSectionPlanner = Pick<RoomPlannerReturn, 'applyTemplate'>;
+type RoomSectionPlanner = Pick<RoomPlannerReturn, "applyTemplate">;
 
 type WallsSectionPlanner = Pick<
   RoomPlannerReturn,
-  | 'addWallFeature'
-  | 'disconnectEndpoint'
-  | 'fromDisplay'
-  | 'removeWall'
-  | 'removeWallFeature'
-  | 'room'
-  | 'selectedWallId'
-  | 'setSelectedWallId'
-  | 'setWallLength'
-  | 'toDisplay'
-  | 'unit'
-  | 'updateWallFeature'
+  | "addWallFeature"
+  | "disconnectEndpoint"
+  | "fromDisplay"
+  | "removeWall"
+  | "removeWallFeature"
+  | "room"
+  | "selectedWallId"
+  | "setSelectedWallId"
+  | "setWallLength"
+  | "toDisplay"
+  | "unit"
+  | "updateWallFeature"
 >;
 
 type FurnitureSectionPlanner = Pick<
   RoomPlannerReturn,
-  | 'addFurniture'
-  | 'duplicateFurniture'
-  | 'furniture'
-  | 'fromDisplay'
-  | 'bringFurnitureToFront'
-  | 'moveFurnitureBackward'
-  | 'moveFurnitureForward'
-  | 'removeFurniture'
-  | 'rotateFurniture'
-  | 'sendFurnitureToBack'
-  | 'setPulloutBedSize'
-  | 'selectedId'
-  | 'selectedIds'
-  | 'setSelectedId'
-  | 'togglePulloutSofa'
-  | 'toDisplay'
-  | 'unit'
-  | 'updateFurniture'
-  | 'updatePulloutSofa'
+  | "addFurniture"
+  | "duplicateFurniture"
+  | "furniture"
+  | "fromDisplay"
+  | "bringFurnitureToFront"
+  | "moveFurnitureBackward"
+  | "moveFurnitureForward"
+  | "removeFurniture"
+  | "rotateFurniture"
+  | "sendFurnitureToBack"
+  | "setPulloutBedSize"
+  | "selectedId"
+  | "selectedIds"
+  | "setSelectedId"
+  | "togglePulloutSofa"
+  | "toDisplay"
+  | "unit"
+  | "updateFurniture"
+  | "updatePulloutSofa"
 >;
 
 type HistoryDebugPlanner = Pick<
   RoomPlannerReturn,
-  | 'discardFutureHistory'
-  | 'historyDebug'
-  | 'jumpToHistory'
-  | 'returnToLatestHistory'
+  "discardFutureHistory" | "historyDebug" | "jumpToHistory" | "returnToLatestHistory"
 >;
 
 type ProjectControls = Pick<
   PlannerProjectsReturn,
-  | 'activeProject'
-  | 'activeSnapshot'
-  | 'createProject'
-  | 'createSnapshot'
-  | 'deleteProject'
-  | 'deleteSnapshot'
-  | 'duplicateProject'
-  | 'duplicateSnapshot'
-  | 'exportProject'
-  | 'importProject'
-  | 'projects'
-  | 'renameProject'
-  | 'renameSnapshot'
-  | 'selectProject'
-  | 'selectSnapshot'
+  | "activeProject"
+  | "activeSnapshot"
+  | "createProject"
+  | "createSnapshot"
+  | "deleteProject"
+  | "deleteSnapshot"
+  | "duplicateProject"
+  | "duplicateSnapshot"
+  | "exportProject"
+  | "importProject"
+  | "projects"
+  | "renameProject"
+  | "renameSnapshot"
+  | "selectProject"
+  | "selectSnapshot"
 >;
 
 const featureMeta = {
   closet: {
     Icon: ClosetIcon,
-    accentClass: 'text-stone-400',
-    cardClass: 'border-stone-400/20 bg-stone-400/[0.03]',
-    label: 'closet',
+    accentClass: "text-stone-400",
+    cardClass: "border-stone-400/20 bg-stone-400/[0.03]",
+    label: "closet",
   },
   door: {
     Icon: DoorIcon,
-    accentClass: 'text-indigo-500',
-    cardClass: 'border-indigo-500/20 bg-indigo-500/[0.03]',
-    label: 'door',
+    accentClass: "text-indigo-500",
+    cardClass: "border-indigo-500/20 bg-indigo-500/[0.03]",
+    label: "door",
   },
   opening: {
     Icon: OpeningIcon,
-    accentClass: 'text-emerald-500',
-    cardClass: 'border-emerald-500/20 bg-emerald-500/[0.03]',
-    label: 'opening',
+    accentClass: "text-emerald-500",
+    cardClass: "border-emerald-500/20 bg-emerald-500/[0.03]",
+    label: "opening",
   },
   window: {
     Icon: WindowIcon,
-    accentClass: 'text-sky-500',
-    cardClass: 'border-sky-500/20 bg-sky-500/[0.03]',
-    label: 'window',
+    accentClass: "text-sky-500",
+    cardClass: "border-sky-500/20 bg-sky-500/[0.03]",
+    label: "window",
   },
 } as const;
 
@@ -328,17 +311,11 @@ function NumberInput({
 }) {
   return (
     <div className="flex flex-col gap-1">
-      <Label className="text-xs text-gray-500 dark:text-white/50">
-        {label}
-      </Label>
+      <Label className="text-xs text-gray-500 dark:text-white/50">{label}</Label>
       <div className="relative">
         <Input
           type="number"
-          value={
-            value % 1 === 0
-              ? value.toFixed(0)
-              : Number.parseFloat(value.toFixed(3))
-          }
+          value={value % 1 === 0 ? value.toFixed(0) : Number.parseFloat(value.toFixed(3))}
           onChange={(event) => {
             const nextValue = Number.parseFloat(event.target.value);
             if (!Number.isNaN(nextValue)) {
@@ -374,10 +351,9 @@ function SidebarHeader({ onClose }: { onClose: () => void }) {
               {
                 href: HANG_TIME_URL,
                 icon: <HangTimeAppIcon className="h-4.5 w-4.5" />,
-                iconClassName:
-                  'bg-gradient-to-br from-fuchsia-500 via-violet-500 to-indigo-600',
-                title: 'Hang Time',
-                subtitle: 'Pixel Perfect Picture Placement',
+                iconClassName: "bg-gradient-to-br from-fuchsia-500 via-violet-500 to-indigo-600",
+                title: "Hang Time",
+                subtitle: "Pixel Perfect Picture Placement",
               },
             ]}
           />
@@ -397,11 +373,11 @@ function SidebarHeader({ onClose }: { onClose: () => void }) {
 function formatProjectBrowserDate(timestamp: string) {
   try {
     return new Intl.DateTimeFormat(undefined, {
-      month: 'short',
-      day: 'numeric',
+      month: "short",
+      day: "numeric",
     }).format(new Date(timestamp));
   } catch {
-    return '';
+    return "";
   }
 }
 
@@ -425,17 +401,17 @@ function ProjectManagerDialog({
       return;
     }
 
-    const blob = new Blob([exported], { type: 'application/json' });
+    const blob = new Blob([exported], { type: "application/json" });
     const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
+    const link = document.createElement("a");
     const safeName = activeProject.name
       .trim()
       .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '');
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
 
     link.href = url;
-    link.download = `${safeName || 'floor-plan-project'}.json`;
+    link.download = `${safeName || "floor-plan-project"}.json`;
     link.click();
     URL.revokeObjectURL(url);
   }, [activeProject.id, activeProject.name, exportProject]);
@@ -452,11 +428,10 @@ function ProjectManagerDialog({
         importProject(raw);
         setOpen(false);
       } catch (error) {
-        const message =
-          error instanceof Error ? error.message : 'Import failed';
+        const message = error instanceof Error ? error.message : "Import failed";
         window.alert(`Unable to import project: ${message}`);
       } finally {
-        event.target.value = '';
+        event.target.value = "";
       }
     },
     [importProject, setOpen],
@@ -484,8 +459,7 @@ function ProjectManagerDialog({
           />
           <div className="mb-3 flex items-center justify-between gap-3">
             <p className="text-xs text-gray-500 dark:text-white/45">
-              {projects.length} available{' '}
-              {projects.length === 1 ? 'project' : 'projects'}
+              {projects.length} available {projects.length === 1 ? "project" : "projects"}
             </p>
             <div className="flex items-center gap-2">
               <span className="text-[11px] text-gray-400 dark:text-white/35">
@@ -517,17 +491,11 @@ function ProjectManagerDialog({
               {projects.map((project) => {
                 const isActive = project.id === activeProject.id;
                 const currentSnapshot =
-                  project.snapshots.find(
-                    (snapshot) => snapshot.id === project.activeSnapshotId,
-                  ) ?? project.snapshots[0];
+                  project.snapshots.find((snapshot) => snapshot.id === project.activeSnapshotId) ??
+                  project.snapshots[0];
 
                 return (
-                  <InspectorListRow
-                    key={project.id}
-                    asChild
-                    selected={isActive}
-                    tone="cyan"
-                  >
+                  <InspectorListRow key={project.id} asChild selected={isActive} tone="cyan">
                     <button
                       type="button"
                       onClick={() => {
@@ -541,10 +509,8 @@ function ProjectManagerDialog({
                           {project.name}
                         </p>
                         <p className="truncate text-[11px] text-gray-500 dark:text-white/45">
-                          {currentSnapshot?.name} · {project.snapshots.length}{' '}
-                          {project.snapshots.length === 1
-                            ? 'snapshot'
-                            : 'snapshots'}
+                          {currentSnapshot?.name} · {project.snapshots.length}{" "}
+                          {project.snapshots.length === 1 ? "snapshot" : "snapshots"}
                         </p>
                       </div>
                       <div className="shrink-0 pl-4 text-right">
@@ -552,7 +518,7 @@ function ProjectManagerDialog({
                           {formatProjectBrowserDate(project.updatedAt)}
                         </p>
                         <p className="mt-1 text-[11px] text-gray-400 dark:text-white/35">
-                          {isActive ? 'Current' : 'Open'}
+                          {isActive ? "Current" : "Open"}
                         </p>
                       </div>
                     </button>
@@ -589,10 +555,7 @@ function SidebarProjectActions({
           <Tooltip>
             <TooltipTrigger
               render={
-                <ToolPanelActionButton
-                  onClick={onBrowseProjects}
-                  aria-label="Browse projects"
-                >
+                <ToolPanelActionButton onClick={onBrowseProjects} aria-label="Browse projects">
                   <FolderOpen className="h-4 w-4" />
                 </ToolPanelActionButton>
               }
@@ -602,10 +565,7 @@ function SidebarProjectActions({
           <Tooltip>
             <TooltipTrigger
               render={
-                <ToolPanelActionButton
-                  onClick={onCreateProject}
-                  aria-label="New project"
-                >
+                <ToolPanelActionButton onClick={onCreateProject} aria-label="New project">
                   <Plus className="h-4 w-4" />
                 </ToolPanelActionButton>
               }
@@ -615,11 +575,7 @@ function SidebarProjectActions({
           <Tooltip>
             <TooltipTrigger
               render={
-                <ToolPanelActionButton
-                  onClick={undo}
-                  disabled={!canUndo}
-                  aria-label="Undo"
-                >
+                <ToolPanelActionButton onClick={undo} disabled={!canUndo} aria-label="Undo">
                   <Undo2 className="h-4 w-4" />
                 </ToolPanelActionButton>
               }
@@ -629,11 +585,7 @@ function SidebarProjectActions({
           <Tooltip>
             <TooltipTrigger
               render={
-                <ToolPanelActionButton
-                  onClick={redo}
-                  disabled={!canRedo}
-                  aria-label="Redo"
-                >
+                <ToolPanelActionButton onClick={redo} disabled={!canRedo} aria-label="Redo">
                   <Redo2 className="h-4 w-4" />
                 </ToolPanelActionButton>
               }
@@ -667,9 +619,7 @@ function ProjectBrowserSection({
   } = controls;
   const [isOpen, setIsOpen] = useState(false);
   const [projectDraftName, setProjectDraftName] = useState(activeProject.name);
-  const [snapshotDraftName, setSnapshotDraftName] = useState(
-    activeSnapshot.name,
-  );
+  const [snapshotDraftName, setSnapshotDraftName] = useState(activeSnapshot.name);
 
   useEffect(() => {
     setProjectDraftName(activeProject.name);
@@ -710,17 +660,13 @@ function ProjectBrowserSection({
               <div className="space-y-4">
                 <div className="grid gap-3">
                   <div className="space-y-1">
-                    <Label className="text-xs text-gray-500 dark:text-white/50">
-                      Project name
-                    </Label>
+                    <Label className="text-xs text-gray-500 dark:text-white/50">Project name</Label>
                     <Input
                       value={projectDraftName}
-                      onChange={(event) =>
-                        setProjectDraftName(event.target.value)
-                      }
+                      onChange={(event) => setProjectDraftName(event.target.value)}
                       onBlur={commitProjectRename}
                       onKeyDown={(event) => {
-                        if (event.key === 'Enter') {
+                        if (event.key === "Enter") {
                           event.currentTarget.blur();
                         }
                       }}
@@ -733,12 +679,10 @@ function ProjectBrowserSection({
                     </Label>
                     <Input
                       value={snapshotDraftName}
-                      onChange={(event) =>
-                        setSnapshotDraftName(event.target.value)
-                      }
+                      onChange={(event) => setSnapshotDraftName(event.target.value)}
                       onBlur={commitSnapshotRename}
                       onKeyDown={(event) => {
-                        if (event.key === 'Enter') {
+                        if (event.key === "Enter") {
                           event.currentTarget.blur();
                         }
                       }}
@@ -753,9 +697,7 @@ function ProjectBrowserSection({
 
                 <div>
                   <div className="mb-2 flex items-center justify-between gap-3">
-                    <Label className="text-xs text-gray-500 dark:text-white/50">
-                      Snapshots
-                    </Label>
+                    <Label className="text-xs text-gray-500 dark:text-white/50">Snapshots</Label>
                     <span className="text-[11px] text-gray-400 dark:text-white/35">
                       {activeProject.snapshots.length} variations
                     </span>
@@ -773,9 +715,7 @@ function ProjectBrowserSection({
                         >
                           <button
                             type="button"
-                            onClick={() =>
-                              selectSnapshot(activeProject.id, snapshot.id)
-                            }
+                            onClick={() => selectSnapshot(activeProject.id, snapshot.id)}
                             className="flex min-w-0 flex-1 items-center justify-between text-left"
                           >
                             <div className="min-w-0">
@@ -783,71 +723,19 @@ function ProjectBrowserSection({
                                 {snapshot.name}
                               </p>
                               <p className="truncate text-[11px] text-gray-500 dark:text-white/45">
-                                Updated{' '}
-                                {formatProjectBrowserDate(snapshot.updatedAt)}
+                                Updated {formatProjectBrowserDate(snapshot.updatedAt)}
                               </p>
                             </div>
                             <span className="shrink-0 pl-3 text-[11px] text-gray-400 dark:text-white/35">
-                              {isActive ? 'Current' : 'Open'}
+                              {isActive ? "Current" : "Open"}
                             </span>
                           </button>
 
-                          <Popover>
-                            <PopoverTrigger
-                              render={
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8 shrink-0 text-gray-400 hover:text-gray-700 dark:text-white/40 dark:hover:text-white"
-                                  onClick={(event) => event.stopPropagation()}
-                                >
-                                  <MoreHorizontal className="h-4 w-4" />
-                                  <span className="sr-only">
-                                    Snapshot actions
-                                  </span>
-                                </Button>
-                              }
-                            />
-                            <PopoverContent
-                              align="end"
-                              className="w-44 p-1.5"
-                              onClick={(event) => event.stopPropagation()}
-                            >
-                              <div className="space-y-1">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="w-full justify-start"
-                                  onClick={() =>
-                                    duplicateSnapshot(
-                                      activeProject.id,
-                                      snapshot.id,
-                                    )
-                                  }
-                                >
-                                  <Copy className="mr-2 h-3.5 w-3.5" />
-                                  Duplicate
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="w-full justify-start text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300"
-                                  onClick={() =>
-                                    deleteSnapshot(
-                                      activeProject.id,
-                                      snapshot.id,
-                                    )
-                                  }
-                                  disabled={
-                                    activeProject.snapshots.length === 1
-                                  }
-                                >
-                                  <Trash2 className="mr-2 h-3.5 w-3.5" />
-                                  Delete
-                                </Button>
-                              </div>
-                            </PopoverContent>
-                          </Popover>
+                          <SnapshotActionsMenu
+                            onDuplicate={() => duplicateSnapshot(activeProject.id, snapshot.id)}
+                            onDelete={() => deleteSnapshot(activeProject.id, snapshot.id)}
+                            deleteDisabled={activeProject.snapshots.length === 1}
+                          />
                         </InspectorListRow>
                       );
                     })}
@@ -884,22 +772,12 @@ function RoomShapeSection({
   const { applyTemplate } = planner;
 
   return (
-    <Collapsible
-      open={open}
-      className="border-b border-gray-200 dark:border-white/10"
-    >
-      <SectionHeader
-        icon={Home}
-        label="Room Shape"
-        iconColor="text-blue-500"
-        onToggle={onToggle}
-      />
+    <Collapsible open={open} className="border-b border-gray-200 dark:border-white/10">
+      <SectionHeader icon={Home} label="Room Shape" iconColor="text-blue-500" onToggle={onToggle} />
       <CollapsibleContent>
         <div className="space-y-3 pt-2.5 pb-3">
           <div>
-            <Label className="mb-1.5 text-xs text-gray-500 dark:text-white/50">
-              Templates
-            </Label>
+            <Label className="mb-1.5 text-xs text-gray-500 dark:text-white/50">Templates</Label>
             <div className="grid grid-cols-4 gap-1.5">
               {ROOM_TEMPLATES.map((template) => {
                 const ShapeIcon = ROOM_SHAPE_ICONS[template.name];
@@ -912,10 +790,7 @@ function RoomShapeSection({
                     tone="blue"
                     className="gap-1.5 px-2.5 py-2.5"
                   >
-                    <button
-                      type="button"
-                      onClick={() => applyTemplate(template.vertices)}
-                    >
+                    <button type="button" onClick={() => applyTemplate(template.vertices)}>
                       {ShapeIcon ? (
                         <ShapeIcon className="h-6 w-6 text-gray-500 dark:text-white/60" />
                       ) : null}
@@ -946,10 +821,7 @@ function WallsSection({
   const { room, selectedWallId, setSelectedWallId } = planner;
 
   return (
-    <Collapsible
-      open={open}
-      className="border-b border-gray-200 dark:border-white/10"
-    >
+    <Collapsible open={open} className="border-b border-gray-200 dark:border-white/10">
       <SectionHeader
         icon={Layers}
         label={`Walls (${room.walls.length})`}
@@ -962,9 +834,8 @@ function WallsSection({
             tone="cyan"
             className="text-[11px] leading-relaxed text-cyan-700 dark:text-cyan-300"
           >
-            Click an endpoint handle on the canvas to draw new wall segments.
-            Drag endpoints to reshape. Drag one endpoint onto another to connect
-            them.
+            Click an endpoint handle on the canvas to draw new wall segments. Drag endpoints to
+            reshape. Drag one endpoint onto another to connect them.
           </InspectorInset>
 
           {room.walls.map((wall, wallIndex) => (
@@ -1009,9 +880,7 @@ function WallCard({
     updateWallFeature,
   } = planner;
 
-  const endpointMap = new Map(
-    room.endpoints.map((endpoint) => [endpoint.id, endpoint]),
-  );
+  const endpointMap = new Map(room.endpoints.map((endpoint) => [endpoint.id, endpoint]));
   const start = endpointMap.get(wall.startId);
   const end = endpointMap.get(wall.endId);
 
@@ -1020,11 +889,7 @@ function WallCard({
   }
 
   const wallLength = getWallLength(start.x, start.y, end.x, end.y);
-  const startConnections = getConnectionCount(
-    room.walls,
-    wall.startId,
-    wall.id,
-  );
+  const startConnections = getConnectionCount(room.walls, wall.startId, wall.id);
   const endConnections = getConnectionCount(room.walls, wall.endId, wall.id);
   const unitSuffix = getUnitSuffix(unit);
   const measurementStep = getMeasurementStep(unit);
@@ -1142,10 +1007,10 @@ function WallFeatureCard({
 }: {
   feature: WallFeature;
   fromDisplay: Parser;
-  removeWallFeature: RoomPlannerReturn['removeWallFeature'];
+  removeWallFeature: RoomPlannerReturn["removeWallFeature"];
   toDisplay: Formatter;
   unit: Unit;
-  updateWallFeature: RoomPlannerReturn['updateWallFeature'];
+  updateWallFeature: RoomPlannerReturn["updateWallFeature"];
   wallId: string;
   wallLength: number;
 }) {
@@ -1154,12 +1019,10 @@ function WallFeatureCard({
   const measurementStep = getMeasurementStep(unit);
 
   return (
-    <div className={cn('space-y-2 rounded-xl border px-2.5 py-2.5', cardClass)}>
+    <div className={cn("space-y-2 rounded-xl border px-2.5 py-2.5", cardClass)}>
       <div className="flex items-center gap-1.5">
-        <Icon className={cn('h-3.5 w-3.5', accentClass)} />
-        <span className={cn('text-[11px] font-medium capitalize', accentClass)}>
-          {label}
-        </span>
+        <Icon className={cn("h-3.5 w-3.5", accentClass)} />
+        <span className={cn("text-[11px] font-medium capitalize", accentClass)}>{label}</span>
         <Button
           variant="ghost"
           size="sm"
@@ -1171,9 +1034,7 @@ function WallFeatureCard({
       </div>
 
       <div className="flex items-center gap-1.5">
-        <span className="w-7 flex-shrink-0 text-[9px] text-gray-400 dark:text-white/25">
-          Pos
-        </span>
+        <span className="w-7 flex-shrink-0 text-[9px] text-gray-400 dark:text-white/25">Pos</span>
         <CompactMeasurementInput
           value={feature.offset}
           unit={unit}
@@ -1199,20 +1060,17 @@ function WallFeatureCard({
           onChange={(value) => {
             if (value > 0) {
               updateWallFeature(wallId, feature.id, {
-                width: Math.min(
-                  wallLength - feature.offset,
-                  fromDisplay(value),
-                ),
+                width: Math.min(wallLength - feature.offset, fromDisplay(value)),
               });
             }
           }}
         />
       </div>
 
-      {feature.type === 'door' ? (
+      {feature.type === "door" ? (
         <DoorFeatureControls
-          swingDirection={feature.swingDirection ?? 'inward'}
-          swingHand={feature.swingHand ?? 'left'}
+          swingDirection={feature.swingDirection ?? "inward"}
+          swingHand={feature.swingHand ?? "left"}
           onChange={(patch) => updateWallFeature(wallId, feature.id, patch)}
         />
       ) : null}
@@ -1265,29 +1123,27 @@ function DoorFeatureControls({
   swingHand,
 }: {
   onChange: (patch: Partial<WallFeature>) => void;
-  swingDirection: NonNullable<WallFeature['swingDirection']>;
-  swingHand: NonNullable<WallFeature['swingHand']>;
+  swingDirection: NonNullable<WallFeature["swingDirection"]>;
+  swingHand: NonNullable<WallFeature["swingHand"]>;
 }) {
   return (
     <div className="grid grid-cols-2 gap-1.5">
       <div className="flex flex-col gap-1">
-        <span className="text-[11px] text-gray-400 dark:text-white/35">
-          Swing
-        </span>
+        <span className="text-[11px] text-gray-400 dark:text-white/35">Swing</span>
         <div className="grid grid-cols-2 gap-1">
           <FeatureOptionButton
-            selected={swingDirection === 'inward'}
+            selected={swingDirection === "inward"}
             title="Swing inward (into room)"
             label="Inward"
-            onClick={() => onChange({ swingDirection: 'inward' })}
+            onClick={() => onChange({ swingDirection: "inward" })}
           >
             <InwardSwingIcon />
           </FeatureOptionButton>
           <FeatureOptionButton
-            selected={swingDirection === 'outward'}
+            selected={swingDirection === "outward"}
             title="Swing outward (away from room)"
             label="Outward"
-            onClick={() => onChange({ swingDirection: 'outward' })}
+            onClick={() => onChange({ swingDirection: "outward" })}
           >
             <OutwardSwingIcon />
           </FeatureOptionButton>
@@ -1295,23 +1151,21 @@ function DoorFeatureControls({
       </div>
 
       <div className="flex flex-col gap-1">
-        <span className="text-[11px] text-gray-400 dark:text-white/35">
-          Hinge
-        </span>
+        <span className="text-[11px] text-gray-400 dark:text-white/35">Hinge</span>
         <div className="grid grid-cols-2 gap-1">
           <FeatureOptionButton
-            selected={swingHand === 'left'}
+            selected={swingHand === "left"}
             title="Hinge on left (start) side"
             label="Left"
-            onClick={() => onChange({ swingHand: 'left' })}
+            onClick={() => onChange({ swingHand: "left" })}
           >
             <LeftHingeIcon />
           </FeatureOptionButton>
           <FeatureOptionButton
-            selected={swingHand === 'right'}
+            selected={swingHand === "right"}
             title="Hinge on right (end) side"
             label="Right"
-            onClick={() => onChange({ swingHand: 'right' })}
+            onClick={() => onChange({ swingHand: "right" })}
           >
             <RightHingeIcon />
           </FeatureOptionButton>
@@ -1368,7 +1222,7 @@ function FeatureCreateButton({
       className="gap-2 px-2.5 py-2 text-gray-500 dark:text-white/55"
     >
       <button type="button" onClick={onClick}>
-        <Icon className={cn('h-3.5 w-3.5 shrink-0', accentClassName)} />
+        <Icon className={cn("h-3.5 w-3.5 shrink-0", accentClassName)} />
         <span className="text-[11px] font-medium">{label}</span>
       </button>
     </InspectorOptionCard>
@@ -1380,7 +1234,7 @@ function WallFeatureActions({
   wallId,
   wallLength,
 }: {
-  addWallFeature: RoomPlannerReturn['addWallFeature'];
+  addWallFeature: RoomPlannerReturn["addWallFeature"];
   wallId: string;
   wallLength: number;
 }) {
@@ -1392,11 +1246,11 @@ function WallFeatureActions({
         label="Add Door"
         onClick={() =>
           addWallFeature(wallId, {
-            type: 'door',
+            type: "door",
             offset: wallLength * 0.3,
             width: 36,
-            swingDirection: 'inward',
-            swingHand: 'left',
+            swingDirection: "inward",
+            swingHand: "left",
           })
         }
       />
@@ -1406,7 +1260,7 @@ function WallFeatureActions({
         label="Add Window"
         onClick={() =>
           addWallFeature(wallId, {
-            type: 'window',
+            type: "window",
             offset: wallLength * 0.3,
             width: 36,
             sillHeight: 36,
@@ -1420,7 +1274,7 @@ function WallFeatureActions({
         label="Add Opening"
         onClick={() =>
           addWallFeature(wallId, {
-            type: 'opening',
+            type: "opening",
             offset: wallLength * 0.3,
             width: 42,
           })
@@ -1432,7 +1286,7 @@ function WallFeatureActions({
         label="Add Closet"
         onClick={() =>
           addWallFeature(wallId, {
-            type: 'closet',
+            type: "closet",
             offset: wallLength * 0.2,
             width: 48,
             height: 96,
@@ -1449,27 +1303,27 @@ function CustomFurnitureCreator({
   toDisplay,
   unit,
 }: {
-  addFurniture: RoomPlannerReturn['addFurniture'];
+  addFurniture: RoomPlannerReturn["addFurniture"];
   fromDisplay: Parser;
   toDisplay: Formatter;
   unit: Unit;
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [customName, setCustomName] = useState('Custom Piece');
+  const [customName, setCustomName] = useState("Custom Piece");
   const [customWidth, setCustomWidth] = useState(60);
   const [customDepth, setCustomDepth] = useState(30);
-  const [customShape, setCustomShape] = useState<FurnitureShape>('rectangle');
+  const [customShape, setCustomShape] = useState<FurnitureShape>("rectangle");
 
   const unitSuffix = getUnitSuffix(unit);
   const trimmedName = customName.trim();
 
   const customPreset: FurniturePreset = {
-    type: 'custom',
-    name: trimmedName || 'Custom Piece',
+    type: "custom",
+    name: trimmedName || "Custom Piece",
     shape: customShape,
     width: Math.max(1, customWidth),
     depth: Math.max(1, customDepth),
-    color: customShape === 'circle' ? '#38bdf8' : '#94a3b8',
+    color: customShape === "circle" ? "#38bdf8" : "#94a3b8",
   };
 
   return (
@@ -1484,7 +1338,7 @@ function CustomFurnitureCreator({
             Custom Piece
           </span>
           <span className="truncate text-[11px] text-gray-500 dark:text-white/35">
-            {customShape === 'circle' ? 'Circle' : 'Square'} •{' '}
+            {customShape === "circle" ? "Circle" : "Square"} •{" "}
             {formatFurnitureFootprint(
               customPreset.width,
               customPreset.depth,
@@ -1494,21 +1348,19 @@ function CustomFurnitureCreator({
           </span>
         </div>
         <span className="text-[10px] text-gray-400 dark:text-white/25">
-          {isExpanded ? 'Hide' : 'Build'}
+          {isExpanded ? "Hide" : "Build"}
         </span>
         <ChevronDown
           className={cn(
-            'h-3.5 w-3.5 text-gray-400 transition-transform duration-200',
-            !isExpanded && '-rotate-90',
+            "h-3.5 w-3.5 text-gray-400 transition-transform duration-200",
+            !isExpanded && "-rotate-90",
           )}
         />
       </CollapsibleTrigger>
       <CollapsibleContent>
         <div className="space-y-3 border-t border-gray-200/70 px-3 py-3 dark:border-white/10">
           <div className="space-y-1">
-            <Label className="text-xs text-gray-500 dark:text-white/50">
-              Name
-            </Label>
+            <Label className="text-xs text-gray-500 dark:text-white/50">Name</Label>
             <Input
               value={customName}
               onChange={(event) => setCustomName(event.target.value)}
@@ -1535,21 +1387,16 @@ function CustomFurnitureCreator({
           </div>
 
           <div className="space-y-1">
-            <Label className="text-xs text-gray-500 dark:text-white/50">
-              Shape
-            </Label>
+            <Label className="text-xs text-gray-500 dark:text-white/50">Shape</Label>
             <div className="grid grid-cols-2 gap-1.5">
               <InspectorOptionCard
                 asChild
                 layout="column"
-                selected={customShape === 'rectangle'}
+                selected={customShape === "rectangle"}
                 tone="emerald"
                 className="gap-1.5 px-2.5 py-2.5"
               >
-                <button
-                  type="button"
-                  onClick={() => setCustomShape('rectangle')}
-                >
+                <button type="button" onClick={() => setCustomShape("rectangle")}>
                   <div className="h-5 w-5 rounded-[4px] border-2 border-current" />
                   <span className="text-[10px] leading-tight">Square</span>
                 </button>
@@ -1557,11 +1404,11 @@ function CustomFurnitureCreator({
               <InspectorOptionCard
                 asChild
                 layout="column"
-                selected={customShape === 'circle'}
+                selected={customShape === "circle"}
                 tone="cyan"
                 className="gap-1.5 px-2.5 py-2.5"
               >
-                <button type="button" onClick={() => setCustomShape('circle')}>
+                <button type="button" onClick={() => setCustomShape("circle")}>
                   <div className="h-5 w-5 rounded-full border-2 border-current" />
                   <span className="text-[10px] leading-tight">Circle</span>
                 </button>
@@ -1614,14 +1461,12 @@ function FurniturePresetGrid({
   toDisplay,
   unitSuffix,
 }: {
-  addFurniture: RoomPlannerReturn['addFurniture'];
+  addFurniture: RoomPlannerReturn["addFurniture"];
   categoryLabel: string;
   toDisplay: Formatter;
   unitSuffix: string;
 }) {
-  const category = FURNITURE_CATEGORIES.find(
-    (entry) => entry.label === categoryLabel,
-  );
+  const category = FURNITURE_CATEGORIES.find((entry) => entry.label === categoryLabel);
   const presets = FURNITURE_PRESETS.filter((preset) =>
     (category?.types as readonly string[] | undefined)?.includes(preset.type),
   );
@@ -1640,12 +1485,7 @@ function FurniturePresetGrid({
               {preset.name}
             </span>
             <span className="text-xs text-gray-400 dark:text-white/30">
-              {formatFurnitureFootprint(
-                preset.width,
-                preset.depth,
-                toDisplay,
-                unitSuffix,
-              )}
+              {formatFurnitureFootprint(preset.width, preset.depth, toDisplay, unitSuffix)}
             </span>
           </button>
         </InspectorOptionCard>
@@ -1665,11 +1505,11 @@ function PulloutSofaInspector({
 }: {
   fromDisplay: Parser;
   furniture: FurnitureItem & { pulloutSofa: PulloutSofaState };
-  setPulloutBedSize: RoomPlannerReturn['setPulloutBedSize'];
-  togglePulloutSofa: RoomPlannerReturn['togglePulloutSofa'];
+  setPulloutBedSize: RoomPlannerReturn["setPulloutBedSize"];
+  togglePulloutSofa: RoomPlannerReturn["togglePulloutSofa"];
   toDisplay: Formatter;
   unit: Unit;
-  updatePulloutSofa: RoomPlannerReturn['updatePulloutSofa'];
+  updatePulloutSofa: RoomPlannerReturn["updatePulloutSofa"];
 }) {
   const unitSuffix = getUnitSuffix(unit);
 
@@ -1686,7 +1526,7 @@ function PulloutSofaInspector({
             className="h-7 px-2 text-[11px]"
             onClick={() => togglePulloutSofa(furniture.id)}
           >
-            {furniture.pulloutSofa.isOpen ? 'Close Sofa' : 'Open Bed'}
+            {furniture.pulloutSofa.isOpen ? "Close Sofa" : "Open Bed"}
           </Button>
         </div>
 
@@ -1699,9 +1539,7 @@ function PulloutSofaInspector({
           >
             <button
               type="button"
-              onClick={() =>
-                !furniture.pulloutSofa.isOpen && togglePulloutSofa(furniture.id)
-              }
+              onClick={() => !furniture.pulloutSofa.isOpen && togglePulloutSofa(furniture.id)}
             >
               <div className="h-4 w-6 rounded-[4px] border-2 border-current" />
               <span className="text-[10px] leading-tight">Open</span>
@@ -1715,9 +1553,7 @@ function PulloutSofaInspector({
           >
             <button
               type="button"
-              onClick={() =>
-                furniture.pulloutSofa.isOpen && togglePulloutSofa(furniture.id)
-              }
+              onClick={() => furniture.pulloutSofa.isOpen && togglePulloutSofa(furniture.id)}
             >
               <div className="h-4 w-6 rounded-[4px] border-2 border-current bg-current/20" />
               <span className="text-[10px] leading-tight">Closed</span>
@@ -1726,14 +1562,10 @@ function PulloutSofaInspector({
         </InspectorSegmentedControl>
 
         <div className="flex items-center justify-between">
-          <Label className="text-xs text-gray-500 dark:text-white/50">
-            Bed Size
-          </Label>
+          <Label className="text-xs text-gray-500 dark:text-white/50">Bed Size</Label>
           <Select
             value={furniture.pulloutSofa.bedSize}
-            onValueChange={(value) =>
-              setPulloutBedSize(furniture.id, value as PulloutBedSize)
-            }
+            onValueChange={(value) => setPulloutBedSize(furniture.id, value as PulloutBedSize)}
           >
             <SelectTrigger className="h-7 w-28 text-xs">
               <SelectValue />
@@ -1779,9 +1611,7 @@ function PulloutSofaInspector({
         </InspectorInset>
 
         <InspectorInset className="space-y-2">
-          <Label className="text-xs font-medium text-gray-700 dark:text-white/70">
-            Open Size
-          </Label>
+          <Label className="text-xs font-medium text-gray-700 dark:text-white/70">Open Size</Label>
           <NumberInput
             label="Width"
             value={toDisplay(furniture.pulloutSofa.openWidth)}
@@ -1829,23 +1659,23 @@ function FurnitureItemInspector({
   updateFurniture,
   updatePulloutSofa,
 }: {
-  bringFurnitureToFront: RoomPlannerReturn['bringFurnitureToFront'];
-  duplicateFurniture: RoomPlannerReturn['duplicateFurniture'];
+  bringFurnitureToFront: RoomPlannerReturn["bringFurnitureToFront"];
+  duplicateFurniture: RoomPlannerReturn["duplicateFurniture"];
   fromDisplay: Parser;
   furniture: FurnitureItem;
   furnitureCount: number;
   layerIndex: number;
-  moveFurnitureBackward: RoomPlannerReturn['moveFurnitureBackward'];
-  moveFurnitureForward: RoomPlannerReturn['moveFurnitureForward'];
-  removeFurniture: RoomPlannerReturn['removeFurniture'];
-  rotateFurniture: RoomPlannerReturn['rotateFurniture'];
-  sendFurnitureToBack: RoomPlannerReturn['sendFurnitureToBack'];
-  setPulloutBedSize: RoomPlannerReturn['setPulloutBedSize'];
-  togglePulloutSofa: RoomPlannerReturn['togglePulloutSofa'];
+  moveFurnitureBackward: RoomPlannerReturn["moveFurnitureBackward"];
+  moveFurnitureForward: RoomPlannerReturn["moveFurnitureForward"];
+  removeFurniture: RoomPlannerReturn["removeFurniture"];
+  rotateFurniture: RoomPlannerReturn["rotateFurniture"];
+  sendFurnitureToBack: RoomPlannerReturn["sendFurnitureToBack"];
+  setPulloutBedSize: RoomPlannerReturn["setPulloutBedSize"];
+  togglePulloutSofa: RoomPlannerReturn["togglePulloutSofa"];
   toDisplay: Formatter;
   unit: Unit;
-  updateFurniture: RoomPlannerReturn['updateFurniture'];
-  updatePulloutSofa: RoomPlannerReturn['updatePulloutSofa'];
+  updateFurniture: RoomPlannerReturn["updateFurniture"];
+  updatePulloutSofa: RoomPlannerReturn["updatePulloutSofa"];
 }) {
   const unitSuffix = getUnitSuffix(unit);
   const canMoveBackward = layerIndex > 0;
@@ -1896,9 +1726,7 @@ function FurnitureItemInspector({
       <NumberInput
         label="Rotation"
         value={furniture.rotation}
-        onChange={(value) =>
-          rotateFurniture(furniture.id, ((value % 360) + 360) % 360)
-        }
+        onChange={(value) => rotateFurniture(furniture.id, ((value % 360) + 360) % 360)}
         suffix="deg"
         min={0}
         max={359}
@@ -1910,9 +1738,7 @@ function FurnitureItemInspector({
           variant="outline"
           size="sm"
           className="h-7 flex-1 text-xs"
-          onClick={() =>
-            rotateFurniture(furniture.id, (furniture.rotation + 15) % 360)
-          }
+          onClick={() => rotateFurniture(furniture.id, (furniture.rotation + 15) % 360)}
         >
           <RotateCw className="mr-1 h-3 w-3" />
           +15°
@@ -1930,9 +1756,7 @@ function FurnitureItemInspector({
 
       <div className="space-y-2">
         <div className="flex items-center justify-between gap-2">
-          <Label className="text-xs text-gray-500 dark:text-white/50">
-            Layer
-          </Label>
+          <Label className="text-xs text-gray-500 dark:text-white/50">Layer</Label>
           <span className="text-[11px] text-gray-400 dark:text-white/35">
             {layerIndex + 1} of {furnitureCount}
           </span>
@@ -1997,7 +1821,7 @@ function FurnitureItemInspector({
           ) : (
             <Unlock className="mr-1 h-3 w-3" />
           )}
-          {furniture.locked ? 'Unlock' : 'Lock'}
+          {furniture.locked ? "Unlock" : "Lock"}
         </Button>
         <Button
           variant="destructive"
@@ -2044,16 +1868,11 @@ function FurnitureSection({
     updatePulloutSofa,
   } = planner;
 
-  const [activeCategory, setActiveCategory] = useState(
-    FURNITURE_CATEGORIES[0].label,
-  );
+  const [activeCategory, setActiveCategory] = useState(FURNITURE_CATEGORIES[0].label);
   const unitSuffix = getUnitSuffix(unit);
 
   return (
-    <Collapsible
-      open={open}
-      className="border-b border-gray-200 dark:border-white/10"
-    >
+    <Collapsible open={open} className="border-b border-gray-200 dark:border-white/10">
       <SectionHeader
         icon={Sofa}
         label="Furniture"
@@ -2062,10 +1881,7 @@ function FurnitureSection({
       />
       <CollapsibleContent>
         <div className="space-y-3 pt-2.5 pb-3">
-          <FurnitureCategoryPicker
-            activeCategory={activeCategory}
-            onChange={setActiveCategory}
-          />
+          <FurnitureCategoryPicker activeCategory={activeCategory} onChange={setActiveCategory} />
 
           <FurniturePresetGrid
             addFurniture={addFurniture}
@@ -2101,10 +1917,7 @@ function FurnitureSection({
                     tone="cyan"
                     className="cursor-pointer text-[11px]"
                   >
-                    <div
-                      data-sidebar-furniture-id={item.id}
-                      onClick={() => setSelectedId(item.id)}
-                    >
+                    <div data-sidebar-furniture-id={item.id} onClick={() => setSelectedId(item.id)}>
                       <div className="flex items-center gap-2 px-0.5 py-0.5">
                         <div
                           className="h-3 w-3 flex-shrink-0 rounded-sm"
@@ -2112,8 +1925,7 @@ function FurnitureSection({
                         />
                         <span className="flex-1 truncate">{item.name}</span>
                         <span className="text-gray-400 dark:text-white/30">
-                          {toDisplay(item.width).toFixed(0)}x
-                          {toDisplay(item.depth).toFixed(0)}
+                          {toDisplay(item.width).toFixed(0)}x{toDisplay(item.depth).toFixed(0)}
                         </span>
                       </div>
                       {selectedIds.length === 1 && item.id === selectedId ? (
@@ -2161,20 +1973,17 @@ function HistoryDebugSection({
   const entries = [
     ...planner.historyDebug.past.map((entry) => ({
       ...entry,
-      tone: 'past' as const,
+      tone: "past" as const,
     })),
-    { ...planner.historyDebug.present, tone: 'present' as const },
+    { ...planner.historyDebug.present, tone: "present" as const },
     ...planner.historyDebug.future.map((entry) => ({
       ...entry,
-      tone: 'future' as const,
+      tone: "future" as const,
     })),
   ];
 
   return (
-    <Collapsible
-      open={open}
-      className="border-b border-gray-200 dark:border-white/10"
-    >
+    <Collapsible open={open} className="border-b border-gray-200 dark:border-white/10">
       <SectionHeader
         icon={History}
         iconColor="text-amber-500"
@@ -2186,8 +1995,8 @@ function HistoryDebugSection({
           {planner.historyDebug.locked ? (
             <InspectorInset tone="amber" className="space-y-2">
               <div className="text-xs font-medium text-amber-700 dark:text-amber-200">
-                You are viewing an earlier version. To make changes, go back to
-                the latest version or start editing from this point.
+                You are viewing an earlier version. To make changes, go back to the latest version
+                or start editing from this point.
               </div>
               <div className="flex gap-2">
                 <Button
@@ -2206,7 +2015,7 @@ function HistoryDebugSection({
                     const futureCount = planner.historyDebug.futureCount;
                     const message =
                       futureCount === 1
-                        ? 'Editing from this point will discard 1 future change. Continue?'
+                        ? "Editing from this point will discard 1 future change. Continue?"
                         : `Editing from this point will discard ${futureCount} future changes. Continue?`;
                     if (window.confirm(message)) {
                       planner.discardFutureHistory();
@@ -2233,8 +2042,7 @@ function HistoryDebugSection({
                 Current
               </div>
               <div className="mt-1 text-sm font-semibold text-cyan-700 dark:text-cyan-100">
-                #{planner.historyDebug.currentPosition + 1} of{' '}
-                {planner.historyDebug.totalCount}
+                #{planner.historyDebug.currentPosition + 1} of {planner.historyDebug.totalCount}
               </div>
             </InspectorInset>
             <InspectorInset className="px-2.5 py-2.5">
@@ -2252,7 +2060,7 @@ function HistoryDebugSection({
               Snapshot Key
             </div>
             <div className="mt-1 break-all font-mono text-[11px] leading-5 text-gray-600 dark:text-white/65">
-              {planner.historyDebug.key ?? 'none'}
+              {planner.historyDebug.key ?? "none"}
             </div>
           </InspectorInset>
 
@@ -2261,38 +2069,36 @@ function HistoryDebugSection({
               <InspectorListRow
                 key={entry.id}
                 asChild
-                selected={entry.tone === 'present'}
+                selected={entry.tone === "present"}
                 tone="cyan"
                 className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-xs"
               >
                 <button
                   type="button"
                   onClick={() => planner.jumpToHistory(entry.position)}
-                  disabled={entry.tone === 'present'}
+                  disabled={entry.tone === "present"}
                 >
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
                       <span
                         className={cn(
-                          'rounded-full px-2 py-0.5 text-[10px] uppercase tracking-[0.12em]',
-                          entry.tone === 'present'
-                            ? 'bg-cyan-500/15 text-cyan-700 dark:text-cyan-200'
-                            : 'bg-gray-200/70 text-gray-500 dark:bg-white/10 dark:text-white/45',
+                          "rounded-full px-2 py-0.5 text-[10px] uppercase tracking-[0.12em]",
+                          entry.tone === "present"
+                            ? "bg-cyan-500/15 text-cyan-700 dark:text-cyan-200"
+                            : "bg-gray-200/70 text-gray-500 dark:bg-white/10 dark:text-white/45",
                         )}
                       >
-                        {entry.tone === 'present' ? 'current' : 'step'}
+                        {entry.tone === "present" ? "current" : "step"}
                       </span>
-                      <span className="font-medium">
-                        Step {entry.position + 1}
-                      </span>
+                      <span className="font-medium">Step {entry.position + 1}</span>
                     </div>
                     <div className="mt-1 text-[11px] opacity-65">
-                      {entry.endpointCount} endpoints, {entry.wallCount} walls,{' '}
+                      {entry.endpointCount} endpoints, {entry.wallCount} walls,{" "}
                       {entry.furnitureCount} furniture
                     </div>
                   </div>
                   <span className="text-[11px] font-medium opacity-75">
-                    {entry.tone === 'present' ? 'Live' : 'Jump'}
+                    {entry.tone === "present" ? "Live" : "Jump"}
                   </span>
                 </button>
               </InspectorListRow>
@@ -2317,31 +2123,10 @@ function InwardSwingIcon() {
         strokeWidth="1.5"
         opacity="0.2"
       />
-      <line
-        x1="2"
-        y1="26"
-        x2="9"
-        y2="26"
-        stroke="currentColor"
-        strokeWidth="2"
-        opacity="0.5"
-      />
-      <line
-        x1="21"
-        y1="26"
-        x2="26"
-        y2="26"
-        stroke="currentColor"
-        strokeWidth="2"
-        opacity="0.5"
-      />
+      <line x1="2" y1="26" x2="9" y2="26" stroke="currentColor" strokeWidth="2" opacity="0.5" />
+      <line x1="21" y1="26" x2="26" y2="26" stroke="currentColor" strokeWidth="2" opacity="0.5" />
       <path d="M 9 26 L 9 14" stroke="currentColor" strokeWidth="1.5" />
-      <path
-        d="M 9 14 A 12 12 0 0 1 21 26"
-        stroke="currentColor"
-        strokeWidth="1"
-        opacity="0.4"
-      />
+      <path d="M 9 14 A 12 12 0 0 1 21 26" stroke="currentColor" strokeWidth="1" opacity="0.4" />
     </svg>
   );
 }
@@ -2359,31 +2144,10 @@ function OutwardSwingIcon() {
         strokeWidth="1.5"
         opacity="0.2"
       />
-      <line
-        x1="2"
-        y1="14"
-        x2="9"
-        y2="14"
-        stroke="currentColor"
-        strokeWidth="2"
-        opacity="0.5"
-      />
-      <line
-        x1="21"
-        y1="14"
-        x2="26"
-        y2="14"
-        stroke="currentColor"
-        strokeWidth="2"
-        opacity="0.5"
-      />
+      <line x1="2" y1="14" x2="9" y2="14" stroke="currentColor" strokeWidth="2" opacity="0.5" />
+      <line x1="21" y1="14" x2="26" y2="14" stroke="currentColor" strokeWidth="2" opacity="0.5" />
       <path d="M 9 14 L 9 2" stroke="currentColor" strokeWidth="1.5" />
-      <path
-        d="M 9 2 A 12 12 0 0 1 21 14"
-        stroke="currentColor"
-        strokeWidth="1"
-        opacity="0.4"
-      />
+      <path d="M 9 2 A 12 12 0 0 1 21 14" stroke="currentColor" strokeWidth="1" opacity="0.4" />
     </svg>
   );
 }
@@ -2422,31 +2186,25 @@ function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
 }
 
-function formatMeasurementValue(
-  value: number,
-  unit: Unit,
-  toDisplay: Formatter,
-) {
+function formatMeasurementValue(value: number, unit: Unit, toDisplay: Formatter) {
   const displayValue = toDisplay(value);
-  return unit === 'cm'
+  return unit === "cm"
     ? Number.parseFloat(displayValue.toFixed(0))
     : Number.parseFloat(displayValue.toFixed(3));
 }
 
 function getConnectionCount(walls: Wall[], endpointId: string, wallId: string) {
   return walls.filter(
-    (wall) =>
-      wall.id !== wallId &&
-      (wall.startId === endpointId || wall.endId === endpointId),
+    (wall) => wall.id !== wallId && (wall.startId === endpointId || wall.endId === endpointId),
   ).length;
 }
 
 function getMeasurementStep(unit: Unit) {
-  return unit === 'cm' ? 1 : 0.125;
+  return unit === "cm" ? 1 : 0.125;
 }
 
 function getUnitSuffix(unit: Unit) {
-  return unit === 'cm' ? 'cm' : '"';
+  return unit === "cm" ? "cm" : '"';
 }
 
 function formatFurnitureFootprint(
@@ -2461,19 +2219,19 @@ function formatFurnitureFootprint(
 function isPulloutSofa(
   item: FurnitureItem,
 ): item is FurnitureItem & { pulloutSofa: PulloutSofaState } {
-  return item.type === 'pullout-sofa' && Boolean(item.pulloutSofa);
+  return item.type === "pullout-sofa" && Boolean(item.pulloutSofa);
 }
 
 function getPulloutBedSizeLabel(bedSize: PulloutBedSize) {
   switch (bedSize) {
-    case 'twin':
-      return 'Twin';
-    case 'full':
-      return 'Full';
-    case 'queen':
-      return 'Queen';
-    case 'king':
-      return 'King';
+    case "twin":
+      return "Twin";
+    case "full":
+      return "Full";
+    case "queen":
+      return "Queen";
+    case "king":
+      return "King";
   }
 }
 
@@ -2499,42 +2257,31 @@ export function Sidebar({ planner, projects }: SidebarProps) {
     const panel = panelRef.current;
     if (!panel) return false;
 
-    const viewport = panel.querySelector<HTMLElement>(
-      '[data-slot="scroll-area-viewport"]',
-    );
+    const viewport = panel.querySelector<HTMLElement>('[data-slot="scroll-area-viewport"]');
     const target = panel.querySelector<HTMLElement>(selector);
     if (!viewport || !target) return false;
 
     const viewportRect = viewport.getBoundingClientRect();
     const targetRect = target.getBoundingClientRect();
     const targetTop = targetRect.top - viewportRect.top + viewport.scrollTop;
-    const centeredTop =
-      targetTop - viewport.clientHeight / 2 + targetRect.height / 2;
+    const centeredTop = targetTop - viewport.clientHeight / 2 + targetRect.height / 2;
 
     viewport.scrollTo({
       top: Math.max(0, centeredTop),
-      behavior: 'smooth',
+      behavior: "smooth",
     });
     return true;
   }, []);
 
   useEffect(() => {
-    if (
-      selectedWallId &&
-      selectedWallId !== previousSelectedWallIdRef.current &&
-      !wallsOpen
-    ) {
+    if (selectedWallId && selectedWallId !== previousSelectedWallIdRef.current && !wallsOpen) {
       setWallsOpen(true);
     }
     previousSelectedWallIdRef.current = selectedWallId;
   }, [selectedWallId, wallsOpen]);
 
   useEffect(() => {
-    if (
-      selectedId &&
-      selectedId !== previousSelectedIdRef.current &&
-      !furnitureOpen
-    ) {
+    if (selectedId && selectedId !== previousSelectedIdRef.current && !furnitureOpen) {
       setFurnitureOpen(true);
     }
     previousSelectedIdRef.current = selectedId;
@@ -2544,13 +2291,9 @@ export function Sidebar({ planner, projects }: SidebarProps) {
     if (!isOpen || !selectedWallId || !wallsOpen) return;
 
     let frame = requestAnimationFrame(() => {
-      if (
-        !scrollSidebarItemIntoView(`[data-sidebar-wall-id="${selectedWallId}"]`)
-      ) {
+      if (!scrollSidebarItemIntoView(`[data-sidebar-wall-id="${selectedWallId}"]`)) {
         frame = requestAnimationFrame(() => {
-          scrollSidebarItemIntoView(
-            `[data-sidebar-wall-id="${selectedWallId}"]`,
-          );
+          scrollSidebarItemIntoView(`[data-sidebar-wall-id="${selectedWallId}"]`);
         });
       }
     });
@@ -2562,15 +2305,9 @@ export function Sidebar({ planner, projects }: SidebarProps) {
     if (!isOpen || !selectedId || !furnitureOpen) return;
 
     let frame = requestAnimationFrame(() => {
-      if (
-        !scrollSidebarItemIntoView(
-          `[data-sidebar-furniture-id="${selectedId}"]`,
-        )
-      ) {
+      if (!scrollSidebarItemIntoView(`[data-sidebar-furniture-id="${selectedId}"]`)) {
         frame = requestAnimationFrame(() => {
-          scrollSidebarItemIntoView(
-            `[data-sidebar-furniture-id="${selectedId}"]`,
-          );
+          scrollSidebarItemIntoView(`[data-sidebar-furniture-id="${selectedId}"]`);
         });
       }
     });
@@ -2589,17 +2326,14 @@ export function Sidebar({ planner, projects }: SidebarProps) {
           x: isOpen ? -18 : 0,
         }}
         transition={{
-          type: 'spring',
+          type: "spring",
           stiffness: 360,
           damping: 28,
           opacity: { duration: 0.16 },
         }}
-        style={{ pointerEvents: isOpen ? 'none' : 'auto' }}
+        style={{ pointerEvents: isOpen ? "none" : "auto" }}
       >
-        <FloatingIconButton
-          onClick={() => setIsOpen(true)}
-          title="Show sidebar"
-        >
+        <FloatingIconButton onClick={() => setIsOpen(true)} title="Show sidebar">
           <PanelLeftOpen className="h-4 w-4" />
         </FloatingIconButton>
       </motion.div>
@@ -2613,12 +2347,12 @@ export function Sidebar({ planner, projects }: SidebarProps) {
           x: isOpen ? 0 : -42,
         }}
         transition={{
-          type: 'spring',
+          type: "spring",
           stiffness: 340,
           damping: 30,
           opacity: { duration: 0.16 },
         }}
-        style={{ pointerEvents: isOpen ? 'auto' : 'none' }}
+        style={{ pointerEvents: isOpen ? "auto" : "none" }}
       >
         <ToolPanel
           ref={panelRef}
@@ -2646,8 +2380,7 @@ export function Sidebar({ planner, projects }: SidebarProps) {
 
               <div
                 className={cn(
-                  isHistoryEditingLocked &&
-                    'pointer-events-none opacity-45 select-none',
+                  isHistoryEditingLocked && "pointer-events-none opacity-45 select-none",
                 )}
               >
                 <RoomShapeSection
@@ -2659,8 +2392,7 @@ export function Sidebar({ planner, projects }: SidebarProps) {
 
               <div
                 className={cn(
-                  isHistoryEditingLocked &&
-                    'pointer-events-none opacity-45 select-none',
+                  isHistoryEditingLocked && "pointer-events-none opacity-45 select-none",
                 )}
               >
                 <WallsSection
@@ -2672,8 +2404,7 @@ export function Sidebar({ planner, projects }: SidebarProps) {
 
               <div
                 className={cn(
-                  isHistoryEditingLocked &&
-                    'pointer-events-none opacity-45 select-none',
+                  isHistoryEditingLocked && "pointer-events-none opacity-45 select-none",
                 )}
               >
                 <FurnitureSection

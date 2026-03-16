@@ -1,17 +1,10 @@
 import { ChevronDown } from "lucide-react";
 import * as React from "react";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "./components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "./components/ui/popover";
 import { cn } from "./lib/utils";
 import { ToolPanelBrandMark } from "./tool-shell";
 
-interface ToolAppBrandProps extends Omit<
-  React.HTMLAttributes<HTMLDivElement>,
-  "title"
-> {
+interface ToolAppBrandProps extends Omit<React.HTMLAttributes<HTMLDivElement>, "title"> {
   icon: React.ReactNode;
   iconClassName?: string;
   subtitle?: React.ReactNode;
@@ -44,10 +37,7 @@ function ToolAppBrand({
   ...props
 }: ToolAppBrandProps) {
   return (
-    <div
-      className={cn("flex min-w-0 items-center gap-2.5", className)}
-      {...props}
-    >
+    <div className={cn("flex min-w-0 items-center gap-2.5", className)} {...props}>
       <ToolPanelBrandMark className={cn("h-8 w-8 rounded-xl", iconClassName)}>
         {icon}
       </ToolPanelBrandMark>
@@ -56,9 +46,7 @@ function ToolAppBrand({
           {title}
         </p>
         {subtitle ? (
-          <p className="mt-0.5 truncate text-[11px] text-gray-500 dark:text-white/45">
-            {subtitle}
-          </p>
+          <p className="mt-0.5 truncate text-[11px] text-gray-500 dark:text-white/45">{subtitle}</p>
         ) : null}
       </div>
     </div>
@@ -77,9 +65,7 @@ function ToolAppSwitcher({
 }: ToolAppSwitcherProps) {
   const resolvedAriaLabel =
     ariaLabel ??
-    (typeof currentTitle === "string"
-      ? `Switch apps from ${currentTitle}`
-      : "Switch apps");
+    (typeof currentTitle === "string" ? `Switch apps from ${currentTitle}` : "Switch apps");
 
   return (
     <Popover>

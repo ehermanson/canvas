@@ -1,12 +1,7 @@
-import type {
-  FurnitureItem,
-  HistoryEntry,
-  PlannerHistoryState,
-  Room,
-} from '@/types';
+import type { FurnitureItem, HistoryEntry, PlannerHistoryState, Room } from "@/types";
 
-const PLANNER_HISTORY_STORAGE_PREFIX = 'floor-planner-history';
-const LEGACY_PLANNER_HISTORY_STORAGE_PREFIX = 'room-planner-history';
+const PLANNER_HISTORY_STORAGE_PREFIX = "floor-planner-history";
+const LEGACY_PLANNER_HISTORY_STORAGE_PREFIX = "room-planner-history";
 
 function cloneHistoryEntry(entry: HistoryEntry): HistoryEntry {
   return {
@@ -15,10 +10,7 @@ function cloneHistoryEntry(entry: HistoryEntry): HistoryEntry {
   };
 }
 
-export function createHistoryEntry(
-  room: Room,
-  furniture: FurnitureItem[],
-): HistoryEntry {
+export function createHistoryEntry(room: Room, furniture: FurnitureItem[]): HistoryEntry {
   return cloneHistoryEntry({ room, furniture });
 }
 
@@ -42,59 +34,52 @@ function getLegacyPlannerHistoryStorageKey(historyKey: string) {
   return `${LEGACY_PLANNER_HISTORY_STORAGE_PREFIX}:${historyKey}`;
 }
 
-export function getPlannerSnapshotHistoryKey(
-  projectId: string,
-  snapshotId: string,
-) {
+export function getPlannerSnapshotHistoryKey(projectId: string, snapshotId: string) {
   return `${projectId}:${snapshotId}`;
 }
 
 function isWallFeature(value: unknown) {
   return Boolean(
     value &&
-      typeof value === 'object' &&
-      typeof (value as { id?: unknown }).id === 'string' &&
-      typeof (value as { type?: unknown }).type === 'string' &&
-      typeof (value as { offset?: unknown }).offset === 'number' &&
-      typeof (value as { width?: unknown }).width === 'number',
+    typeof value === "object" &&
+    typeof (value as { id?: unknown }).id === "string" &&
+    typeof (value as { type?: unknown }).type === "string" &&
+    typeof (value as { offset?: unknown }).offset === "number" &&
+    typeof (value as { width?: unknown }).width === "number",
   );
 }
 
 function isWall(value: unknown) {
   return Boolean(
     value &&
-      typeof value === 'object' &&
-      typeof (value as { id?: unknown }).id === 'string' &&
-      typeof (value as { startId?: unknown }).startId === 'string' &&
-      typeof (value as { endId?: unknown }).endId === 'string' &&
-      Array.isArray((value as { features?: unknown }).features) &&
-      (value as { features: unknown[] }).features.every(isWallFeature),
+    typeof value === "object" &&
+    typeof (value as { id?: unknown }).id === "string" &&
+    typeof (value as { startId?: unknown }).startId === "string" &&
+    typeof (value as { endId?: unknown }).endId === "string" &&
+    Array.isArray((value as { features?: unknown }).features) &&
+    (value as { features: unknown[] }).features.every(isWallFeature),
   );
 }
 
 function isEndpoint(value: unknown) {
   return Boolean(
     value &&
-      typeof value === 'object' &&
-      typeof (value as { id?: unknown }).id === 'string' &&
-      typeof (value as { x?: unknown }).x === 'number' &&
-      typeof (value as { y?: unknown }).y === 'number',
+    typeof value === "object" &&
+    typeof (value as { id?: unknown }).id === "string" &&
+    typeof (value as { x?: unknown }).x === "number" &&
+    typeof (value as { y?: unknown }).y === "number",
   );
 }
 
 function isHistoryEntry(value: unknown): value is HistoryEntry {
   return Boolean(
     value &&
-      typeof value === 'object' &&
-      Array.isArray((value as { furniture?: unknown }).furniture) &&
-      Array.isArray(
-        (value as { room?: { endpoints?: unknown } }).room?.endpoints,
-      ) &&
-      Array.isArray((value as { room?: { walls?: unknown } }).room?.walls) &&
-      (value as { room: { endpoints: unknown[] } }).room.endpoints.every(
-        isEndpoint,
-      ) &&
-      (value as { room: { walls: unknown[] } }).room.walls.every(isWall),
+    typeof value === "object" &&
+    Array.isArray((value as { furniture?: unknown }).furniture) &&
+    Array.isArray((value as { room?: { endpoints?: unknown } }).room?.endpoints) &&
+    Array.isArray((value as { room?: { walls?: unknown } }).room?.walls) &&
+    (value as { room: { endpoints: unknown[] } }).room.endpoints.every(isEndpoint) &&
+    (value as { room: { walls: unknown[] } }).room.walls.every(isWall),
   );
 }
 
@@ -109,16 +94,14 @@ export function areHistoryEntriesEqual(a: HistoryEntry, b: HistoryEntry) {
 function isPlannerHistoryState(value: unknown): value is PlannerHistoryState {
   return Boolean(
     value &&
-      typeof value === 'object' &&
-      isHistoryEntry((value as { present?: unknown }).present) &&
-      Array.isArray((value as { past?: unknown }).past) &&
-      Array.isArray((value as { future?: unknown }).future) &&
-      (typeof (value as { navigationLocked?: unknown }).navigationLocked ===
-        'boolean' ||
-        typeof (value as { navigationLocked?: unknown }).navigationLocked ===
-          'undefined') &&
-      (value as { past: unknown[] }).past.every(isHistoryEntry) &&
-      (value as { future: unknown[] }).future.every(isHistoryEntry),
+    typeof value === "object" &&
+    isHistoryEntry((value as { present?: unknown }).present) &&
+    Array.isArray((value as { past?: unknown }).past) &&
+    Array.isArray((value as { future?: unknown }).future) &&
+    (typeof (value as { navigationLocked?: unknown }).navigationLocked === "boolean" ||
+      typeof (value as { navigationLocked?: unknown }).navigationLocked === "undefined") &&
+    (value as { past: unknown[] }).past.every(isHistoryEntry) &&
+    (value as { future: unknown[] }).future.every(isHistoryEntry),
   );
 }
 
@@ -129,16 +112,14 @@ export function loadPlannerHistoryState(
 ): PlannerHistoryState {
   const initialState = createPlannerHistoryState(room, furniture);
 
-  if (!historyKey || typeof window === 'undefined') {
+  if (!historyKey || typeof window === "undefined") {
     return initialState;
   }
 
   try {
     const raw =
       window.sessionStorage.getItem(getPlannerHistoryStorageKey(historyKey)) ??
-      window.sessionStorage.getItem(
-        getLegacyPlannerHistoryStorageKey(historyKey),
-      );
+      window.sessionStorage.getItem(getLegacyPlannerHistoryStorageKey(historyKey));
     if (!raw) {
       return initialState;
     }
@@ -154,8 +135,7 @@ export function loadPlannerHistoryState(
 
     return {
       future: parsed.future.map(cloneHistoryEntry),
-      navigationLocked:
-        parsed.navigationLocked === true && parsed.future.length > 0,
+      navigationLocked: parsed.navigationLocked === true && parsed.future.length > 0,
       past: parsed.past.map(cloneHistoryEntry),
       present: cloneHistoryEntry(parsed.present),
     };
@@ -168,7 +148,7 @@ export function persistPlannerHistoryState(
   historyKey: string | null | undefined,
   historyState: PlannerHistoryState,
 ) {
-  if (!historyKey || typeof window === 'undefined') {
+  if (!historyKey || typeof window === "undefined") {
     return;
   }
 
@@ -176,20 +156,14 @@ export function persistPlannerHistoryState(
     getPlannerHistoryStorageKey(historyKey),
     JSON.stringify(historyState),
   );
-  window.sessionStorage.removeItem(
-    getLegacyPlannerHistoryStorageKey(historyKey),
-  );
+  window.sessionStorage.removeItem(getLegacyPlannerHistoryStorageKey(historyKey));
 }
 
-export function removePlannerHistoryState(
-  historyKey: string | null | undefined,
-) {
-  if (!historyKey || typeof window === 'undefined') {
+export function removePlannerHistoryState(historyKey: string | null | undefined) {
+  if (!historyKey || typeof window === "undefined") {
     return;
   }
 
   window.sessionStorage.removeItem(getPlannerHistoryStorageKey(historyKey));
-  window.sessionStorage.removeItem(
-    getLegacyPlannerHistoryStorageKey(historyKey),
-  );
+  window.sessionStorage.removeItem(getLegacyPlannerHistoryStorageKey(historyKey));
 }

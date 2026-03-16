@@ -7,13 +7,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Make the plan extremely concise. Sacrifice grammar for the sake of concision.
 - At the end of each plan, give me a list of unresolved questions to answer, if any.
 
-
 ## Build & Development Commands
 
 ```bash
-npm run dev          # Start Vite dev server
-npm run build        # TypeScript check + Vite build
-npm run preview      # Preview production build locally
+vp dev               # Start Vite+ dev server
+vp build             # Build for production
+vp preview           # Preview production build locally
+vp test              # Run tests
+vp check             # Format, lint, type-check
 npm run deploy       # Deploy to Cloudflare Workers
 npm run dev:worker   # Local Cloudflare worker development
 ```
@@ -23,15 +24,16 @@ npm run dev:worker   # Local Cloudflare worker development
 This is a React/TypeScript picture hanging calculator that helps users calculate precise measurements for hanging pictures and creating gallery walls. It's deployed as a Cloudflare Workers application.
 
 ### Tech Stack
-- React 18 with TypeScript
-- Vite for bundling
-- Tailwind CSS with shadcn/ui
-    - ALWAYS check for a shadcn component before creating your own
+
+- React 19 with TypeScript
+- Vite+ (unified toolchain wrapping Vite, Vitest, Oxlint, Oxfmt)
+- Tailwind CSS with base-ui
 - Cloudflare Workers for deployment
 
 ### State Management Pattern
 
 All application state lives in the `useCalculator()` hook (`src/hooks/useCalculator.ts`). This hook:
+
 - Manages the `CalculatorState` (wall dimensions, frame configs, layout settings)
 - Returns a `Calculator` object with state and setter functions
 - Uses `useMemo` to compute layout positions when state changes
@@ -41,6 +43,7 @@ Components receive the calculator object via props and call setters to update st
 ### Layout Modes
 
 Two layout types with different calculation logic (`src/utils/calculations.ts`):
+
 - **Grid**: Frames arranged in rows/columns with configurable spacing
 - **Row**: Single row of frames
 

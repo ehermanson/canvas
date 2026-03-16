@@ -4,38 +4,36 @@ import type {
   FramePosition,
   GalleryFrame,
   GalleryVAlign,
-} from '@/types';
+} from "@/types";
 
 export const INCH_TO_CM = 2.54;
 
-export const toDisplayUnit = (value: number, unit: 'in' | 'cm'): number => {
-  return unit === 'in' ? value : value * INCH_TO_CM;
+export const toDisplayUnit = (value: number, unit: "in" | "cm"): number => {
+  return unit === "in" ? value : value * INCH_TO_CM;
 };
 
-export const fromDisplayUnit = (value: number, unit: 'in' | 'cm'): number => {
-  return unit === 'in' ? value : value / INCH_TO_CM;
+export const fromDisplayUnit = (value: number, unit: "in" | "cm"): number => {
+  return unit === "in" ? value : value / INCH_TO_CM;
 };
 
 // Format with up to 3 decimal places, trimming trailing zeros
 const formatNumber = (value: number, maxDecimals: number): string => {
   const fixed = value.toFixed(maxDecimals);
   // Remove trailing zeros after decimal point
-  return fixed.replace(/\.?0+$/, '');
+  return fixed.replace(/\.?0+$/, "");
 };
 
-export const formatMeasurement = (value: number, unit: 'in' | 'cm'): string => {
+export const formatMeasurement = (value: number, unit: "in" | "cm"): string => {
   // Inches: up to 3 decimals (1/8" = 0.125), cm: up to 1 decimal
-  const decimals = unit === 'in' ? 3 : 1;
-  return unit === 'in'
+  const decimals = unit === "in" ? 3 : 1;
+  return unit === "in"
     ? `${formatNumber(value, decimals)}"`
     : `${formatNumber(value, decimals)} cm`;
 };
 
-export const formatShort = (value: number, unit: 'in' | 'cm'): string => {
-  const decimals = unit === 'in' ? 3 : 1;
-  return unit === 'in'
-    ? `${formatNumber(value, decimals)}"`
-    : `${formatNumber(value, decimals)}cm`;
+export const formatShort = (value: number, unit: "in" | "cm"): string => {
+  const decimals = unit === "in" ? 3 : 1;
+  return unit === "in" ? `${formatNumber(value, decimals)}"` : `${formatNumber(value, decimals)}cm`;
 };
 
 interface LayoutRow {
@@ -59,9 +57,7 @@ function getFrameDimensions(
   return { width: frame.width, height: frame.height };
 }
 
-export function calculateLayoutPositions(
-  state: CalculatorState,
-): FramePosition[] {
+export function calculateLayoutPositions(state: CalculatorState): FramePosition[] {
   const {
     frames,
     vAlign,
@@ -90,7 +86,7 @@ export function calculateLayoutPositions(
 
   // Step 1: Group frames into rows
   const rows: LayoutRow[] = [];
-  const rowMap = new Map<number, LayoutRow['frames']>();
+  const rowMap = new Map<number, LayoutRow["frames"]>();
   frames.forEach((frame, index) => {
     const rowNum = frame.row ?? 0;
     if (!rowMap.has(rowNum)) {
@@ -109,14 +105,9 @@ export function calculateLayoutPositions(
     const rowHDistribution = rowConfig?.hDistribution ?? hDistribution;
 
     const rowWidth =
-      rowFrames.reduce(
-        (sum, f) => sum + getFrameDimensions(f.frame, state).width,
-        0,
-      ) +
+      rowFrames.reduce((sum, f) => sum + getFrameDimensions(f.frame, state).width, 0) +
       (rowFrames.length - 1) * rowHSpacing;
-    const rowHeight = Math.max(
-      ...rowFrames.map((f) => getFrameDimensions(f.frame, state).height),
-    );
+    const rowHeight = Math.max(...rowFrames.map((f) => getFrameDimensions(f.frame, state).height));
 
     rows.push({
       id: `row-${idx}`,
@@ -131,22 +122,21 @@ export function calculateLayoutPositions(
 
   // Step 2: Calculate total height
   const totalHeight =
-    rows.reduce((sum, row) => sum + row.height, 0) +
-    (rows.length - 1) * rowSpacing;
+    rows.reduce((sum, row) => sum + row.height, 0) + (rows.length - 1) * rowSpacing;
 
   // Step 3: Calculate vertical starting position based on anchor type
   let boundingBoxY: number;
-  if (anchorType === 'center') {
+  if (anchorType === "center") {
     boundingBoxY = (wallHeight - totalHeight) / 2;
-  } else if (anchorType === 'ceiling') {
+  } else if (anchorType === "ceiling") {
     boundingBoxY = anchorValue;
-  } else if (anchorType === 'floor') {
+  } else if (anchorType === "floor") {
     boundingBoxY = wallHeight - anchorValue - totalHeight;
-  } else if (anchorType === 'furniture') {
+  } else if (anchorType === "furniture") {
     const furnitureTop = wallHeight - furnitureHeight;
-    if (furnitureVAnchor === 'center') {
+    if (furnitureVAnchor === "center") {
       boundingBoxY = (furnitureTop - totalHeight) / 2;
-    } else if (furnitureVAnchor === 'ceiling') {
+    } else if (furnitureVAnchor === "ceiling") {
       boundingBoxY = anchorValue;
     } else {
       // above-furniture
@@ -171,20 +161,19 @@ export function calculateLayoutPositions(
     let effectiveHSpacing = row.hSpacing;
     let rowStartX: number;
 
-    if (row.hDistribution !== 'fixed') {
+    if (row.hDistribution !== "fixed") {
       const availableSpace = wallWidth - totalFrameWidth;
 
       switch (row.hDistribution) {
-        case 'space-between':
-          effectiveHSpacing =
-            framesInRow > 1 ? availableSpace / (framesInRow - 1) : 0;
+        case "space-between":
+          effectiveHSpacing = framesInRow > 1 ? availableSpace / (framesInRow - 1) : 0;
           rowStartX = 0;
           break;
-        case 'space-evenly':
+        case "space-evenly":
           effectiveHSpacing = availableSpace / (framesInRow + 1);
           rowStartX = effectiveHSpacing;
           break;
-        case 'space-around':
+        case "space-around":
           effectiveHSpacing = availableSpace / framesInRow;
           rowStartX = effectiveHSpacing / 2;
           break;
@@ -197,33 +186,32 @@ export function calculateLayoutPositions(
       const fixedRowWidth = totalFrameWidth + (framesInRow - 1) * row.hSpacing;
 
       // Handle furniture alignment
-      if (anchorType === 'furniture') {
+      if (anchorType === "furniture") {
         let furnitureLeft: number;
-        if (furnitureAnchor === 'center') {
+        if (furnitureAnchor === "center") {
           furnitureLeft = (wallWidth - furnitureWidth) / 2;
-        } else if (furnitureAnchor === 'left') {
+        } else if (furnitureAnchor === "left") {
           furnitureLeft = furnitureOffset;
         } else {
           furnitureLeft = wallWidth - furnitureWidth - furnitureOffset;
         }
         const furnitureCenterX = furnitureLeft + furnitureWidth / 2;
 
-        if (frameFurnitureAlign === 'span') {
+        if (frameFurnitureAlign === "span") {
           // Use distribution within furniture width bounds
-          if (hDistribution !== 'fixed') {
+          if (hDistribution !== "fixed") {
             const availableSpace = furnitureWidth - totalFrameWidth;
 
             switch (hDistribution) {
-              case 'space-between':
-                effectiveHSpacing =
-                  framesInRow > 1 ? availableSpace / (framesInRow - 1) : 0;
+              case "space-between":
+                effectiveHSpacing = framesInRow > 1 ? availableSpace / (framesInRow - 1) : 0;
                 rowStartX = furnitureLeft;
                 break;
-              case 'space-evenly':
+              case "space-evenly":
                 effectiveHSpacing = availableSpace / (framesInRow + 1);
                 rowStartX = furnitureLeft + effectiveHSpacing;
                 break;
-              case 'space-around':
+              case "space-around":
                 effectiveHSpacing = availableSpace / framesInRow;
                 rowStartX = furnitureLeft + effectiveHSpacing / 2;
                 break;
@@ -233,9 +221,9 @@ export function calculateLayoutPositions(
           } else {
             rowStartX = furnitureCenterX - fixedRowWidth / 2;
           }
-        } else if (frameFurnitureAlign === 'center') {
+        } else if (frameFurnitureAlign === "center") {
           rowStartX = furnitureCenterX - fixedRowWidth / 2;
-        } else if (frameFurnitureAlign === 'left') {
+        } else if (frameFurnitureAlign === "left") {
           rowStartX = furnitureLeft;
         } else {
           // right
@@ -243,9 +231,9 @@ export function calculateLayoutPositions(
         }
       } else {
         // Standard anchor-based positioning
-        if (hAnchorType === 'center') {
+        if (hAnchorType === "center") {
           rowStartX = (wallWidth - fixedRowWidth) / 2;
-        } else if (hAnchorType === 'left') {
+        } else if (hAnchorType === "left") {
           rowStartX = hAnchorValue;
         } else {
           rowStartX = wallWidth - fixedRowWidth - hAnchorValue;
@@ -260,9 +248,9 @@ export function calculateLayoutPositions(
 
       // Position frame vertically within row based on vAlign
       let y: number;
-      if (row.vAlign === 'top') {
+      if (row.vAlign === "top") {
         y = currentRowY;
-      } else if (row.vAlign === 'bottom') {
+      } else if (row.vAlign === "bottom") {
         y = currentRowY + row.height - dims.height;
       } else {
         // center
@@ -275,7 +263,7 @@ export function calculateLayoutPositions(
       let hookX2: number | undefined;
       let hookGap: number | undefined;
 
-      if (hangingType === 'dual') {
+      if (hangingType === "dual") {
         hookX = currentX + hookInset;
         hookX2 = currentX + dims.width - hookInset;
         hookGap = dims.width - 2 * hookInset;
@@ -284,10 +272,7 @@ export function calculateLayoutPositions(
       }
 
       const isOutOfBounds =
-        currentX < 0 ||
-        y < 0 ||
-        currentX + dims.width > wallWidth ||
-        y + dims.height > wallHeight;
+        currentX < 0 || y < 0 || currentX + dims.width > wallWidth || y + dims.height > wallHeight;
 
       positions.push({
         id: originalIndex + 1,

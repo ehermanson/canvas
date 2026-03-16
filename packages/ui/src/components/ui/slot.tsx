@@ -1,12 +1,10 @@
-import { cn } from '../../lib/utils';
-import * as React from 'react';
+import { cn } from "../../lib/utils";
+import * as React from "react";
 
-function composeRefs<T>(
-  ...refs: Array<React.Ref<T> | undefined>
-): React.RefCallback<T> {
+function composeRefs<T>(...refs: Array<React.Ref<T> | undefined>): React.RefCallback<T> {
   return (node) => {
     for (const ref of refs) {
-      if (typeof ref === 'function') {
+      if (typeof ref === "function") {
         ref(node);
         continue;
       }
@@ -29,10 +27,10 @@ function isEventHandler(key: string) {
   return /^on[A-Z]/.test(key);
 }
 
-function mergeElementProps<
-  T extends Record<string, unknown>,
-  U extends Record<string, unknown>,
->(slotProps: T, childProps: U) {
+function mergeElementProps<T extends Record<string, unknown>, U extends Record<string, unknown>>(
+  slotProps: T,
+  childProps: U,
+) {
   const mergedProps: Record<string, unknown> = {
     ...slotProps,
     ...childProps,
@@ -46,7 +44,7 @@ function mergeElementProps<
     const childHandler = childProps[key];
     const slotHandler = slotProps[key];
 
-    if (typeof childHandler === 'function' && typeof slotHandler === 'function') {
+    if (typeof childHandler === "function" && typeof slotHandler === "function") {
       mergedProps[key] = (...args: unknown[]) => {
         childHandler(...args);
         slotHandler(...args);
@@ -68,14 +66,8 @@ function mergeElementProps<
   return mergedProps as T & U;
 }
 
-function cloneElementWithProps(
-  element: React.ReactElement,
-  props: Record<string, unknown>,
-) {
-  const mergedProps = mergeElementProps(
-    props,
-    element.props as Record<string, unknown>,
-  );
+function cloneElementWithProps(element: React.ReactElement, props: Record<string, unknown>) {
+  const mergedProps = mergeElementProps(props, element.props as Record<string, unknown>);
 
   const ref = props.ref as React.Ref<unknown> | undefined;
   const childRef = getElementRef(element);
@@ -92,19 +84,14 @@ type SlotProps = React.HTMLAttributes<HTMLElement> & {
   [key: string]: unknown;
 };
 
-const Slot = React.forwardRef<HTMLElement, SlotProps>(
-  function Slot(
-    { children, ...props },
-    ref,
-  ) {
-    const child = React.Children.only(children);
+const Slot = React.forwardRef<HTMLElement, SlotProps>(function Slot({ children, ...props }, ref) {
+  const child = React.Children.only(children);
 
-    if (!React.isValidElement(child)) {
-      return null;
-    }
+  if (!React.isValidElement(child)) {
+    return null;
+  }
 
-    return cloneElementWithProps(child, { ...props, ref });
-  },
-);
+  return cloneElementWithProps(child, { ...props, ref });
+});
 
 export { Slot, cloneElementWithProps };

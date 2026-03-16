@@ -1,12 +1,12 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from "vite-plus/test";
 
 import {
   calculateFitViewState,
   getWallInteriorUnitNormal,
   getWallLabelLayout,
   shouldDrawSelectedWallMeasurements,
-} from '@/components/canvas';
-import type { Point } from '@/types';
+} from "@/components/canvas";
+import type { Point } from "@/types";
 
 const ROOM_POINTS: Point[] = [
   { x: 0, y: 0 },
@@ -19,12 +19,7 @@ function doRectsOverlap(
   a: { maxX: number; maxY: number; minX: number; minY: number },
   b: { maxX: number; maxY: number; minX: number; minY: number },
 ) {
-  return !(
-    a.maxX < b.minX ||
-    a.minX > b.maxX ||
-    a.maxY < b.minY ||
-    a.minY > b.maxY
-  );
+  return !(a.maxX < b.minX || a.minX > b.maxX || a.maxY < b.minY || a.minY > b.maxY);
 }
 
 function doesCircleOverlapRect(
@@ -39,8 +34,8 @@ function doesCircleOverlapRect(
   return dx * dx + dy * dy <= circle.radius * circle.radius;
 }
 
-describe('calculateFitViewState', () => {
-  it('returns null when the viewport cannot accommodate fit padding', () => {
+describe("calculateFitViewState", () => {
+  it("returns null when the viewport cannot accommodate fit padding", () => {
     expect(
       calculateFitViewState(
         {
@@ -56,7 +51,7 @@ describe('calculateFitViewState', () => {
     ).toBeNull();
   });
 
-  it('returns a positive zoom for a valid viewport', () => {
+  it("returns a positive zoom for a valid viewport", () => {
     const fitView = calculateFitViewState(
       {
         centerX: 600,
@@ -79,33 +74,25 @@ describe('calculateFitViewState', () => {
   });
 });
 
-describe('getWallInteriorUnitNormal', () => {
+describe("getWallInteriorUnitNormal", () => {
   const roomCentroid = { x: 72, y: 60 };
 
-  it('points into the room for the top wall of a rectangle', () => {
-    const normal = getWallInteriorUnitNormal(
-      { x: 0, y: 0 },
-      { x: 144, y: 0 },
-      roomCentroid,
-    );
+  it("points into the room for the top wall of a rectangle", () => {
+    const normal = getWallInteriorUnitNormal({ x: 0, y: 0 }, { x: 144, y: 0 }, roomCentroid);
 
     expect(normal.x).toBeCloseTo(0);
     expect(normal.y).toBeCloseTo(1);
   });
 
-  it('points into the room for the left wall of a rectangle', () => {
-    const normal = getWallInteriorUnitNormal(
-      { x: 0, y: 120 },
-      { x: 0, y: 0 },
-      roomCentroid,
-    );
+  it("points into the room for the left wall of a rectangle", () => {
+    const normal = getWallInteriorUnitNormal({ x: 0, y: 120 }, { x: 0, y: 0 }, roomCentroid);
 
     expect(normal.x).toBeCloseTo(1);
     expect(normal.y).toBeCloseTo(0);
   });
 });
 
-describe('getWallLabelLayout', () => {
+describe("getWallLabelLayout", () => {
   const canvasBounds = {
     maxX: 500,
     maxY: 500,
@@ -113,7 +100,7 @@ describe('getWallLabelLayout', () => {
     minY: 0,
   };
 
-  it('moves labels far enough outward to clear endpoint handles on short walls', () => {
+  it("moves labels far enough outward to clear endpoint handles on short walls", () => {
     const endpointObstacles = [
       { center: { x: 80, y: 100 }, radius: 15 },
       { center: { x: 120, y: 100 }, radius: 15 },
@@ -130,14 +117,12 @@ describe('getWallLabelLayout', () => {
     });
 
     expect(layout.bounds.maxY).toBeLessThan(100);
-    expect(
-      endpointObstacles.some((circle) =>
-        doesCircleOverlapRect(circle, layout.bounds),
-      ),
-    ).toBe(false);
+    expect(endpointObstacles.some((circle) => doesCircleOverlapRect(circle, layout.bounds))).toBe(
+      false,
+    );
   });
 
-  it('avoids previously placed label bounds', () => {
+  it("avoids previously placed label bounds", () => {
     const obstacleRect = {
       maxX: 145,
       maxY: 70,
@@ -159,28 +144,28 @@ describe('getWallLabelLayout', () => {
   });
 });
 
-describe('shouldDrawSelectedWallMeasurements', () => {
-  it('returns false when the selected wall would only duplicate the default full-wall label', () => {
+describe("shouldDrawSelectedWallMeasurements", () => {
+  it("returns false when the selected wall would only duplicate the default full-wall label", () => {
     expect(shouldDrawSelectedWallMeasurements(120, [])).toBe(false);
     expect(
       shouldDrawSelectedWallMeasurements(120, [
         {
-          id: 'window-1',
+          id: "window-1",
           offset: 24,
-          type: 'window',
+          type: "window",
           width: 24,
         },
       ]),
     ).toBe(false);
   });
 
-  it('returns true when blocking features split the wall into meaningful spans', () => {
+  it("returns true when blocking features split the wall into meaningful spans", () => {
     expect(
       shouldDrawSelectedWallMeasurements(120, [
         {
-          id: 'door-1',
+          id: "door-1",
           offset: 48,
-          type: 'door',
+          type: "door",
           width: 24,
         },
       ]),

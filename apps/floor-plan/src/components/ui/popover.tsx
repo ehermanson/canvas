@@ -1,6 +1,1 @@
-export {
-  Popover,
-  PopoverAnchor,
-  PopoverContent,
-  PopoverTrigger,
-} from '@canvas-tools/ui';
+export { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from "@canvas-tools/ui";

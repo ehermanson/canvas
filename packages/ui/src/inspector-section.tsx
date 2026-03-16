@@ -5,9 +5,7 @@ import { cn } from "./lib/utils";
 
 type InspectorSectionHeaderVariant = "badge" | "inline";
 
-interface InspectorSectionHeaderProps extends React.ComponentProps<
-  typeof CollapsibleTrigger
-> {
+interface InspectorSectionHeaderProps extends React.ComponentProps<typeof CollapsibleTrigger> {
   description?: React.ReactNode;
   descriptionClassName?: string;
   icon: React.ComponentType<{ className?: string }>;
@@ -74,10 +72,7 @@ function InspectorSectionHeader({
     <CollapsibleTrigger className={cn("group w-full", className)} {...props}>
       <h3 className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-white/90">
         <span
-          className={cn(
-            "flex h-6 w-6 items-center justify-center rounded-lg",
-            iconBadgeClassName,
-          )}
+          className={cn("flex h-6 w-6 items-center justify-center rounded-lg", iconBadgeClassName)}
         >
           <Icon className={cn("h-3.5 w-3.5", iconClassName)} />
         </span>

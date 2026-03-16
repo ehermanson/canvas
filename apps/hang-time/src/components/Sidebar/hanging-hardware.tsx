@@ -1,11 +1,11 @@
-import { InspectorOptionCard, InspectorSectionHeader } from '@canvas-tools/ui';
-import { CircleDot } from 'lucide-react';
-import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible';
-import { Field, FieldLabel } from '@/components/ui/field';
-import { Input } from '@/components/ui/input';
-import type { UseCalculatorReturn } from '@/hooks/use-calculator';
-import { cn } from '@/lib/utils';
-import type { HangingType } from '@/types';
+import { InspectorOptionCard, InspectorSectionHeader } from "@canvas-tools/ui";
+import { CircleDot } from "lucide-react";
+import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
+import { Field, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import type { UseCalculatorReturn } from "@/hooks/use-calculator";
+import { cn } from "@/lib/utils";
+import type { HangingType } from "@/types";
 
 // Custom icons for hook types
 function SingleHookIcon({ className }: { className?: string }) {
@@ -25,14 +25,7 @@ function SingleHookIcon({ className }: { className?: string }) {
       {/* Single hook at center */}
       <circle cx="12" cy="7" r="2" fill="currentColor" />
       {/* Hook line to top */}
-      <line
-        x1="12"
-        y1="4"
-        x2="12"
-        y2="5"
-        stroke="currentColor"
-        strokeWidth="1.5"
-      />
+      <line x1="12" y1="4" x2="12" y2="5" stroke="currentColor" strokeWidth="1.5" />
     </svg>
   );
 }
@@ -53,24 +46,10 @@ function DualHookIcon({ className }: { className?: string }) {
       />
       {/* Left hook */}
       <circle cx="7" cy="7" r="2" fill="currentColor" />
-      <line
-        x1="7"
-        y1="4"
-        x2="7"
-        y2="5"
-        stroke="currentColor"
-        strokeWidth="1.5"
-      />
+      <line x1="7" y1="4" x2="7" y2="5" stroke="currentColor" strokeWidth="1.5" />
       {/* Right hook */}
       <circle cx="17" cy="7" r="2" fill="currentColor" />
-      <line
-        x1="17"
-        y1="4"
-        x2="17"
-        y2="5"
-        stroke="currentColor"
-        strokeWidth="1.5"
-      />
+      <line x1="17" y1="4" x2="17" y2="5" stroke="currentColor" strokeWidth="1.5" />
     </svg>
   );
 }
@@ -80,8 +59,8 @@ const HANGING_TYPE_OPTIONS: {
   label: string;
   icon: typeof SingleHookIcon;
 }[] = [
-  { value: 'center', label: 'Single', icon: SingleHookIcon },
-  { value: 'dual', label: 'Dual', icon: DualHookIcon },
+  { value: "center", label: "Single", icon: SingleHookIcon },
+  { value: "dual", label: "Dual", icon: DualHookIcon },
 ];
 
 interface Props {
@@ -89,14 +68,10 @@ interface Props {
 }
 
 export function HangingHardware({ calculator }: Props) {
-  const { state, u, fromU, setHangingOffset, setHangingType, setHookInset } =
-    calculator;
+  const { state, u, fromU, setHangingOffset, setHangingType, setHookInset } = calculator;
 
   return (
-    <Collapsible
-      defaultOpen
-      className="border-b border-gray-200 dark:border-white/10"
-    >
+    <Collapsible defaultOpen className="border-b border-gray-200 dark:border-white/10">
       <InspectorSectionHeader
         icon={CircleDot}
         iconClassName="text-cyan-500"
@@ -121,24 +96,21 @@ export function HangingHardware({ calculator }: Props) {
                     tone="cyan"
                     className="p-2"
                   >
-                    <button
-                      onClick={() => setHangingType(option.value)}
-                      type="button"
-                    >
+                    <button onClick={() => setHangingType(option.value)} type="button">
                       <Icon
                         className={cn(
-                          'h-6 w-8',
+                          "h-6 w-8",
                           isSelected
-                            ? 'text-cyan-600 dark:text-cyan-400'
-                            : 'text-gray-400 dark:text-white/40',
+                            ? "text-cyan-600 dark:text-cyan-400"
+                            : "text-gray-400 dark:text-white/40",
                         )}
                       />
                       <span
                         className={cn(
-                          'text-xs font-medium mt-1',
+                          "text-xs font-medium mt-1",
                           isSelected
-                            ? 'text-cyan-600 dark:text-cyan-300'
-                            : 'text-gray-600 dark:text-white/60',
+                            ? "text-cyan-600 dark:text-cyan-300"
+                            : "text-gray-600 dark:text-white/60",
                         )}
                       >
                         {option.label}
@@ -152,18 +124,14 @@ export function HangingHardware({ calculator }: Props) {
 
           {/* Hook Offset from Top */}
           <Field>
-            <FieldLabel htmlFor="hanging-offset">
-              Hook Offset from Top ({state.unit})
-            </FieldLabel>
+            <FieldLabel htmlFor="hanging-offset">Hook Offset from Top ({state.unit})</FieldLabel>
             <Input
               id="hanging-offset"
               type="number"
               step="0.125"
               min={0}
               value={parseFloat(u(state.hangingOffset).toFixed(3))}
-              onChange={(e) =>
-                setHangingOffset(fromU(parseFloat(e.target.value) || 0))
-              }
+              onChange={(e) => setHangingOffset(fromU(parseFloat(e.target.value) || 0))}
               className="h-8 text-sm"
             />
             <p className="text-[10px] text-gray-400 dark:text-white/40 mt-1">
@@ -172,20 +140,16 @@ export function HangingHardware({ calculator }: Props) {
           </Field>
 
           {/* Hook Inset (only for dual) */}
-          {state.hangingType === 'dual' && (
+          {state.hangingType === "dual" && (
             <Field>
-              <FieldLabel htmlFor="hook-inset">
-                Hook Inset ({state.unit})
-              </FieldLabel>
+              <FieldLabel htmlFor="hook-inset">Hook Inset ({state.unit})</FieldLabel>
               <Input
                 id="hook-inset"
                 type="number"
                 step="0.125"
                 min={0}
                 value={parseFloat(u(state.hookInset).toFixed(3))}
-                onChange={(e) =>
-                  setHookInset(fromU(parseFloat(e.target.value) || 0))
-                }
+                onChange={(e) => setHookInset(fromU(parseFloat(e.target.value) || 0))}
                 className="h-8 text-sm"
               />
               <p className="text-[10px] text-gray-400 dark:text-white/40 mt-1">

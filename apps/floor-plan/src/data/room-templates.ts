@@ -1,9 +1,9 @@
-import type { RoomTemplate } from '@/types';
+import type { RoomTemplate } from "@/types";
 
 export const ROOM_TEMPLATES: RoomTemplate[] = [
   {
-    name: 'Rectangle (12x10)',
-    description: 'Standard rectangular room',
+    name: "Rectangle (12x10)",
+    description: "Standard rectangular room",
     vertices: [
       { x: 0, y: 0 },
       { x: 144, y: 0 },
@@ -12,8 +12,8 @@ export const ROOM_TEMPLATES: RoomTemplate[] = [
     ],
   },
   {
-    name: 'Square (12x12)',
-    description: 'Square room',
+    name: "Square (12x12)",
+    description: "Square room",
     vertices: [
       { x: 0, y: 0 },
       { x: 144, y: 0 },
@@ -22,8 +22,8 @@ export const ROOM_TEMPLATES: RoomTemplate[] = [
     ],
   },
   {
-    name: 'Large (16x14)',
-    description: 'Large rectangular room',
+    name: "Large (16x14)",
+    description: "Large rectangular room",
     vertices: [
       { x: 0, y: 0 },
       { x: 192, y: 0 },
@@ -32,8 +32,8 @@ export const ROOM_TEMPLATES: RoomTemplate[] = [
     ],
   },
   {
-    name: 'L-Shape',
-    description: 'L-shaped room',
+    name: "L-Shape",
+    description: "L-shaped room",
     vertices: [
       { x: 0, y: 0 },
       { x: 192, y: 0 },
@@ -44,8 +44,8 @@ export const ROOM_TEMPLATES: RoomTemplate[] = [
     ],
   },
   {
-    name: 'T-Shape',
-    description: 'T-shaped room',
+    name: "T-Shape",
+    description: "T-shaped room",
     vertices: [
       { x: 48, y: 0 },
       { x: 192, y: 0 },
@@ -59,8 +59,8 @@ export const ROOM_TEMPLATES: RoomTemplate[] = [
     ],
   },
   {
-    name: 'Studio Apartment',
-    description: 'Open studio with alcove',
+    name: "Studio Apartment",
+    description: "Open studio with alcove",
     vertices: [
       { x: 0, y: 0 },
       { x: 240, y: 0 },
@@ -73,8 +73,8 @@ export const ROOM_TEMPLATES: RoomTemplate[] = [
     ],
   },
   {
-    name: 'Bay Window',
-    description: 'Room with bay window bump-out',
+    name: "Bay Window",
+    description: "Room with bay window bump-out",
     vertices: [
       { x: 0, y: 0 },
       { x: 48, y: 0 },

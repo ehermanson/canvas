@@ -1,18 +1,19 @@
 {
   "name": "@canvas-tools/viewport",
-  "private": true,
   "version": "1.0.0",
+  "private": true,
   "type": "module",
   "exports": {
     ".": "./src/index.ts"
   },
-  "peerDependencies": {
-    "react": "^19.2.0"
+  "scripts": {
+    "test": "vp test run"
   },
   "devDependencies": {
-    "vitest": "^4.0.17"
+    "vite-plus": "latest",
+    "vitest": "npm:@voidzero-dev/vite-plus-test@latest"
   },
-  "scripts": {
-    "test": "vitest run"
+  "peerDependencies": {
+    "react": "^19.2.0"
   }
 }

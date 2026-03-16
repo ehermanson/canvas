@@ -1,31 +1,24 @@
-import { SuiteDialogContent } from '@canvas-tools/ui';
-import { Check, FolderOpen, Pencil, Trash2, X } from 'lucide-react';
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
+import { SuiteDialogContent } from "@canvas-tools/ui";
+import { Check, FolderOpen, Pencil, Trash2, X } from "lucide-react";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
-import { cn } from '@/lib/utils';
-import type { SavedLayout } from '@/types';
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
+import type { SavedLayout } from "@/types";
 
 interface SavedLayoutsDialogProps {
   layouts: SavedLayout[];
   onLoad: (layout: SavedLayout) => void;
   onDelete: (id: string) => void;
-  onRename: (
-    id: string,
-    newTitle: string,
-  ) => { success: boolean; error?: string };
+  onRename: (id: string, newTitle: string) => { success: boolean; error?: string };
   buttonClassName?: string;
   buttonLabel?: string;
   iconOnly?: boolean;
@@ -33,10 +26,10 @@ interface SavedLayoutsDialogProps {
 }
 
 function formatDate(timestamp: number): string {
-  return new Date(timestamp).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
+  return new Date(timestamp).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
   });
 }
 
@@ -51,7 +44,7 @@ export function SavedLayoutsDialog({
   tooltipLabel,
 }: SavedLayoutsDialogProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editValue, setEditValue] = useState('');
+  const [editValue, setEditValue] = useState("");
   const [editError, setEditError] = useState<string | null>(null);
 
   const startEditing = (layout: SavedLayout, e: React.MouseEvent) => {
@@ -64,7 +57,7 @@ export function SavedLayoutsDialog({
   const cancelEditing = (e: React.MouseEvent) => {
     e.stopPropagation();
     setEditingId(null);
-    setEditValue('');
+    setEditValue("");
     setEditError(null);
   };
 
@@ -75,28 +68,28 @@ export function SavedLayoutsDialog({
     const result = onRename(editingId, editValue);
     if (result.success) {
       setEditingId(null);
-      setEditValue('');
+      setEditValue("");
       setEditError(null);
     } else {
-      setEditError(result.error || 'Failed to rename');
+      setEditError(result.error || "Failed to rename");
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       e.stopPropagation();
       if (!editingId) return;
       const result = onRename(editingId, editValue);
       if (result.success) {
         setEditingId(null);
-        setEditValue('');
+        setEditValue("");
         setEditError(null);
       } else {
-        setEditError(result.error || 'Failed to rename');
+        setEditError(result.error || "Failed to rename");
       }
-    } else if (e.key === 'Escape') {
+    } else if (e.key === "Escape") {
       setEditingId(null);
-      setEditValue('');
+      setEditValue("");
       setEditError(null);
     }
   };
@@ -106,20 +99,12 @@ export function SavedLayoutsDialog({
       variant="outline"
       size="sm"
       className={cn(
-        iconOnly
-          ? 'h-9 w-9 rounded-xl p-0'
-          : buttonLabel
-            ? 'justify-start'
-            : 'flex-1',
+        iconOnly ? "h-9 w-9 rounded-xl p-0" : buttonLabel ? "justify-start" : "flex-1",
         buttonClassName,
       )}
-      aria-label={tooltipLabel ?? buttonLabel ?? 'Saved layouts'}
+      aria-label={tooltipLabel ?? buttonLabel ?? "Saved layouts"}
     >
-      <FolderOpen
-        className={
-          iconOnly ? 'h-4 w-4' : buttonLabel ? 'mr-2 h-4 w-4' : 'size-4'
-        }
-      />
+      <FolderOpen className={iconOnly ? "h-4 w-4" : buttonLabel ? "mr-2 h-4 w-4" : "size-4"} />
       {!iconOnly && buttonLabel ? <span>{buttonLabel}</span> : null}
     </Button>
   );
@@ -129,9 +114,7 @@ export function SavedLayoutsDialog({
       {iconOnly ? (
         <Tooltip>
           <TooltipTrigger render={<DialogTrigger render={triggerButton} />} />
-          <TooltipContent>
-            {tooltipLabel ?? buttonLabel ?? 'Saved layouts'}
-          </TooltipContent>
+          <TooltipContent>{tooltipLabel ?? buttonLabel ?? "Saved layouts"}</TooltipContent>
         </Tooltip>
       ) : (
         <DialogTrigger render={triggerButton} />
@@ -145,9 +128,7 @@ export function SavedLayoutsDialog({
         {layouts.length === 0 ? (
           <div className="py-8 text-center text-gray-500 dark:text-white/50">
             <p>No saved layouts yet.</p>
-            <p className="text-sm mt-1">
-              Use the Save button to save your current layout.
-            </p>
+            <p className="text-sm mt-1">Use the Save button to save your current layout.</p>
           </div>
         ) : (
           <div className="space-y-2 max-h-80 overflow-y-auto">
@@ -159,10 +140,7 @@ export function SavedLayoutsDialog({
               >
                 <div className="flex-1 min-w-0">
                   {editingId === layout.id ? (
-                    <div
-                      className="space-y-1"
-                      onClick={(e) => e.stopPropagation()}
-                    >
+                    <div className="space-y-1" onClick={(e) => e.stopPropagation()}>
                       <Input
                         value={editValue}
                         onChange={(e) => {
@@ -171,12 +149,10 @@ export function SavedLayoutsDialog({
                         }}
                         onKeyDown={handleKeyDown}
                         autoFocus
-                        className={`h-8 ${editError ? 'border-red-500' : ''}`}
+                        className={`h-8 ${editError ? "border-red-500" : ""}`}
                       />
                       {editError && (
-                        <p className="text-xs text-red-500 dark:text-red-400">
-                          {editError}
-                        </p>
+                        <p className="text-xs text-red-500 dark:text-red-400">{editError}</p>
                       )}
                     </div>
                   ) : (

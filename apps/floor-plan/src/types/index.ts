@@ -1,5 +1,5 @@
-export type Theme = 'light' | 'dark';
-export type Unit = 'in' | 'cm';
+export type Theme = "light" | "dark";
+export type Unit = "in" | "cm";
 
 // ── Geometry ──
 
@@ -18,15 +18,15 @@ export interface WallEndpoint {
 
 export interface WallFeature {
   id: string;
-  type: 'door' | 'window' | 'closet' | 'opening';
+  type: "door" | "window" | "closet" | "opening";
   /** Distance along the wall from start endpoint, in inches */
   offset: number;
   /** Width of the feature, in inches */
   width: number;
   /** Door swing direction (doors only) */
-  swingDirection?: 'inward' | 'outward';
+  swingDirection?: "inward" | "outward";
   /** Door hinge side (doors only) */
-  swingHand?: 'left' | 'right';
+  swingHand?: "left" | "right";
   /** Window height from floor (windows only), in inches */
   sillHeight?: number;
   /** Window/closet height, in inches */
@@ -52,24 +52,24 @@ export interface Room {
 // ── Furniture ──
 
 export type FurnitureType =
-  | 'desk'
-  | 'chair'
-  | 'couch'
-  | 'pullout-sofa'
-  | 'bed'
-  | 'table'
-  | 'dining-table'
-  | 'coffee-table'
-  | 'rug'
-  | 'bookshelf'
-  | 'dresser'
-  | 'nightstand'
-  | 'tv-stand'
-  | 'wardrobe'
-  | 'custom';
+  | "desk"
+  | "chair"
+  | "couch"
+  | "pullout-sofa"
+  | "bed"
+  | "table"
+  | "dining-table"
+  | "coffee-table"
+  | "rug"
+  | "bookshelf"
+  | "dresser"
+  | "nightstand"
+  | "tv-stand"
+  | "wardrobe"
+  | "custom";
 
-export type FurnitureShape = 'rectangle' | 'circle';
-export type PulloutBedSize = 'twin' | 'full' | 'queen' | 'king';
+export type FurnitureShape = "rectangle" | "circle";
+export type PulloutBedSize = "twin" | "full" | "queen" | "king";
 
 export interface PulloutSofaState {
   bedSize: PulloutBedSize;
@@ -144,7 +144,7 @@ export interface PlannerProjectStore {
 export interface PlannerProjectExport {
   version: number;
   exportedAt: string;
-  project: Omit<PlannerProject, 'id'>;
+  project: Omit<PlannerProject, "id">;
 }
 
 // ── Undo/Redo ──

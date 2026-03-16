@@ -1,1 +1,1 @@
-export { Input } from '@canvas-tools/ui';
+export { Input } from "@canvas-tools/ui";

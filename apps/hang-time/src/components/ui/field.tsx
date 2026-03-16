@@ -9,4 +9,4 @@ export {
   FieldSeparator,
   FieldSet,
   FieldTitle,
-} from '@canvas-tools/ui';
+} from "@canvas-tools/ui";

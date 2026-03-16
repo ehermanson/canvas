@@ -1,19 +1,16 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { Canvas } from '@/components/canvas';
-import { Sidebar } from '@/components/Sidebar/sidebar';
-import { useRoomPlanner } from '@/hooks/use-floor-planner';
-import type { PlannerProjectsReturn } from '@/hooks/use-planner-projects';
-import { usePlannerProjects } from '@/hooks/use-planner-projects';
-import { ThemeProvider, useTheme } from '@/hooks/use-theme';
-import { cn } from '@/lib/utils';
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { Canvas } from "@/components/canvas";
+import { Sidebar } from "@/components/Sidebar/sidebar";
+import { useRoomPlanner } from "@/hooks/use-floor-planner";
+import type { PlannerProjectsReturn } from "@/hooks/use-planner-projects";
+import { usePlannerProjects } from "@/hooks/use-planner-projects";
+import { ThemeProvider, useTheme } from "@/hooks/use-theme";
+import { cn } from "@/lib/utils";
 
 function PlannerWorkspace({ projects }: { projects: PlannerProjectsReturn }) {
   const { activeProject, activeSnapshot, updateSnapshotState } = projects;
   const activeLayoutKey = `${activeProject.id}:${activeSnapshot.id}`;
-  const planner = useRoomPlanner(
-    projects.activeSnapshot.state,
-    activeLayoutKey,
-  );
+  const planner = useRoomPlanner(projects.activeSnapshot.state, activeLayoutKey);
   const lastLoadedLayoutKeyRef = useRef(activeLayoutKey);
   const [canvasLayoutKey, setCanvasLayoutKey] = useState(activeLayoutKey);
 
@@ -57,10 +54,10 @@ function AppContent() {
   return (
     <div
       className={cn(
-        'relative h-screen w-screen overflow-hidden transition-colors duration-300',
-        theme === 'dark'
-          ? 'bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950'
-          : 'bg-gradient-to-br from-slate-100 via-slate-50 to-indigo-50',
+        "relative h-screen w-screen overflow-hidden transition-colors duration-300",
+        theme === "dark"
+          ? "bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950"
+          : "bg-gradient-to-br from-slate-100 via-slate-50 to-indigo-50",
       )}
     >
       <PlannerWorkspace projects={projects} />

@@ -1,10 +1,6 @@
-import { Ruler } from 'lucide-react';
-import type { UseCalculatorReturn } from '@/hooks/use-calculator';
-import {
-  formatMeasurement,
-  formatShort,
-  toDisplayUnit,
-} from '@/utils/calculations';
+import { Ruler } from "lucide-react";
+import type { UseCalculatorReturn } from "@/hooks/use-calculator";
+import { formatMeasurement, formatShort, toDisplayUnit } from "@/utils/calculations";
 
 interface MeasurementsProps {
   calculator: UseCalculatorReturn;
@@ -13,10 +9,8 @@ interface MeasurementsProps {
 export function Measurements({ calculator }: MeasurementsProps) {
   const { state, layoutPositions } = calculator;
 
-  const fmt = (val: number) =>
-    formatMeasurement(toDisplayUnit(val, state.unit), state.unit);
-  const fmtShort = (val: number) =>
-    formatShort(toDisplayUnit(val, state.unit), state.unit);
+  const fmt = (val: number) => formatMeasurement(toDisplayUnit(val, state.unit), state.unit);
+  const fmtShort = (val: number) => formatShort(toDisplayUnit(val, state.unit), state.unit);
 
   return (
     <div className="space-y-3">
@@ -42,7 +36,7 @@ export function Measurements({ calculator }: MeasurementsProps) {
                   {fmt(frame.fromLeft)}
                 </div>
                 <div className="text-[10px] text-gray-500 dark:text-white/50">
-                  {frame.hookGap ? 'Left hook from edge' : 'From left edge'}
+                  {frame.hookGap ? "Left hook from edge" : "From left edge"}
                 </div>
               </div>
               {frame.hookGap ? (
@@ -50,35 +44,27 @@ export function Measurements({ calculator }: MeasurementsProps) {
                   <div className="text-base font-bold text-orange-500 dark:text-orange-400">
                     {fmt(frame.hookGap)}
                   </div>
-                  <div className="text-[10px] text-gray-500 dark:text-white/50">
-                    Hook gap
-                  </div>
+                  <div className="text-[10px] text-gray-500 dark:text-white/50">Hook gap</div>
                 </div>
               ) : (
                 <div className="text-center p-2 bg-white dark:bg-white/5 rounded-md">
                   <div className="text-base font-bold text-amber-500 dark:text-amber-400">
                     {fmt(frame.fromCeiling)}
                   </div>
-                  <div className="text-[10px] text-gray-500 dark:text-white/50">
-                    From ceiling
-                  </div>
+                  <div className="text-[10px] text-gray-500 dark:text-white/50">From ceiling</div>
                 </div>
               )}
               <div className="text-center p-2 bg-white dark:bg-white/5 rounded-md">
                 <div className="text-base font-bold text-emerald-500 dark:text-emerald-400">
                   {fmt(frame.fromFloor)}
                 </div>
-                <div className="text-[10px] text-gray-500 dark:text-white/50">
-                  From floor
-                </div>
+                <div className="text-[10px] text-gray-500 dark:text-white/50">From floor</div>
               </div>
               <div className="text-center p-2 bg-white dark:bg-white/5 rounded-md">
                 <div className="text-base font-bold text-gray-500 dark:text-white/60">
                   {fmtShort(frame.width)} × {fmtShort(frame.height)}
                 </div>
-                <div className="text-[10px] text-gray-500 dark:text-white/50">
-                  Frame size
-                </div>
+                <div className="text-[10px] text-gray-500 dark:text-white/50">Frame size</div>
               </div>
             </div>
           </div>

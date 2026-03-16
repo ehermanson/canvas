@@ -1,6 +1,1 @@
-export {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@canvas-tools/ui';
+export { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@canvas-tools/ui";

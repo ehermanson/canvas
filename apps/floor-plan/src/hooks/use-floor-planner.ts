@@ -1,25 +1,20 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { PULLOUT_SOFA_DEFAULTS } from '@/data/furniture-presets';
-import { getFurnitureBounds } from '@/lib/furniture-geometry';
-import { createId } from '@/lib/id';
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { PULLOUT_SOFA_DEFAULTS } from "@/data/furniture-presets";
+import { getFurnitureBounds } from "@/lib/furniture-geometry";
+import { createId } from "@/lib/id";
 import {
   areHistoryEntriesEqual,
   createHistoryEntry,
   loadPlannerHistoryState,
   persistPlannerHistoryState,
-} from '@/lib/planner-history';
+} from "@/lib/planner-history";
 import {
   createDefaultPlannerState,
   normalizePlannerState,
   verticesToRoom,
-} from '@/lib/planner-state';
-import { syncPulloutSofaItem } from '@/lib/pullout-sofa';
-import {
-  findRoomPolygon,
-  getBounds,
-  getWallLength,
-  rotatePointAround,
-} from '@/lib/room-geometry';
+} from "@/lib/planner-state";
+import { syncPulloutSofaItem } from "@/lib/pullout-sofa";
+import { findRoomPolygon, getBounds, getWallLength, rotatePointAround } from "@/lib/room-geometry";
 import type {
   FurnitureItem,
   FurniturePreset,
@@ -33,17 +28,14 @@ import type {
   Wall,
   WallEndpoint,
   WallFeature,
-} from '@/types';
+} from "@/types";
 
-const UNIT_STORAGE_KEY = 'floor-planner-unit';
-const LEGACY_UNIT_STORAGE_KEY = 'room-planner-unit';
+const UNIT_STORAGE_KEY = "floor-planner-unit";
+const LEGACY_UNIT_STORAGE_KEY = "room-planner-unit";
 
 const MAX_HISTORY = 50;
 
-function summarizeHistoryEntry(entry: {
-  furniture: FurnitureItem[];
-  room: Room;
-}) {
+function summarizeHistoryEntry(entry: { furniture: FurnitureItem[]; room: Room }) {
   return {
     endpointCount: entry.room.endpoints.length,
     furnitureCount: entry.furniture.length,
@@ -55,20 +47,13 @@ function normalizeRotation(rotation: number) {
   return ((rotation % 360) + 360) % 360;
 }
 
-function reorderFurnitureItems(
-  items: FurnitureItem[],
-  id: string,
-  targetIndex: number,
-) {
+function reorderFurnitureItems(items: FurnitureItem[], id: string, targetIndex: number) {
   const currentIndex = items.findIndex((item) => item.id === id);
   if (currentIndex === -1) {
     return items;
   }
 
-  const boundedTargetIndex = Math.max(
-    0,
-    Math.min(targetIndex, items.length - 1),
-  );
+  const boundedTargetIndex = Math.max(0, Math.min(targetIndex, items.length - 1));
   if (currentIndex === boundedTargetIndex) {
     return items;
   }
@@ -109,13 +94,10 @@ function getFurnitureGroupBounds(items: FurnitureItem[]) {
 
 function applyFurnitureTransforms(
   items: FurnitureItem[],
-  updates: Array<Pick<FurnitureItem, 'id' | 'rotation' | 'x' | 'y'>>,
+  updates: Array<Pick<FurnitureItem, "id" | "rotation" | "x" | "y">>,
 ) {
   const updateMap = new Map(
-    updates.map((update) => [
-      update.id,
-      { rotation: update.rotation, x: update.x, y: update.y },
-    ]),
+    updates.map((update) => [update.id, { rotation: update.rotation, x: update.x, y: update.y }]),
   );
 
   return items.map((item) => {
@@ -124,11 +106,7 @@ function applyFurnitureTransforms(
   });
 }
 
-function rotateFurnitureItems(
-  items: FurnitureItem[],
-  ids: string[],
-  rotationDegrees: number,
-) {
+function rotateFurnitureItems(items: FurnitureItem[], ids: string[], rotationDegrees: number) {
   const selectedIds = new Set(ids);
   const selectedItems = items.filter((item) => selectedIds.has(item.id));
   const rotatableItems = selectedItems.filter((item) => !item.locked);
@@ -161,15 +139,11 @@ function rotateFurnitureItems(
 
 function getSavedUnit() {
   const savedUnit =
-    localStorage.getItem(UNIT_STORAGE_KEY) ??
-    localStorage.getItem(LEGACY_UNIT_STORAGE_KEY);
-  return savedUnit === 'cm' ? 'cm' : 'in';
+    localStorage.getItem(UNIT_STORAGE_KEY) ?? localStorage.getItem(LEGACY_UNIT_STORAGE_KEY);
+  return savedUnit === "cm" ? "cm" : "in";
 }
 
-export function useRoomPlanner(
-  initialState?: RoomPlannerState,
-  historyKey?: string,
-) {
+export function useRoomPlanner(initialState?: RoomPlannerState, historyKey?: string) {
   const [initialPlannerState] = useState(() => {
     const fallbackUnit = getSavedUnit();
     return normalizePlannerState(
@@ -188,9 +162,7 @@ export function useRoomPlanner(
   const [room, setRoom] = useState(historyState.present.room);
   const [furniture, setFurniture] = useState(historyState.present.furniture);
   const [gridSnap, setGridSnap] = useState(initialPlannerState.gridSnap);
-  const [showMeasurements, setShowMeasurements] = useState(
-    initialPlannerState.showMeasurements,
-  );
+  const [showMeasurements, setShowMeasurements] = useState(initialPlannerState.showMeasurements);
   const [showGrid, setShowGrid] = useState(initialPlannerState.showGrid);
   const [neutralFurnitureColors, setNeutralFurnitureColors] = useState(
     initialPlannerState.neutralFurnitureColors,
@@ -199,41 +171,35 @@ export function useRoomPlanner(
   const [selectedWallId, setSelectedWallId] = useState<string | null>(null);
   const [activeHistoryKey, setActiveHistoryKey] = useState(historyKey ?? null);
 
-  const applyHistoryState = useCallback(
-    (nextHistoryState: PlannerHistoryState) => {
-      setHistoryState(nextHistoryState);
-      setRoom(structuredClone(nextHistoryState.present.room));
-      setFurniture(structuredClone(nextHistoryState.present.furniture));
-    },
-    [],
-  );
+  const applyHistoryState = useCallback((nextHistoryState: PlannerHistoryState) => {
+    setHistoryState(nextHistoryState);
+    setRoom(structuredClone(nextHistoryState.present.room));
+    setFurniture(structuredClone(nextHistoryState.present.furniture));
+  }, []);
 
-  const pushHistory = useCallback(
-    (newRoom: Room, newFurniture: FurnitureItem[]) => {
-      const nextEntry = createHistoryEntry(newRoom, newFurniture);
-      setHistoryState((prev) => {
-        if (areHistoryEntriesEqual(prev.present, nextEntry)) {
-          return prev;
-        }
+  const pushHistory = useCallback((newRoom: Room, newFurniture: FurnitureItem[]) => {
+    const nextEntry = createHistoryEntry(newRoom, newFurniture);
+    setHistoryState((prev) => {
+      if (areHistoryEntriesEqual(prev.present, nextEntry)) {
+        return prev;
+      }
 
-        const nextPast = [
-          ...prev.past,
-          createHistoryEntry(prev.present.room, prev.present.furniture),
-        ];
-        if (nextPast.length > MAX_HISTORY) {
-          nextPast.shift();
-        }
+      const nextPast = [
+        ...prev.past,
+        createHistoryEntry(prev.present.room, prev.present.furniture),
+      ];
+      if (nextPast.length > MAX_HISTORY) {
+        nextPast.shift();
+      }
 
-        return {
-          future: [],
-          navigationLocked: false,
-          past: nextPast,
-          present: nextEntry,
-        };
-      });
-    },
-    [],
-  );
+      return {
+        future: [],
+        navigationLocked: false,
+        past: nextPast,
+        present: nextEntry,
+      };
+    });
+  }, []);
 
   const undo = useCallback(() => {
     if (historyState.past.length === 0) return;
@@ -242,8 +208,7 @@ export function useRoomPlanner(
     applyHistoryState({
       future: [createHistoryEntry(room, furniture), ...historyState.future],
       navigationLocked:
-        historyState.navigationLocked &&
-        historyState.past.length + historyState.future.length > 0,
+        historyState.navigationLocked && historyState.past.length + historyState.future.length > 0,
       past: historyState.past.slice(0, -1),
       present: createHistoryEntry(entry.room, entry.furniture),
     });
@@ -257,20 +222,14 @@ export function useRoomPlanner(
     applyHistoryState({
       future: nextFuture,
       navigationLocked: historyState.navigationLocked && nextFuture.length > 0,
-      past: [...historyState.past, createHistoryEntry(room, furniture)].slice(
-        -MAX_HISTORY,
-      ),
+      past: [...historyState.past, createHistoryEntry(room, furniture)].slice(-MAX_HISTORY),
       present: createHistoryEntry(entry.room, entry.furniture),
     });
   }, [applyHistoryState, furniture, historyState, room]);
 
   const jumpToHistory = useCallback(
     (position: number) => {
-      const timeline = [
-        ...historyState.past,
-        historyState.present,
-        ...historyState.future,
-      ];
+      const timeline = [...historyState.past, historyState.present, ...historyState.future];
       const target = timeline[position];
       if (!target || position === historyState.past.length) {
         return;
@@ -295,8 +254,7 @@ export function useRoomPlanner(
   const isHistoryEditingLocked = historyState.navigationLocked;
 
   const returnToLatestHistory = useCallback(() => {
-    const latestPosition =
-      historyState.past.length + historyState.future.length;
+    const latestPosition = historyState.past.length + historyState.future.length;
     jumpToHistory(latestPosition);
   }, [historyState.future.length, historyState.past.length, jumpToHistory]);
 
@@ -308,31 +266,21 @@ export function useRoomPlanner(
     applyHistoryState({
       future: [],
       navigationLocked: false,
-      past: historyState.past.map((entry) =>
-        createHistoryEntry(entry.room, entry.furniture),
-      ),
-      present: createHistoryEntry(
-        historyState.present.room,
-        historyState.present.furniture,
-      ),
+      past: historyState.past.map((entry) => createHistoryEntry(entry.room, entry.furniture)),
+      present: createHistoryEntry(historyState.present.room, historyState.present.furniture),
     });
-  }, [
-    applyHistoryState,
-    historyState.future.length,
-    historyState.past,
-    historyState.present,
-  ]);
+  }, [applyHistoryState, historyState.future.length, historyState.past, historyState.present]);
 
   // ── Unit conversion ──
   const CM_PER_INCH = 2.54;
 
   const toDisplay = useCallback(
-    (inches: number) => (unit === 'cm' ? inches * CM_PER_INCH : inches),
+    (inches: number) => (unit === "cm" ? inches * CM_PER_INCH : inches),
     [unit],
   );
 
   const fromDisplay = useCallback(
-    (value: number) => (unit === 'cm' ? value / CM_PER_INCH : value),
+    (value: number) => (unit === "cm" ? value / CM_PER_INCH : value),
     [unit],
   );
 
@@ -363,8 +311,7 @@ export function useRoomPlanner(
     [activeHistoryKey, applyHistoryState],
   );
 
-  const selectedId =
-    selectedIds.length > 0 ? selectedIds[selectedIds.length - 1] : null;
+  const selectedId = selectedIds.length > 0 ? selectedIds[selectedIds.length - 1] : null;
 
   const setSelectedId = useCallback((id: string | null) => {
     setSelectedIds(id ? [id] : []);
@@ -372,25 +319,20 @@ export function useRoomPlanner(
 
   const toggleSelectedId = useCallback((id: string) => {
     setSelectedIds((current) =>
-      current.includes(id)
-        ? current.filter((selected) => selected !== id)
-        : [...current, id],
+      current.includes(id) ? current.filter((selected) => selected !== id) : [...current, id],
     );
   }, []);
 
   // ── Endpoint helpers ──
 
   const getEndpoint = useCallback(
-    (id: string): WallEndpoint | undefined =>
-      room.endpoints.find((e) => e.id === id),
+    (id: string): WallEndpoint | undefined => room.endpoints.find((e) => e.id === id),
     [room.endpoints],
   );
 
   const getWallsForEndpoint = useCallback(
     (endpointId: string): Wall[] =>
-      room.walls.filter(
-        (w) => w.startId === endpointId || w.endId === endpointId,
-      ),
+      room.walls.filter((w) => w.startId === endpointId || w.endId === endpointId),
     [room.walls],
   );
 
@@ -487,7 +429,7 @@ export function useRoomPlanner(
         const seen = new Set<string>();
         const dedupedWalls = walls.filter((w) => {
           if (w.startId === w.endId) return false; // self-loop
-          const key = [w.startId, w.endId].sort().join('-');
+          const key = [w.startId, w.endId].sort().join("-");
           if (seen.has(key)) return false;
           seen.add(key);
           return true;
@@ -565,9 +507,7 @@ export function useRoomPlanner(
           let dx = 0;
           let dy = 0;
           if (other) {
-            const len = Math.sqrt(
-              (other.x - ep.x) ** 2 + (other.y - ep.y) ** 2,
-            );
+            const len = Math.sqrt((other.x - ep.x) ** 2 + (other.y - ep.y) ** 2);
             if (len > 0) {
               dx = ((other.x - ep.x) / len) * offset;
               dy = ((other.y - ep.y) / len) * offset;
@@ -597,9 +537,7 @@ export function useRoomPlanner(
         }
 
         // Replace the original endpoint with its nudged version, add new ones
-        const endpoints = prev.endpoints.map((e) =>
-          e.id === endpointId ? newEndpoints[0] : e,
-        );
+        const endpoints = prev.endpoints.map((e) => (e.id === endpointId ? newEndpoints[0] : e));
         for (let i = 1; i < newEndpoints.length; i++) {
           endpoints.push(newEndpoints[i]);
         }
@@ -669,7 +607,7 @@ export function useRoomPlanner(
   // ── Wall features ──
 
   const addWallFeature = useCallback(
-    (wallId: string, feature: Omit<WallFeature, 'id'>) => {
+    (wallId: string, feature: Omit<WallFeature, "id">) => {
       setRoom((prev) => {
         const walls = prev.walls.map((w) =>
           w.id === wallId
@@ -694,9 +632,7 @@ export function useRoomPlanner(
           w.id === wallId
             ? {
                 ...w,
-                features: w.features.map((f) =>
-                  f.id === featureId ? { ...f, ...updates } : f,
-                ),
+                features: w.features.map((f) => (f.id === featureId ? { ...f, ...updates } : f)),
               }
             : w,
         );
@@ -712,9 +648,7 @@ export function useRoomPlanner(
     (wallId: string, featureId: string) => {
       setRoom((prev) => {
         const walls = prev.walls.map((w) =>
-          w.id === wallId
-            ? { ...w, features: w.features.filter((f) => f.id !== featureId) }
-            : w,
+          w.id === wallId ? { ...w, features: w.features.filter((f) => f.id !== featureId) } : w,
         );
         const updated = { ...prev, walls };
         pushHistory(updated, furniture);
@@ -725,24 +659,21 @@ export function useRoomPlanner(
   );
 
   /** Move a wall feature during drag (no history push) */
-  const moveWallFeature = useCallback(
-    (wallId: string, featureId: string, newOffset: number) => {
-      setRoom((prev) => {
-        const walls = prev.walls.map((w) =>
-          w.id === wallId
-            ? {
-                ...w,
-                features: w.features.map((f) =>
-                  f.id === featureId ? { ...f, offset: newOffset } : f,
-                ),
-              }
-            : w,
-        );
-        return { ...prev, walls };
-      });
-    },
-    [],
-  );
+  const moveWallFeature = useCallback((wallId: string, featureId: string, newOffset: number) => {
+    setRoom((prev) => {
+      const walls = prev.walls.map((w) =>
+        w.id === wallId
+          ? {
+              ...w,
+              features: w.features.map((f) =>
+                f.id === featureId ? { ...f, offset: newOffset } : f,
+              ),
+            }
+          : w,
+      );
+      return { ...prev, walls };
+    });
+  }, []);
 
   const commitFeatureMove = useCallback(() => {
     setRoom((prev) => {
@@ -753,12 +684,7 @@ export function useRoomPlanner(
 
   /** Transfer a feature from one wall to another during drag (no history push) */
   const moveFeatureToWall = useCallback(
-    (
-      fromWallId: string,
-      toWallId: string,
-      featureId: string,
-      newOffset: number,
-    ) => {
+    (fromWallId: string, toWallId: string, featureId: string, newOffset: number) => {
       setRoom((prev) => {
         const fromWall = prev.walls.find((w) => w.id === fromWallId);
         if (!fromWall) return prev;
@@ -811,12 +737,8 @@ export function useRoomPlanner(
         const wall = prev.walls.find((entry) => entry.id === wallId);
         if (!wall) return prev;
 
-        const start = prev.endpoints.find(
-          (endpoint) => endpoint.id === wall.startId,
-        );
-        const end = prev.endpoints.find(
-          (endpoint) => endpoint.id === wall.endId,
-        );
+        const start = prev.endpoints.find((endpoint) => endpoint.id === wall.startId);
+        const end = prev.endpoints.find((endpoint) => endpoint.id === wall.endId);
         const feature = wall.features.find((entry) => entry.id === featureId);
         if (!start || !end || !feature) return prev;
 
@@ -849,10 +771,7 @@ export function useRoomPlanner(
   // ── Furniture mutations ──
 
   const applyFurnitureFrame = useCallback(
-    (
-      item: FurnitureItem,
-      frame: Pick<FurnitureItem, 'depth' | 'width' | 'x' | 'y'>,
-    ) => {
+    (item: FurnitureItem, frame: Pick<FurnitureItem, "depth" | "width" | "x" | "y">) => {
       if (!item.pulloutSofa) {
         return {
           ...item,
@@ -912,9 +831,7 @@ export function useRoomPlanner(
         pulloutSofa: preset.pulloutSofa,
       };
 
-      const nextItem = preset.pulloutSofa
-        ? syncPulloutSofaItem(item, preset.pulloutSofa)
-        : item;
+      const nextItem = preset.pulloutSofa ? syncPulloutSofaItem(item, preset.pulloutSofa) : item;
 
       setFurniture((prev) => {
         const next = [...prev, nextItem];
@@ -951,9 +868,7 @@ export function useRoomPlanner(
           return prev;
         }
 
-        const next = prev.map((item) =>
-          item.id === id ? { ...item, name: trimmedName } : item,
-        );
+        const next = prev.map((item) => (item.id === id ? { ...item, name: trimmedName } : item));
         pushHistory(room, next);
         return next;
       });
@@ -966,10 +881,8 @@ export function useRoomPlanner(
   }, []);
 
   const moveFurnitureGroup = useCallback(
-    (updates: Array<Pick<FurnitureItem, 'id' | 'x' | 'y'>>) => {
-      const updateMap = new Map(
-        updates.map((update) => [update.id, { x: update.x, y: update.y }]),
-      );
+    (updates: Array<Pick<FurnitureItem, "id" | "x" | "y">>) => {
+      const updateMap = new Map(updates.map((update) => [update.id, { x: update.x, y: update.y }]));
       setFurniture((prev) =>
         prev.map((item) => {
           const nextPosition = updateMap.get(item.id);
@@ -981,10 +894,8 @@ export function useRoomPlanner(
   );
 
   const updateFurnitureGroup = useCallback(
-    (updates: Array<Pick<FurnitureItem, 'id' | 'x' | 'y'>>) => {
-      const updateMap = new Map(
-        updates.map((update) => [update.id, { x: update.x, y: update.y }]),
-      );
+    (updates: Array<Pick<FurnitureItem, "id" | "x" | "y">>) => {
+      const updateMap = new Map(updates.map((update) => [update.id, { x: update.x, y: update.y }]));
       setFurniture((prev) => {
         const next = prev.map((item) => {
           const nextPosition = updateMap.get(item.id);
@@ -998,22 +909,18 @@ export function useRoomPlanner(
   );
 
   const setFurnitureFrame = useCallback(
-    (id: string, frame: Pick<FurnitureItem, 'depth' | 'width' | 'x' | 'y'>) => {
+    (id: string, frame: Pick<FurnitureItem, "depth" | "width" | "x" | "y">) => {
       setFurniture((prev) =>
-        prev.map((item) =>
-          item.id === id ? applyFurnitureFrame(item, frame) : item,
-        ),
+        prev.map((item) => (item.id === id ? applyFurnitureFrame(item, frame) : item)),
       );
     },
     [applyFurnitureFrame],
   );
 
   const updateFurnitureFrame = useCallback(
-    (id: string, frame: Pick<FurnitureItem, 'depth' | 'width' | 'x' | 'y'>) => {
+    (id: string, frame: Pick<FurnitureItem, "depth" | "width" | "x" | "y">) => {
       setFurniture((prev) => {
-        const next = prev.map((item) =>
-          item.id === id ? applyFurnitureFrame(item, frame) : item,
-        );
+        const next = prev.map((item) => (item.id === id ? applyFurnitureFrame(item, frame) : item));
         pushHistory(room, next);
         return next;
       });
@@ -1022,13 +929,11 @@ export function useRoomPlanner(
   );
 
   const setFurnitureRotation = useCallback((id: string, rotation: number) => {
-    setFurniture((prev) =>
-      prev.map((f) => (f.id === id ? { ...f, rotation } : f)),
-    );
+    setFurniture((prev) => prev.map((f) => (f.id === id ? { ...f, rotation } : f)));
   }, []);
 
   const setFurnitureTransforms = useCallback(
-    (updates: Array<Pick<FurnitureItem, 'id' | 'rotation' | 'x' | 'y'>>) => {
+    (updates: Array<Pick<FurnitureItem, "id" | "rotation" | "x" | "y">>) => {
       setFurniture((prev) => applyFurnitureTransforms(prev, updates));
     },
     [],
@@ -1135,8 +1040,7 @@ export function useRoomPlanner(
                   closedWidth: updates.closedWidth,
                   openWidth: updates.closedWidth,
                 }
-              : updates.openWidth !== undefined &&
-                  updates.closedWidth === undefined
+              : updates.openWidth !== undefined && updates.closedWidth === undefined
                 ? {
                     closedWidth: updates.openWidth,
                     openWidth: updates.openWidth,
@@ -1162,7 +1066,7 @@ export function useRoomPlanner(
     (id: string, bedSize: PulloutBedSize) => {
       setFurniture((prev) => {
         const next = prev.map((item) => {
-          if (item.id !== id || item.type !== 'pullout-sofa') return item;
+          if (item.id !== id || item.type !== "pullout-sofa") return item;
           const pulloutSofa = item.pulloutSofa ?? {
             ...PULLOUT_SOFA_DEFAULTS.queen,
             isOpen: false,
@@ -1215,9 +1119,7 @@ export function useRoomPlanner(
         pushHistory(room, next);
         return next;
       });
-      setSelectedIds((current) =>
-        current.filter((selected) => selected !== id),
-      );
+      setSelectedIds((current) => current.filter((selected) => selected !== id));
     },
     [room, pushHistory],
   );
@@ -1234,9 +1136,7 @@ export function useRoomPlanner(
         pushHistory(room, next);
         return next;
       });
-      setSelectedIds((current) =>
-        current.filter((selected) => !idsToRemove.has(selected)),
-      );
+      setSelectedIds((current) => current.filter((selected) => !idsToRemove.has(selected)));
     },
     [room, pushHistory],
   );
@@ -1362,15 +1262,7 @@ export function useRoomPlanner(
       showGrid,
       neutralFurnitureColors,
     }),
-    [
-      unit,
-      room,
-      furniture,
-      gridSnap,
-      showMeasurements,
-      showGrid,
-      neutralFurnitureColors,
-    ],
+    [unit, room, furniture, gridSnap, showMeasurements, showGrid, neutralFurnitureColors],
   );
 
   useEffect(() => {
@@ -1403,8 +1295,8 @@ export function useRoomPlanner(
       })),
       pastCount: historyState.past.length,
       present: {
-        id: 'present',
-        label: 'Current',
+        id: "present",
+        label: "Current",
         position: historyState.past.length,
         ...summarizeHistoryEntry({ furniture, room }),
       },

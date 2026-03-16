@@ -1,24 +1,21 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { SavedLayout } from '@/types';
+import { useCallback, useEffect, useMemo, useState } from "react";
+import type { SavedLayout } from "@/types";
 
-const STORAGE_KEY = 'picture-hanging-layouts';
-const LOADED_LAYOUT_KEY = 'picture-hanging-loaded-layout-id';
-const URL_CHANGE_EVENT = 'hang-time:url-change';
+const STORAGE_KEY = "picture-hanging-layouts";
+const LOADED_LAYOUT_KEY = "picture-hanging-loaded-layout-id";
+const URL_CHANGE_EVENT = "hang-time:url-change";
 
 let historyPatchRefs = 0;
 let restoreHistoryPatch: (() => void) | null = null;
 
 function patchHistoryForUrlChanges() {
-  if (typeof window === 'undefined') return () => {};
+  if (typeof window === "undefined") return () => {};
 
   historyPatchRefs += 1;
   if (historyPatchRefs === 1) {
     const originalPushState = window.history.pushState.bind(window.history);
-    const originalReplaceState = window.history.replaceState.bind(
-      window.history,
-    );
-    const notifyUrlChange = () =>
-      window.dispatchEvent(new Event(URL_CHANGE_EVENT));
+    const originalReplaceState = window.history.replaceState.bind(window.history);
+    const notifyUrlChange = () => window.dispatchEvent(new Event(URL_CHANGE_EVENT));
 
     window.history.pushState = (...args) => {
       originalPushState(...args);
@@ -28,12 +25,12 @@ function patchHistoryForUrlChanges() {
       originalReplaceState(...args);
       notifyUrlChange();
     };
-    window.addEventListener('popstate', notifyUrlChange);
+    window.addEventListener("popstate", notifyUrlChange);
 
     restoreHistoryPatch = () => {
       window.history.pushState = originalPushState;
       window.history.replaceState = originalReplaceState;
-      window.removeEventListener('popstate', notifyUrlChange);
+      window.removeEventListener("popstate", notifyUrlChange);
     };
   }
 
@@ -101,9 +98,7 @@ export function useSavedLayouts() {
   const isNameTaken = useCallback(
     (name: string, excludeId?: string) => {
       const trimmed = name.trim().toLowerCase();
-      return layouts.some(
-        (l) => l.title.toLowerCase() === trimmed && l.id !== excludeId,
-      );
+      return layouts.some((l) => l.title.toLowerCase() === trimmed && l.id !== excludeId);
     },
     [layouts],
   );
@@ -134,7 +129,7 @@ export function useSavedLayouts() {
       if (isNameTaken(trimmedTitle)) {
         return {
           success: false,
-          error: 'A layout with this name already exists',
+          error: "A layout with this name already exists",
         };
       }
 
@@ -149,7 +144,7 @@ export function useSavedLayouts() {
 
       const layout: SavedLayout = {
         id: crypto.randomUUID(),
-        title: trimmedTitle || 'Untitled Layout',
+        title: trimmedTitle || "Untitled Layout",
         url: currentUrl,
         createdAt: Date.now(),
         updatedAt: Date.now(),
@@ -167,9 +162,7 @@ export function useSavedLayouts() {
   const update = useCallback(
     (id: string): { success: boolean; error?: string } => {
       // Check if this exact config is already saved elsewhere
-      const existingConfig = layouts.find(
-        (l) => l.url === currentUrl && l.id !== id,
-      );
+      const existingConfig = layouts.find((l) => l.url === currentUrl && l.id !== id);
       if (existingConfig) {
         return {
           success: false,
@@ -192,13 +185,13 @@ export function useSavedLayouts() {
       const trimmedTitle = newTitle.trim();
 
       if (!trimmedTitle) {
-        return { success: false, error: 'Name cannot be empty' };
+        return { success: false, error: "Name cannot be empty" };
       }
 
       if (isNameTaken(trimmedTitle, id)) {
         return {
           success: false,
-          error: 'A layout with this name already exists',
+          error: "A layout with this name already exists",
         };
       }
 

@@ -1,1 +1,1 @@
-export { ScrollArea, ScrollBar } from '@canvas-tools/ui';
+export { ScrollArea, ScrollBar } from "@canvas-tools/ui";

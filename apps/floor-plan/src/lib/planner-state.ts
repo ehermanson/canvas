@@ -1,21 +1,14 @@
-import { PULLOUT_SOFA_DEFAULTS } from '@/data/furniture-presets';
-import { createId } from '@/lib/id';
-import { syncPulloutSofaItem } from '@/lib/pullout-sofa';
-import type {
-  FurnitureItem,
-  Room,
-  RoomPlannerState,
-  Unit,
-  Wall,
-  WallEndpoint,
-} from '@/types';
+import { PULLOUT_SOFA_DEFAULTS } from "@/data/furniture-presets";
+import { createId } from "@/lib/id";
+import { syncPulloutSofaItem } from "@/lib/pullout-sofa";
+import type { FurnitureItem, Room, RoomPlannerState, Unit, Wall, WallEndpoint } from "@/types";
 
 function isUnit(value: unknown): value is Unit {
-  return value === 'cm' || value === 'in';
+  return value === "cm" || value === "in";
 }
 
 function isRoom(value: unknown): value is Room {
-  if (!value || typeof value !== 'object') {
+  if (!value || typeof value !== "object") {
     return false;
   }
 
@@ -53,7 +46,7 @@ export function createDefaultRoom(): Room {
 }
 
 function normalizeFurnitureItem(item: FurnitureItem) {
-  if (item.type !== 'pullout-sofa') {
+  if (item.type !== "pullout-sofa") {
     return item;
   }
 
@@ -69,7 +62,7 @@ function normalizeFurnitureItem(item: FurnitureItem) {
   });
 }
 
-export function createDefaultPlannerState(unit: Unit = 'in'): RoomPlannerState {
+export function createDefaultPlannerState(unit: Unit = "in"): RoomPlannerState {
   return {
     unit,
     room: createDefaultRoom(),
@@ -83,7 +76,7 @@ export function createDefaultPlannerState(unit: Unit = 'in'): RoomPlannerState {
 
 export function normalizePlannerState(
   value: Partial<RoomPlannerState> | null | undefined,
-  fallbackUnit: Unit = 'in',
+  fallbackUnit: Unit = "in",
 ): RoomPlannerState {
   const normalizedUnit = isUnit(value?.unit) ? value.unit : fallbackUnit;
   const room = isRoom(value?.room) ? value.room : createDefaultRoom();
@@ -92,9 +85,7 @@ export function normalizePlannerState(
     unit: normalizedUnit,
     room: structuredClone(room),
     furniture: Array.isArray(value?.furniture)
-      ? value.furniture.map((item) =>
-          normalizeFurnitureItem(structuredClone(item)),
-        )
+      ? value.furniture.map((item) => normalizeFurnitureItem(structuredClone(item)))
       : [],
     gridSnap: normalizeGridSnap(value?.gridSnap),
     showMeasurements: value?.showMeasurements ?? true,

@@ -1,12 +1,6 @@
-import {
-  createContext,
-  type ReactNode,
-  useContext,
-  useEffect,
-  useState,
-} from 'react';
+import { createContext, type ReactNode, useContext, useEffect, useState } from "react";
 
-export type Theme = 'light' | 'dark';
+export type Theme = "light" | "dark";
 
 interface ThemeContextValue {
   theme: Theme;
@@ -19,23 +13,23 @@ export function createAppThemeScope(options: {
   legacyStorageKeys?: string[];
   storageKey: string;
 }) {
-  const { defaultTheme = 'dark', legacyStorageKeys = [], storageKey } = options;
+  const { defaultTheme = "dark", legacyStorageKeys = [], storageKey } = options;
   const ThemeContext = createContext<ThemeContextValue | null>(null);
 
   function ThemeProvider({ children }: { children: ReactNode }) {
     const [theme, setThemeState] = useState<Theme>(() => {
-      if (typeof window === 'undefined') {
+      if (typeof window === "undefined") {
         return defaultTheme;
       }
 
       const saved = window.localStorage.getItem(storageKey);
-      if (saved === 'light' || saved === 'dark') {
+      if (saved === "light" || saved === "dark") {
         return saved;
       }
 
       for (const legacyStorageKey of legacyStorageKeys) {
         const legacySaved = window.localStorage.getItem(legacyStorageKey);
-        if (legacySaved === 'light' || legacySaved === 'dark') {
+        if (legacySaved === "light" || legacySaved === "dark") {
           return legacySaved;
         }
       }
@@ -49,10 +43,10 @@ export function createAppThemeScope(options: {
         window.localStorage.removeItem(legacyStorageKey);
       }
 
-      if (theme === 'dark') {
-        document.documentElement.classList.add('dark');
+      if (theme === "dark") {
+        document.documentElement.classList.add("dark");
       } else {
-        document.documentElement.classList.remove('dark');
+        document.documentElement.classList.remove("dark");
       }
     }, [legacyStorageKeys, storageKey, theme]);
 
@@ -62,20 +56,18 @@ export function createAppThemeScope(options: {
       },
       theme,
       toggleTheme: () => {
-        setThemeState((current) => (current === 'dark' ? 'light' : 'dark'));
+        setThemeState((current) => (current === "dark" ? "light" : "dark"));
       },
     };
 
-    return (
-      <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
-    );
+    return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
   }
 
   function useTheme() {
     const context = useContext(ThemeContext);
 
     if (!context) {
-      throw new Error('useTheme must be used within a ThemeProvider');
+      throw new Error("useTheme must be used within a ThemeProvider");
     }
 
     return context;

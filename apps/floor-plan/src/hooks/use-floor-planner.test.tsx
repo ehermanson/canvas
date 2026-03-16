@@ -1,27 +1,27 @@
-import { act, renderHook } from '@testing-library/react';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { act, renderHook } from "@testing-library/react";
+import { beforeEach, describe, expect, it } from "vite-plus/test";
 
-import { useRoomPlanner } from '@/hooks/use-floor-planner';
-import type { FurniturePreset, RoomPlannerState } from '@/types';
+import { useRoomPlanner } from "@/hooks/use-floor-planner";
+import type { FurniturePreset, RoomPlannerState } from "@/types";
 
 const DESK_PRESET: FurniturePreset = {
-  type: 'desk',
-  name: 'Desk',
-  shape: 'rectangle',
+  type: "desk",
+  name: "Desk",
+  shape: "rectangle",
   width: 60,
   depth: 30,
-  color: '#f59e0b',
+  color: "#f59e0b",
 };
 
 const PULLOUT_PRESET: FurniturePreset = {
-  type: 'pullout-sofa',
-  name: 'Pull-out Sofa',
-  shape: 'rectangle',
+  type: "pullout-sofa",
+  name: "Pull-out Sofa",
+  shape: "rectangle",
   width: 72,
   depth: 38,
-  color: '#7c3aed',
+  color: "#7c3aed",
   pulloutSofa: {
-    bedSize: 'full',
+    bedSize: "full",
     isOpen: false,
     closedWidth: 72,
     closedDepth: 38,
@@ -30,23 +30,21 @@ const PULLOUT_PRESET: FurniturePreset = {
   },
 };
 
-function createPlannerState(
-  overrides: Partial<RoomPlannerState> = {},
-): RoomPlannerState {
+function createPlannerState(overrides: Partial<RoomPlannerState> = {}): RoomPlannerState {
   return {
-    unit: 'in',
+    unit: "in",
     room: {
       endpoints: [
-        { id: 'a', x: 0, y: 0 },
-        { id: 'b', x: 144, y: 0 },
-        { id: 'c', x: 144, y: 120 },
-        { id: 'd', x: 0, y: 120 },
+        { id: "a", x: 0, y: 0 },
+        { id: "b", x: 144, y: 0 },
+        { id: "c", x: 144, y: 120 },
+        { id: "d", x: 0, y: 120 },
       ],
       walls: [
-        { id: 'w1', startId: 'a', endId: 'b', features: [] },
-        { id: 'w2', startId: 'b', endId: 'c', features: [] },
-        { id: 'w3', startId: 'c', endId: 'd', features: [] },
-        { id: 'w4', startId: 'd', endId: 'a', features: [] },
+        { id: "w1", startId: "a", endId: "b", features: [] },
+        { id: "w2", startId: "b", endId: "c", features: [] },
+        { id: "w3", startId: "c", endId: "d", features: [] },
+        { id: "w4", startId: "d", endId: "a", features: [] },
       ],
     },
     furniture: [],
@@ -58,19 +56,19 @@ function createPlannerState(
   };
 }
 
-describe('useRoomPlanner', () => {
+describe("useRoomPlanner", () => {
   beforeEach(() => {
     localStorage.clear();
     sessionStorage.clear();
   });
 
-  it('defaults grid snapping to 1 inch', () => {
+  it("defaults grid snapping to 1 inch", () => {
     const { result } = renderHook(() => useRoomPlanner());
 
     expect(result.current.gridSnap).toBe(1);
   });
 
-  it('normalizes legacy snap values to 1 inch when loading state', () => {
+  it("normalizes legacy snap values to 1 inch when loading state", () => {
     const { result } = renderHook(() =>
       useRoomPlanner(
         createPlannerState({
@@ -82,7 +80,7 @@ describe('useRoomPlanner', () => {
     expect(result.current.gridSnap).toBe(1);
   });
 
-  it('loads and updates neutral furniture color mode', () => {
+  it("loads and updates neutral furniture color mode", () => {
     const { result } = renderHook(() =>
       useRoomPlanner(
         createPlannerState({
@@ -101,10 +99,10 @@ describe('useRoomPlanner', () => {
     expect(result.current.state.neutralFurnitureColors).toBe(false);
   });
 
-  it('loads a new planner state and restores that snapshot history independently', () => {
+  it("loads a new planner state and restores that snapshot history independently", () => {
     const { result } = renderHook(() => useRoomPlanner());
 
-    let itemId = '';
+    let itemId = "";
     act(() => {
       itemId = result.current.addFurniture(DESK_PRESET);
     });
@@ -118,20 +116,20 @@ describe('useRoomPlanner', () => {
           gridSnap: 0,
           room: {
             endpoints: [
-              { id: 'e1', x: 0, y: 0 },
-              { id: 'e2', x: 120, y: 0 },
-              { id: 'e3', x: 120, y: 96 },
-              { id: 'e4', x: 0, y: 96 },
+              { id: "e1", x: 0, y: 0 },
+              { id: "e2", x: 120, y: 0 },
+              { id: "e3", x: 120, y: 96 },
+              { id: "e4", x: 0, y: 96 },
             ],
             walls: [
-              { id: 'w1', startId: 'e1', endId: 'e2', features: [] },
-              { id: 'w2', startId: 'e2', endId: 'e3', features: [] },
-              { id: 'w3', startId: 'e3', endId: 'e4', features: [] },
-              { id: 'w4', startId: 'e4', endId: 'e1', features: [] },
+              { id: "w1", startId: "e1", endId: "e2", features: [] },
+              { id: "w2", startId: "e2", endId: "e3", features: [] },
+              { id: "w3", startId: "e3", endId: "e4", features: [] },
+              { id: "w4", startId: "e4", endId: "e1", features: [] },
             ],
           },
         }),
-        'project-1:snapshot-2',
+        "project-1:snapshot-2",
       );
     });
 
@@ -141,7 +139,7 @@ describe('useRoomPlanner', () => {
     expect(result.current.canUndo).toBe(false);
   });
 
-  it('makes the first committed change undoable from the loaded snapshot state', () => {
+  it("makes the first committed change undoable from the loaded snapshot state", () => {
     const { result } = renderHook(() => useRoomPlanner());
 
     act(() => {
@@ -159,11 +157,9 @@ describe('useRoomPlanner', () => {
     expect(result.current.canRedo).toBe(true);
   });
 
-  it('persists snapshot history in session storage across refreshes', () => {
-    const historyKey = 'project-1:snapshot-1';
-    const { result, unmount } = renderHook(() =>
-      useRoomPlanner(createPlannerState(), historyKey),
-    );
+  it("persists snapshot history in session storage across refreshes", () => {
+    const historyKey = "project-1:snapshot-1";
+    const { result, unmount } = renderHook(() => useRoomPlanner(createPlannerState(), historyKey));
 
     act(() => {
       result.current.addFurniture(DESK_PRESET);
@@ -173,9 +169,7 @@ describe('useRoomPlanner', () => {
     expect(result.current.canUndo).toBe(true);
     unmount();
 
-    const restored = renderHook(() =>
-      useRoomPlanner(persistedState, historyKey),
-    );
+    const restored = renderHook(() => useRoomPlanner(persistedState, historyKey));
 
     expect(restored.result.current.furniture).toHaveLength(1);
     expect(restored.result.current.canUndo).toBe(true);
@@ -188,14 +182,14 @@ describe('useRoomPlanner', () => {
     expect(restored.result.current.furniture).toHaveLength(0);
   });
 
-  it('can jump directly to an earlier history step', () => {
+  it("can jump directly to an earlier history step", () => {
     const { result } = renderHook(() => useRoomPlanner());
 
     act(() => {
       result.current.addFurniture(DESK_PRESET);
       result.current.addFurniture({
         ...DESK_PRESET,
-        name: 'Desk Two',
+        name: "Desk Two",
       });
     });
 
@@ -212,7 +206,7 @@ describe('useRoomPlanner', () => {
     expect(result.current.isHistoryEditingLocked).toBe(true);
   });
 
-  it('can discard future history after time traveling', () => {
+  it("can discard future history after time traveling", () => {
     const { result } = renderHook(() => useRoomPlanner());
 
     act(() => {
@@ -222,7 +216,7 @@ describe('useRoomPlanner', () => {
     act(() => {
       result.current.addFurniture({
         ...DESK_PRESET,
-        name: 'Desk Two',
+        name: "Desk Two",
       });
     });
 
@@ -242,14 +236,14 @@ describe('useRoomPlanner', () => {
     expect(result.current.historyDebug.totalCount).toBe(1);
   });
 
-  it('does not lock editing after ordinary undo and redo', () => {
+  it("does not lock editing after ordinary undo and redo", () => {
     const { result } = renderHook(() => useRoomPlanner());
 
     act(() => {
       result.current.addFurniture(DESK_PRESET);
       result.current.addFurniture({
         ...DESK_PRESET,
-        name: 'Desk Two',
+        name: "Desk Two",
       });
     });
 
@@ -268,7 +262,7 @@ describe('useRoomPlanner', () => {
     expect(result.current.isHistoryEditingLocked).toBe(false);
   });
 
-  it('clears the browsing lock when returning to the latest step', () => {
+  it("clears the browsing lock when returning to the latest step", () => {
     const { result } = renderHook(() => useRoomPlanner());
 
     act(() => {
@@ -278,7 +272,7 @@ describe('useRoomPlanner', () => {
     act(() => {
       result.current.addFurniture({
         ...DESK_PRESET,
-        name: 'Desk Two',
+        name: "Desk Two",
       });
     });
 
@@ -300,22 +294,22 @@ describe('useRoomPlanner', () => {
     expect(result.current.canRedo).toBe(false);
   });
 
-  it('migrates legacy pull-out sofas without metadata on load', () => {
+  it("migrates legacy pull-out sofas without metadata on load", () => {
     const { result } = renderHook(() =>
       useRoomPlanner(
         createPlannerState({
           furniture: [
             {
-              id: 'legacy-sofa',
-              type: 'pullout-sofa',
-              name: 'Legacy Sofa',
-              shape: 'rectangle',
+              id: "legacy-sofa",
+              type: "pullout-sofa",
+              name: "Legacy Sofa",
+              shape: "rectangle",
               width: 70,
               depth: 36,
               x: 50,
               y: 50,
               rotation: 0,
-              color: '#000',
+              color: "#000",
               locked: false,
             },
           ],
@@ -329,13 +323,13 @@ describe('useRoomPlanner', () => {
     expect(item.pulloutSofa?.closedWidth).toBe(84);
     expect(item.pulloutSofa?.openWidth).toBe(84);
     expect(item.pulloutSofa?.closedDepth).toBe(36);
-    expect(item.pulloutSofa?.bedSize).toBe('queen');
+    expect(item.pulloutSofa?.bedSize).toBe("queen");
   });
 
-  it('adds furniture at the room center and selects it', () => {
+  it("adds furniture at the room center and selects it", () => {
     const { result } = renderHook(() => useRoomPlanner());
 
-    let itemId = '';
+    let itemId = "";
     act(() => {
       itemId = result.current.addFurniture(DESK_PRESET);
     });
@@ -351,16 +345,16 @@ describe('useRoomPlanner', () => {
     expect(result.current.selectedId).toBe(itemId);
   });
 
-  it('supports multi-select bulk duplication and removal', () => {
+  it("supports multi-select bulk duplication and removal", () => {
     const { result } = renderHook(() => useRoomPlanner());
 
-    let firstId = '';
-    let secondId = '';
+    let firstId = "";
+    let secondId = "";
     act(() => {
       firstId = result.current.addFurniture(DESK_PRESET);
       secondId = result.current.addFurniture({
         ...DESK_PRESET,
-        name: 'Desk Two',
+        name: "Desk Two",
       });
       result.current.setSelectedIds([firstId, secondId]);
     });
@@ -381,35 +375,35 @@ describe('useRoomPlanner', () => {
     expect(result.current.furniture).toHaveLength(2);
   });
 
-  it('rotates selected furniture together around their shared bounds center', () => {
+  it("rotates selected furniture together around their shared bounds center", () => {
     const { result } = renderHook(() =>
       useRoomPlanner(
         createPlannerState({
           furniture: [
             {
-              id: 'desk-1',
-              type: 'desk',
-              name: 'Desk One',
-              shape: 'rectangle',
+              id: "desk-1",
+              type: "desk",
+              name: "Desk One",
+              shape: "rectangle",
               width: 60,
               depth: 30,
               x: 60,
               y: 60,
               rotation: 0,
-              color: '#f59e0b',
+              color: "#f59e0b",
               locked: false,
             },
             {
-              id: 'desk-2',
-              type: 'desk',
-              name: 'Desk Two',
-              shape: 'rectangle',
+              id: "desk-2",
+              type: "desk",
+              name: "Desk Two",
+              shape: "rectangle",
               width: 60,
               depth: 30,
               x: 120,
               y: 60,
               rotation: 0,
-              color: '#f59e0b',
+              color: "#f59e0b",
               locked: false,
             },
           ],
@@ -418,18 +412,18 @@ describe('useRoomPlanner', () => {
     );
 
     act(() => {
-      result.current.rotateFurnitureGroup(['desk-1', 'desk-2'], 90);
+      result.current.rotateFurnitureGroup(["desk-1", "desk-2"], 90);
     });
 
     expect(result.current.furniture).toEqual([
       expect.objectContaining({
-        id: 'desk-1',
+        id: "desk-1",
         x: 90,
         y: 30,
         rotation: 90,
       }),
       expect.objectContaining({
-        id: 'desk-2',
+        id: "desk-2",
         x: 90,
         y: 90,
         rotation: 90,
@@ -437,125 +431,95 @@ describe('useRoomPlanner', () => {
     ]);
   });
 
-  it('reorders furniture layers and keeps that order undoable', () => {
+  it("reorders furniture layers and keeps that order undoable", () => {
     const { result } = renderHook(() => useRoomPlanner());
 
-    let firstId = '';
-    let secondId = '';
-    let thirdId = '';
+    let firstId = "";
+    let secondId = "";
+    let thirdId = "";
 
     act(() => {
       firstId = result.current.addFurniture(DESK_PRESET);
       secondId = result.current.addFurniture({
         ...DESK_PRESET,
-        name: 'Desk Two',
+        name: "Desk Two",
       });
       thirdId = result.current.addFurniture({
         ...DESK_PRESET,
-        name: 'Desk Three',
+        name: "Desk Three",
       });
     });
 
-    expect(result.current.furniture.map((item) => item.id)).toEqual([
-      firstId,
-      secondId,
-      thirdId,
-    ]);
+    expect(result.current.furniture.map((item) => item.id)).toEqual([firstId, secondId, thirdId]);
 
     act(() => {
       result.current.sendFurnitureToBack(thirdId);
     });
 
-    expect(result.current.furniture.map((item) => item.id)).toEqual([
-      thirdId,
-      firstId,
-      secondId,
-    ]);
+    expect(result.current.furniture.map((item) => item.id)).toEqual([thirdId, firstId, secondId]);
 
     act(() => {
       result.current.moveFurnitureForward(thirdId);
     });
 
-    expect(result.current.furniture.map((item) => item.id)).toEqual([
-      firstId,
-      thirdId,
-      secondId,
-    ]);
+    expect(result.current.furniture.map((item) => item.id)).toEqual([firstId, thirdId, secondId]);
 
     act(() => {
       result.current.bringFurnitureToFront(firstId);
     });
 
-    expect(result.current.furniture.map((item) => item.id)).toEqual([
-      thirdId,
-      secondId,
-      firstId,
-    ]);
+    expect(result.current.furniture.map((item) => item.id)).toEqual([thirdId, secondId, firstId]);
 
     act(() => {
       result.current.moveFurnitureBackward(firstId);
     });
 
-    expect(result.current.furniture.map((item) => item.id)).toEqual([
-      thirdId,
-      firstId,
-      secondId,
-    ]);
+    expect(result.current.furniture.map((item) => item.id)).toEqual([thirdId, firstId, secondId]);
 
     act(() => {
       result.current.undo();
     });
 
-    expect(result.current.furniture.map((item) => item.id)).toEqual([
-      thirdId,
-      secondId,
-      firstId,
-    ]);
+    expect(result.current.furniture.map((item) => item.id)).toEqual([thirdId, secondId, firstId]);
 
     act(() => {
       result.current.redo();
     });
 
-    expect(result.current.furniture.map((item) => item.id)).toEqual([
-      thirdId,
-      firstId,
-      secondId,
-    ]);
+    expect(result.current.furniture.map((item) => item.id)).toEqual([thirdId, firstId, secondId]);
   });
 
-  it('renames furniture and trims whitespace', () => {
+  it("renames furniture and trims whitespace", () => {
     const { result } = renderHook(() => useRoomPlanner());
 
-    let itemId = '';
+    let itemId = "";
     act(() => {
       itemId = result.current.addFurniture(DESK_PRESET);
     });
 
     act(() => {
-      result.current.renameFurniture(itemId, '  Reading Desk  ');
+      result.current.renameFurniture(itemId, "  Reading Desk  ");
     });
 
-    expect(
-      result.current.furniture.find((item) => item.id === itemId)?.name,
-    ).toBe('Reading Desk');
+    expect(result.current.furniture.find((item) => item.id === itemId)?.name).toBe("Reading Desk");
   });
 
-  it('rotates the room and furniture together around the room center', () => {
+  it("rotates the room and furniture together around the room center", () => {
     const { result } = renderHook(() =>
       useRoomPlanner(
         createPlannerState({
           furniture: [
             {
-              id: 'desk-1',
-              type: 'desk',
-              name: 'Desk',
-              shape: 'rectangle',
+              id: "desk-1",
+              type: "desk",
+              name: "Desk",
+              shape: "rectangle",
               width: 60,
               depth: 30,
               x: 90,
               y: 30,
               rotation: 0,
-              color: '#f59e0b',
+              color: "#f59e0b",
               locked: false,
             },
           ],
@@ -568,14 +532,14 @@ describe('useRoomPlanner', () => {
     });
 
     expect(result.current.room.endpoints).toEqual([
-      { id: 'a', x: 132, y: -12 },
-      { id: 'b', x: 132, y: 132 },
-      { id: 'c', x: 12, y: 132 },
-      { id: 'd', x: 12, y: -12 },
+      { id: "a", x: 132, y: -12 },
+      { id: "b", x: 132, y: 132 },
+      { id: "c", x: 12, y: 132 },
+      { id: "d", x: 12, y: -12 },
     ]);
     expect(result.current.furniture).toEqual([
       expect.objectContaining({
-        id: 'desk-1',
+        id: "desk-1",
         x: 102,
         y: 78,
         rotation: 90,
@@ -583,17 +547,15 @@ describe('useRoomPlanner', () => {
     ]);
   });
 
-  it('toggles a pull-out sofa while preserving its top edge', () => {
+  it("toggles a pull-out sofa while preserving its top edge", () => {
     const { result } = renderHook(() => useRoomPlanner());
 
-    let itemId = '';
+    let itemId = "";
     act(() => {
       itemId = result.current.addFurniture(PULLOUT_PRESET);
     });
 
-    const before = result.current.furniture.find(
-      (entry) => entry.id === itemId,
-    );
+    const before = result.current.furniture.find((entry) => entry.id === itemId);
     expect(before).toBeDefined();
     const beforeTop = before!.y - before!.depth / 2;
 
@@ -607,37 +569,35 @@ describe('useRoomPlanner', () => {
     expect(after ? after.y - after.depth / 2 : null).toBe(beforeTop);
   });
 
-  it('updates pull-out bed size while preserving open state and top edge', () => {
+  it("updates pull-out bed size while preserving open state and top edge", () => {
     const { result } = renderHook(() => useRoomPlanner());
 
-    let itemId = '';
+    let itemId = "";
     act(() => {
       itemId = result.current.addFurniture(PULLOUT_PRESET);
       result.current.togglePulloutSofa(itemId);
     });
 
-    const before = result.current.furniture.find(
-      (entry) => entry.id === itemId,
-    );
+    const before = result.current.furniture.find((entry) => entry.id === itemId);
     expect(before?.pulloutSofa?.isOpen).toBe(true);
     const beforeTop = before!.y - before!.depth / 2;
 
     act(() => {
-      result.current.setPulloutBedSize(itemId, 'queen');
+      result.current.setPulloutBedSize(itemId, "queen");
     });
 
     const after = result.current.furniture.find((entry) => entry.id === itemId);
-    expect(after?.pulloutSofa?.bedSize).toBe('queen');
+    expect(after?.pulloutSofa?.bedSize).toBe("queen");
     expect(after?.pulloutSofa?.isOpen).toBe(true);
     expect(after?.width).toBe(84);
     expect(after?.depth).toBe(80);
     expect(after ? after.y - after.depth / 2 : null).toBe(beforeTop);
   });
 
-  it('keeps pull-out sofa widths in sync when reducing only one width field', () => {
+  it("keeps pull-out sofa widths in sync when reducing only one width field", () => {
     const { result } = renderHook(() => useRoomPlanner());
 
-    let itemId = '';
+    let itemId = "";
     act(() => {
       itemId = result.current.addFurniture(PULLOUT_PRESET);
     });
@@ -654,10 +614,10 @@ describe('useRoomPlanner', () => {
     expect(item?.width).toBe(60);
   });
 
-  it('updates pull-out sofa widths together during live frame changes', () => {
+  it("updates pull-out sofa widths together during live frame changes", () => {
     const { result } = renderHook(() => useRoomPlanner());
 
-    let itemId = '';
+    let itemId = "";
     act(() => {
       itemId = result.current.addFurniture(PULLOUT_PRESET);
     });
@@ -682,10 +642,10 @@ describe('useRoomPlanner', () => {
     expect(item?.pulloutSofa?.openWidth).toBe(58);
   });
 
-  it('updates only the active pull-out sofa depth during live frame changes', () => {
+  it("updates only the active pull-out sofa depth during live frame changes", () => {
     const { result } = renderHook(() => useRoomPlanner());
 
-    let itemId = '';
+    let itemId = "";
     act(() => {
       itemId = result.current.addFurniture(PULLOUT_PRESET);
       result.current.togglePulloutSofa(itemId);
@@ -706,10 +666,10 @@ describe('useRoomPlanner', () => {
     expect(item?.pulloutSofa?.closedDepth).toBe(38);
   });
 
-  it('pushes synced pull-out sofa frame updates for discrete resize actions', () => {
+  it("pushes synced pull-out sofa frame updates for discrete resize actions", () => {
     const { result } = renderHook(() => useRoomPlanner());
 
-    let itemId = '';
+    let itemId = "";
     act(() => {
       itemId = result.current.addFurniture(PULLOUT_PRESET);
     });
@@ -730,7 +690,7 @@ describe('useRoomPlanner', () => {
     expect(result.current.canUndo).toBe(true);
   });
 
-  it('translates a selected wall by moving both endpoints together', () => {
+  it("translates a selected wall by moving both endpoints together", () => {
     const { result } = renderHook(() => useRoomPlanner());
 
     act(() => {
@@ -741,21 +701,19 @@ describe('useRoomPlanner', () => {
     const start = result.current.room.endpoints.find(
       (endpoint) => endpoint.id === leftWall.startId,
     );
-    const end = result.current.room.endpoints.find(
-      (endpoint) => endpoint.id === leftWall.endId,
-    );
+    const end = result.current.room.endpoints.find((endpoint) => endpoint.id === leftWall.endId);
 
     expect(start).toMatchObject({ x: -2, y: 120 });
     expect(end).toMatchObject({ x: -2, y: 0 });
   });
 
-  it('nudges a wall feature along the wall and clamps to valid bounds', () => {
+  it("nudges a wall feature along the wall and clamps to valid bounds", () => {
     const { result } = renderHook(() => useRoomPlanner());
     const wallId = result.current.room.walls[0].id;
 
     act(() => {
       result.current.addWallFeature(wallId, {
-        type: 'window',
+        type: "window",
         offset: 100,
         width: 30,
       });
@@ -777,13 +735,13 @@ describe('useRoomPlanner', () => {
     expect(result.current.room.walls[0].features[0]?.offset).toBe(0);
   });
 
-  it('supports wall openings as editable wall features', () => {
+  it("supports wall openings as editable wall features", () => {
     const { result } = renderHook(() => useRoomPlanner());
     const wallId = result.current.room.walls[1].id;
 
     act(() => {
       result.current.addWallFeature(wallId, {
-        type: 'opening',
+        type: "opening",
         offset: 24,
         width: 42,
       });
@@ -791,7 +749,7 @@ describe('useRoomPlanner', () => {
 
     const opening = result.current.room.walls[1].features[0];
     expect(opening).toMatchObject({
-      type: 'opening',
+      type: "opening",
       offset: 24,
       width: 42,
     });

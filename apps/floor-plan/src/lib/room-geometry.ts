@@ -1,4 +1,4 @@
-import type { Point, Wall, WallEndpoint, WallFeature } from '@/types';
+import type { Point, Wall, WallEndpoint, WallFeature } from "@/types";
 
 export interface Bounds {
   maxX: number;
@@ -34,11 +34,7 @@ export function getBounds(points: Point[]): Bounds | null {
   };
 }
 
-export function rotatePointAround(
-  point: Point,
-  center: Point,
-  rotationDegrees: number,
-): Point {
+export function rotatePointAround(point: Point, center: Point, rotationDegrees: number): Point {
   const radians = (rotationDegrees * Math.PI) / 180;
   const dx = point.x - center.x;
   const dy = point.y - center.y;
@@ -89,10 +85,7 @@ export interface WallMeasurementSpan {
   length: number;
 }
 
-export function getWallMeasurementSpans(
-  wallLength: number,
-  features: WallFeature[],
-) {
+export function getWallMeasurementSpans(wallLength: number, features: WallFeature[]) {
   if (wallLength <= 0) {
     return [] as WallMeasurementSpan[];
   }
@@ -100,16 +93,11 @@ export function getWallMeasurementSpans(
   const gapRanges = features
     .filter(
       (feature) =>
-        feature.type === 'door' ||
-        feature.type === 'opening' ||
-        feature.type === 'closet',
+        feature.type === "door" || feature.type === "opening" || feature.type === "closet",
     )
     .map((feature) => ({
       start: Math.max(0, Math.min(wallLength, feature.offset)),
-      end: Math.max(
-        0,
-        Math.min(wallLength, feature.offset + Math.max(feature.width, 0)),
-      ),
+      end: Math.max(0, Math.min(wallLength, feature.offset + Math.max(feature.width, 0))),
     }))
     .filter((range) => range.end > range.start)
     .sort((a, b) => a.start - b.start);
@@ -160,15 +148,10 @@ export function getWallMeasurementSpans(
   return spans;
 }
 
-export function findRoomPolygon(
-  endpoints: WallEndpoint[],
-  walls: Wall[],
-): Point[] | null {
+export function findRoomPolygon(endpoints: WallEndpoint[], walls: Wall[]): Point[] | null {
   if (walls.length < 3) return null;
 
-  const endpointMap = new Map(
-    endpoints.map((endpoint) => [endpoint.id, endpoint]),
-  );
+  const endpointMap = new Map(endpoints.map((endpoint) => [endpoint.id, endpoint]));
   const adjacency = new Map<string, { wallId: string; otherId: string }[]>();
 
   for (const wall of walls) {

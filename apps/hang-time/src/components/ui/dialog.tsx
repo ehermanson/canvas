@@ -9,4 +9,4 @@ export {
   DialogPortal,
   DialogTitle,
   DialogTrigger,
-} from '@canvas-tools/ui';
+} from "@canvas-tools/ui";
