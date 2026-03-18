@@ -5,11 +5,11 @@ Furniture layout planner intended for deployment at `https://floor-plan.app/`.
 ## Commands
 
 ```bash
-npm run dev --workspace @canvas-tools/floor-plan
-npm run lint --workspace @canvas-tools/floor-plan
-npm run test --workspace @canvas-tools/floor-plan
-npm run build --workspace @canvas-tools/floor-plan
-npm run deploy --workspace @canvas-tools/floor-plan
+vp dev               # start dev server
+vp check             # format, lint, type-check
+vp test              # run tests
+vp build             # build for production
+vp run deploy        # deploy to Cloudflare Workers
 ```
 
 ## Notes

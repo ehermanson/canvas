@@ -5,11 +5,11 @@ Picture hanging and gallery wall calculator deployed at `https://hang-time.app/`
 ## Commands
 
 ```bash
-npm run dev --workspace @canvas-tools/hang-time
-npm run lint --workspace @canvas-tools/hang-time
-npm run test --workspace @canvas-tools/hang-time
-npm run build --workspace @canvas-tools/hang-time
-npm run deploy --workspace @canvas-tools/hang-time
+vp dev               # start dev server
+vp check             # format, lint, type-check
+vp test              # run tests
+vp build             # build for production
+vp run deploy        # deploy to Cloudflare Workers
 ```
 
 ## Notes

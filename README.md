@@ -10,28 +10,28 @@ Both apps deploy as separate Cloudflare Workers. Deploying one does not overwrit
 ## Requirements
 
 - Node `22.x` via `.nvmrc`
-- npm
+- Vite+ (`vp`) — installed via `npm install`
 - Wrangler authentication for the target Cloudflare account
 
 ## Workspace Commands
 
 ```bash
-npm install
-npm run lint
-npm run test
-npm run build
-npm run ci
+npm install            # install dependencies (first time only)
+vp check               # format, lint, type-check
+vp run -r test         # run all tests
+vp run -r build        # build all apps
+vp check && vp run -r test && vp run -r build  # full CI check
 ```
 
 App-specific commands:
 
 ```bash
-npm run dev:hang-time
-npm run dev:floor-plan
-npm run deploy:hang-time
-npm run deploy:floor-plan
-npm run deploy:dry-run:hang-time
-npm run deploy:dry-run:floor-plan
+vp run --filter @canvas-tools/hang-time dev
+vp run --filter @canvas-tools/floor-plan dev
+vp run --filter @canvas-tools/hang-time deploy
+vp run --filter @canvas-tools/floor-plan deploy
+vp run --filter @canvas-tools/hang-time deploy:dry-run
+vp run --filter @canvas-tools/floor-plan deploy:dry-run
 ```
 
 ## Deployment Model
