@@ -4,6 +4,7 @@ import { useCalculator } from "@/hooks/use-calculator";
 import { ThemeProvider, useTheme } from "@/hooks/use-theme";
 import { cn } from "@/lib/utils";
 
+// Main application content with theme-aware background
 function AppContent() {
   const calculator = useCalculator();
   const { theme } = useTheme();

@@ -26,6 +26,7 @@ function createManualChunks(id: string) {
   return undefined;
 }
 
+// Floor-plan app configuration
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   resolve: {

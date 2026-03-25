@@ -27,7 +27,7 @@ import { calculateLayoutPositions, fromDisplayUnit, toDisplayUnit } from "@/util
 
 const UNIT_STORAGE_KEY = "picture-hanging-unit";
 
-// Get saved unit from localStorage or default to 'in'
+// Retrieve the persisted measurement unit from localStorage, falling back to inches
 function getSavedUnit(): "in" | "cm" {
   if (typeof window === "undefined") return "in";
   const saved = localStorage.getItem(UNIT_STORAGE_KEY);

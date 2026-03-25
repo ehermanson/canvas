@@ -7,6 +7,7 @@ import { usePlannerProjects } from "@/hooks/use-planner-projects";
 import { ThemeProvider, useTheme } from "@/hooks/use-theme";
 import { cn } from "@/lib/utils";
 
+/** Workspace component that manages project/snapshot lifecycle and canvas rendering. */
 function PlannerWorkspace({ projects }: { projects: PlannerProjectsReturn }) {
   const { activeProject, activeSnapshot, updateSnapshotState } = projects;
   const activeLayoutKey = `${activeProject.id}:${activeSnapshot.id}`;

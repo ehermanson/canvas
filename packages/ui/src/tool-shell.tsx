@@ -2,6 +2,7 @@ import * as React from "react";
 import { Button, type ButtonProps } from "./components/ui/button";
 import { cn } from "./lib/utils";
 
+/** Shared surface styles for tool panel cards. */
 const toolPanelSurfaceClassName =
   "rounded-2xl border border-gray-200/50 bg-white/90 shadow-2xl backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/90";
 

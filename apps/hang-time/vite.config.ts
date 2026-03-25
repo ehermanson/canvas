@@ -2,6 +2,7 @@ import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite-plus";
 
+// Split vendor dependencies into separate chunks for better caching
 function createManualChunks(id: string) {
   if (!id.includes("node_modules")) {
     return undefined;

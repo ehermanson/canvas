@@ -61,6 +61,7 @@ export interface ViewportController {
   zoomPercent: number;
 }
 
+/** Constrain a zoom level to the allowed range. */
 export function clampZoom(value: number, minZoom: number, maxZoom: number) {
   return Math.max(minZoom, Math.min(maxZoom, value));
 }
