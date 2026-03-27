@@ -40,6 +40,8 @@ export interface Wall {
   /** ID of the end endpoint */
   endId: string;
   features: WallFeature[];
+  /** Whether the wall (and its feature placements) is locked from editing */
+  locked?: boolean;
 }
 
 export interface Room {

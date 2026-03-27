@@ -129,6 +129,7 @@ type WallsSectionPlanner = Pick<
   | "setWallLength"
   | "toDisplay"
   | "unit"
+  | "updateWall"
   | "updateWallFeature"
 >;
 
@@ -309,17 +310,42 @@ function NumberInput({
   suffix?: string;
   value: number;
 }) {
+  const formattedValue = value % 1 === 0 ? value.toFixed(0) : Number.parseFloat(value.toFixed(3));
+  const [localValue, setLocalValue] = useState<string>(String(formattedValue));
+  const [isFocused, setIsFocused] = useState(false);
+
+  useEffect(() => {
+    if (!isFocused) {
+      setLocalValue(String(formattedValue));
+    }
+  }, [formattedValue, isFocused]);
+
+  const commit = () => {
+    const nextValue = Number.parseFloat(localValue);
+    if (!Number.isNaN(nextValue)) {
+      onChange(clamp(nextValue, min, max));
+    } else {
+      setLocalValue(String(formattedValue));
+    }
+    setIsFocused(false);
+  };
+
   return (
     <div className="flex flex-col gap-1">
       <Label className="text-xs text-gray-500 dark:text-white/50">{label}</Label>
       <div className="relative">
         <Input
           type="number"
-          value={value % 1 === 0 ? value.toFixed(0) : Number.parseFloat(value.toFixed(3))}
-          onChange={(event) => {
-            const nextValue = Number.parseFloat(event.target.value);
-            if (!Number.isNaN(nextValue)) {
-              onChange(clamp(nextValue, min, max));
+          value={isFocused ? localValue : formattedValue}
+          onChange={(event) => setLocalValue(event.target.value)}
+          onFocus={() => {
+            setIsFocused(true);
+            setLocalValue(String(formattedValue));
+          }}
+          onBlur={commit}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              (event.target as HTMLInputElement).blur();
             }
           }}
           min={min}
@@ -877,6 +903,7 @@ function WallCard({
     setWallLength,
     toDisplay,
     unit,
+    updateWall,
     updateWallFeature,
   } = planner;
 
@@ -906,30 +933,37 @@ function WallCard({
           <span className="inline-flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-indigo-500/80 text-[10px] font-bold text-white">
             {wallIndex + 1}
           </span>
-          <div className="relative flex-1">
-            <Input
-              type="number"
-              value={formatMeasurementValue(wallLength, unit, toDisplay)}
-              onChange={(event) => {
-                const nextValue = Number.parseFloat(event.target.value);
-                if (!Number.isNaN(nextValue) && nextValue > 0) {
-                  setWallLength(wall.id, fromDisplay(nextValue));
-                }
-              }}
-              className="h-7 pr-8 text-xs"
-              min={1}
-              step={measurementStep}
-            />
-            <span className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-[10px] text-gray-400 dark:text-white/30">
-              {unitSuffix}
-            </span>
-          </div>
+          <WallLengthInput
+            wallId={wall.id}
+            wallLength={wallLength}
+            unit={unit}
+            toDisplay={toDisplay}
+            fromDisplay={fromDisplay}
+            setWallLength={setWallLength}
+            measurementStep={measurementStep}
+            unitSuffix={unitSuffix}
+            disabled={wall.locked}
+          />
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 w-6 flex-shrink-0 p-0"
+            title={wall.locked ? "Unlock wall" : "Lock wall"}
+            onClick={() => updateWall(wall.id, { locked: !wall.locked })}
+          >
+            {wall.locked ? (
+              <Lock className="h-3 w-3 text-amber-400" />
+            ) : (
+              <Unlock className="h-3 w-3 text-gray-400" />
+            )}
+          </Button>
           <Button
             variant="ghost"
             size="sm"
             className="h-6 w-6 flex-shrink-0 p-0"
             title="Remove wall"
             onClick={() => removeWall(wall.id)}
+            disabled={wall.locked}
           >
             <Trash2 className="h-3 w-3 text-red-400" />
           </Button>
@@ -1078,7 +1112,77 @@ function WallFeatureCard({
   );
 }
 
+function WallLengthInput({
+  disabled,
+  fromDisplay,
+  measurementStep,
+  setWallLength,
+  toDisplay,
+  unit,
+  unitSuffix,
+  wallId,
+  wallLength,
+}: {
+  disabled?: boolean;
+  fromDisplay: Parser;
+  measurementStep: number;
+  setWallLength: RoomPlannerReturn["setWallLength"];
+  toDisplay: Formatter;
+  unit: Unit;
+  unitSuffix: string;
+  wallId: string;
+  wallLength: number;
+}) {
+  const displayValue = formatMeasurementValue(wallLength, unit, toDisplay);
+  const [localValue, setLocalValue] = useState<string>(String(displayValue));
+  const [isFocused, setIsFocused] = useState(false);
+
+  useEffect(() => {
+    if (!isFocused) {
+      setLocalValue(String(displayValue));
+    }
+  }, [displayValue, isFocused]);
+
+  const commit = () => {
+    const nextValue = Number.parseFloat(localValue);
+    if (!Number.isNaN(nextValue) && nextValue > 0) {
+      setWallLength(wallId, fromDisplay(nextValue));
+    } else {
+      setLocalValue(String(displayValue));
+    }
+    setIsFocused(false);
+  };
+
+  return (
+    <div className="relative flex-1">
+      <Input
+        type="number"
+        value={isFocused ? localValue : displayValue}
+        onChange={(event) => setLocalValue(event.target.value)}
+        onFocus={() => {
+          setIsFocused(true);
+          setLocalValue(String(displayValue));
+        }}
+        onBlur={commit}
+        onKeyDown={(event) => {
+          if (event.key === "Enter") {
+            (event.target as HTMLInputElement).blur();
+          }
+        }}
+        className="h-7 pr-8 text-xs"
+        min={1}
+        step={measurementStep}
+        disabled={disabled}
+      />
+      <span className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-[10px] text-gray-400 dark:text-white/30">
+        {unitSuffix}
+      </span>
+    </div>
+  );
+}
+
 function CompactMeasurementInput({
+  disabled,
   min = 0,
   onChange,
   step,
@@ -1087,6 +1191,7 @@ function CompactMeasurementInput({
   unit,
   value,
 }: {
+  disabled?: boolean;
   min?: number;
   onChange: (value: number) => void;
   step: number;
@@ -1095,20 +1200,47 @@ function CompactMeasurementInput({
   unit: Unit;
   value: number;
 }) {
+  const displayValue = formatMeasurementValue(value, unit, toDisplay);
+  const [localValue, setLocalValue] = useState<string>(String(displayValue));
+  const [isFocused, setIsFocused] = useState(false);
+
+  // Sync local value from prop when not focused
+  useEffect(() => {
+    if (!isFocused) {
+      setLocalValue(String(displayValue));
+    }
+  }, [displayValue, isFocused]);
+
+  const commit = () => {
+    const nextValue = Number.parseFloat(localValue);
+    if (!Number.isNaN(nextValue)) {
+      onChange(nextValue);
+    } else {
+      setLocalValue(String(displayValue));
+    }
+    setIsFocused(false);
+  };
+
   return (
     <div className="relative flex-1">
       <Input
         type="number"
-        value={formatMeasurementValue(value, unit, toDisplay)}
-        onChange={(event) => {
-          const nextValue = Number.parseFloat(event.target.value);
-          if (!Number.isNaN(nextValue)) {
-            onChange(nextValue);
+        value={isFocused ? localValue : displayValue}
+        onChange={(event) => setLocalValue(event.target.value)}
+        onFocus={() => {
+          setIsFocused(true);
+          setLocalValue(String(displayValue));
+        }}
+        onBlur={commit}
+        onKeyDown={(event) => {
+          if (event.key === "Enter") {
+            (event.target as HTMLInputElement).blur();
           }
         }}
         className="h-6 bg-white/80 pr-6 text-[11px] dark:bg-slate-900/70"
         min={min}
         step={step}
+        disabled={disabled}
       />
       <span className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-[9px] text-gray-400 dark:text-white/25">
         {suffix}

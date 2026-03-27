@@ -93,7 +93,10 @@ export function getWallMeasurementSpans(wallLength: number, features: WallFeatur
   const gapRanges = features
     .filter(
       (feature) =>
-        feature.type === "door" || feature.type === "opening" || feature.type === "closet",
+        feature.type === "door" ||
+        feature.type === "window" ||
+        feature.type === "opening" ||
+        feature.type === "closet",
     )
     .map((feature) => ({
       start: Math.max(0, Math.min(wallLength, feature.offset)),

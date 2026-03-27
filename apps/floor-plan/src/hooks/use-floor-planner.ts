@@ -573,6 +573,20 @@ export function useRoomPlanner(initialState?: RoomPlannerState, historyKey?: str
     [furniture, pushHistory],
   );
 
+  // ── Wall updates ──
+
+  const updateWall = useCallback(
+    (wallId: string, updates: Partial<Pick<Wall, "locked">>) => {
+      setRoom((prev) => {
+        const walls = prev.walls.map((w) => (w.id === wallId ? { ...w, ...updates } : w));
+        const updated = { ...prev, walls };
+        pushHistory(updated, furniture);
+        return updated;
+      });
+    },
+    [furniture, pushHistory],
+  );
+
   // ── Wall length editing ──
 
   const setWallLength = useCallback(
@@ -1341,6 +1355,7 @@ export function useRoomPlanner(initialState?: RoomPlannerState, historyKey?: str
     // Walls
     addWallToNewPoint,
     addWallBetweenEndpoints,
+    updateWall,
     removeWall,
     setWallLength,
     // Wall features

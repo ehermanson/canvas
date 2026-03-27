@@ -2220,43 +2220,62 @@ export function Canvas({ planner }: CanvasProps) {
       // Check endpoint hit (highest priority for wall interaction)
       const epHit = hitTestEndpoint(screen);
       if (epHit) {
-        setSelectedId(null);
-        setSelectedWallId(null);
-        setSelectedFeature(null);
-        setSelectedResizeHandle(null);
-        interactionRef.current = {
-          mode: "pending-endpoint",
-          endpointId: epHit.id,
-          startScreen: screen,
-          startWorld: { x: epHit.x, y: epHit.y },
-          altKey: e.altKey,
-        };
-        return;
+        // If any wall connected to this endpoint is locked, skip drag —
+        // moving a shared endpoint would change the locked wall's geometry.
+        const connectedWalls = room.walls.filter(
+          (w) => w.startId === epHit.id || w.endId === epHit.id,
+        );
+        const anyLocked = connectedWalls.some((w) => w.locked);
+        if (!anyLocked) {
+          setSelectedId(null);
+          setSelectedWallId(null);
+          setSelectedFeature(null);
+          setSelectedResizeHandle(null);
+          interactionRef.current = {
+            mode: "pending-endpoint",
+            endpointId: epHit.id,
+            startScreen: screen,
+            startWorld: { x: epHit.x, y: epHit.y },
+            altKey: e.altKey,
+          };
+          return;
+        }
       }
 
-      // Check feature hit
+      // Check feature hit & furniture hit — furniture takes priority over windows
+      // so that pieces placed against a window remain easy to select.
       const featureHit = hitTestFeature(world);
+      const furnitureHit = hitTestFurniture(world);
+
       if (featureHit) {
-        setSelectedWallId(featureHit.wallId);
-        setSelectedId(null);
-        setSelectedFeature({
-          wallId: featureHit.wallId,
-          featureId: featureHit.featureId,
-        });
-        setSelectedResizeHandle(null);
-        interactionRef.current = {
-          mode: "pending-feature",
-          wallId: featureHit.wallId,
-          featureId: featureHit.featureId,
-          startScreen: screen,
-        };
-        setCursor("grabbing");
-        return;
+        const hitFeature = featureHit.wall.features.find((f) => f.id === featureHit.featureId);
+        const isWindow = hitFeature?.type === "window";
+        // If the feature is a window and there's also a furniture item under the
+        // cursor, prefer the furniture. For doors/closets/openings we keep
+        // feature priority since they sit flush on the wall and share geometry.
+        if (!isWindow || !furnitureHit || furnitureHit.locked) {
+          setSelectedWallId(featureHit.wallId);
+          setSelectedId(null);
+          setSelectedFeature({
+            wallId: featureHit.wallId,
+            featureId: featureHit.featureId,
+          });
+          setSelectedResizeHandle(null);
+          interactionRef.current = {
+            mode: "pending-feature",
+            wallId: featureHit.wallId,
+            featureId: featureHit.featureId,
+            startScreen: screen,
+          };
+          setCursor("grabbing");
+          return;
+        }
+        // Fall through to furniture selection below
       }
 
       // Check wall segment hit
       const wallHit = hitTestWallSegment(world);
-      if (wallHit) {
+      if (wallHit && !(furnitureHit && !furnitureHit.locked)) {
         alignmentGuidesRef.current = [];
         setSelectedWallId(wallHit.id);
         setSelectedId(null);
@@ -2265,8 +2284,6 @@ export function Canvas({ planner }: CanvasProps) {
         return;
       }
 
-      // Check furniture hit
-      const furnitureHit = hitTestFurniture(world);
       if (furnitureHit && !furnitureHit.locked) {
         alignmentGuidesRef.current = [];
         const isAlreadySelected = selectedIds.includes(furnitureHit.id);
@@ -2784,7 +2801,10 @@ export function Canvas({ planner }: CanvasProps) {
           }
           const epHit = hitTestEndpoint(screen);
           if (epHit) {
-            setCursor("grab");
+            const anyLocked = room.walls.some(
+              (w) => (w.startId === epHit.id || w.endId === epHit.id) && w.locked,
+            );
+            setCursor(anyLocked ? "default" : "grab");
             return;
           }
           const featureHit = hitTestFeature(world);
@@ -4284,8 +4304,14 @@ export function Canvas({ planner }: CanvasProps) {
         e.preventDefault();
         if (selectedIds.length > 0) {
           removeFurnitureGroup(selectedIds);
+        } else if (selectedFeature) {
+          planner.removeWallFeature(selectedFeature.wallId, selectedFeature.featureId);
+          setSelectedFeature(null);
         } else if (selectedWallId) {
-          planner.removeWall(selectedWallId);
+          const wall = room.walls.find((w) => w.id === selectedWallId);
+          if (wall && !wall.locked) {
+            planner.removeWall(selectedWallId);
+          }
         }
       }
       if (e.key === "r" && document.activeElement === document.body) {
@@ -4360,8 +4386,11 @@ export function Canvas({ planner }: CanvasProps) {
         }
 
         if (selectedWallId) {
-          e.preventDefault();
-          translateWall(selectedWallId, delta.x, delta.y);
+          const selectedWall = room.walls.find((w) => w.id === selectedWallId);
+          if (selectedWall && !selectedWall.locked) {
+            e.preventDefault();
+            translateWall(selectedWallId, delta.x, delta.y);
+          }
           return;
         }
 
@@ -4599,7 +4628,11 @@ export function Canvas({ planner }: CanvasProps) {
               </ContextMenuShortcut>
             </ContextMenuItem>
             <ContextMenuSeparator />
-            <ContextMenuItem variant="destructive" onClick={() => removeWall(contextMenuWall.id)}>
+            <ContextMenuItem
+              variant="destructive"
+              onClick={() => removeWall(contextMenuWall.id)}
+              disabled={contextMenuWall.locked}
+            >
               <Trash2 className="h-4 w-4" />
               Delete Wall
             </ContextMenuItem>
