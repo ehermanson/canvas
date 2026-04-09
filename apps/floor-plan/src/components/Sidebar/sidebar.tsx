@@ -48,6 +48,7 @@ import {
 } from "lucide-react";
 import { motion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { AuthPanel } from "@/components/auth-panel";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Dialog, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -398,10 +399,24 @@ function SidebarHeader({ onClose }: { onClose: () => void }) {
 
 function formatProjectBrowserDate(timestamp: string) {
   try {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60_000);
+    const diffHours = Math.floor(diffMs / 3_600_000);
+    const diffDays = Math.floor(diffMs / 86_400_000);
+
+    if (diffMins < 1) return "Just now";
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+
+    const sameYear = date.getFullYear() === now.getFullYear();
     return new Intl.DateTimeFormat(undefined, {
       month: "short",
       day: "numeric",
-    }).format(new Date(timestamp));
+      ...(sameYear ? {} : { year: "numeric" }),
+    }).format(date);
   } catch {
     return "";
   }
@@ -409,17 +424,49 @@ function formatProjectBrowserDate(timestamp: string) {
 
 function ProjectManagerDialog({
   activeProject,
+  deleteProject,
   exportProject,
   importProject,
+  isRemoteLoading,
+  remoteError,
   open,
   projects,
   selectProject,
   setOpen,
-}: ProjectControls & {
+}: Pick<
+  ProjectControls,
+  | "activeProject"
+  | "deleteProject"
+  | "exportProject"
+  | "importProject"
+  | "projects"
+  | "selectProject"
+> & {
+  isRemoteLoading: boolean;
+  remoteError: string | null;
   open: boolean;
   setOpen: (open: boolean) => void;
 }) {
   const importInputRef = useRef<HTMLInputElement>(null);
+
+  const confirmDeleteProject = useCallback(
+    (projectId: string, projectName: string) => {
+      const message =
+        projects.length === 1
+          ? `Delete "${projectName}"? A fresh blank project will be created so you still have a workspace.`
+          : `Delete "${projectName}" and all of its snapshots?`;
+
+      if (!window.confirm(message)) {
+        return;
+      }
+
+      deleteProject(projectId);
+      if (projectId === activeProject.id) {
+        setOpen(false);
+      }
+    },
+    [activeProject.id, deleteProject, projects.length, setOpen],
+  );
 
   const handleExportProject = useCallback(() => {
     const exported = exportProject(activeProject.id);
@@ -465,17 +512,15 @@ function ProjectManagerDialog({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <SuiteDialogContent className="max-h-[min(80vh,760px)] w-[min(720px,calc(100vw-2rem))] max-w-none overflow-hidden p-0">
-        <DialogHeader className="border-b border-gray-200/70 px-6 py-5 dark:border-white/10">
-          <DialogTitle className="text-left text-xl text-gray-950 dark:text-white">
-            Project Browser
+      <SuiteDialogContent className="max-h-[min(80vh,760px)] w-[min(560px,calc(100vw-2rem))] max-w-none overflow-hidden p-0">
+        <DialogHeader className="px-5 pt-5 pb-0">
+          <DialogTitle className="text-left text-base font-semibold text-gray-950 dark:text-white">
+            Projects
           </DialogTitle>
-          <DialogDescription className="text-left text-gray-500 dark:text-white/50">
-            Choose a saved project to open.
-          </DialogDescription>
+          <DialogDescription className="sr-only">Choose a saved project to open.</DialogDescription>
         </DialogHeader>
 
-        <div className="px-6 py-5">
+        <div className="px-5 pt-3 pb-5">
           <input
             ref={importInputRef}
             type="file"
@@ -483,37 +528,15 @@ function ProjectManagerDialog({
             className="hidden"
             onChange={handleImportFile}
           />
-          <div className="mb-3 flex items-center justify-between gap-3">
-            <p className="text-xs text-gray-500 dark:text-white/45">
-              {projects.length} available {projects.length === 1 ? "project" : "projects"}
-            </p>
-            <div className="flex items-center gap-2">
-              <span className="text-[11px] text-gray-400 dark:text-white/35">
-                Current: {activeProject.name}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-8 gap-1.5 text-[11px]"
-                onClick={() => importInputRef.current?.click()}
-              >
-                <Upload className="h-3.5 w-3.5" />
-                Import JSON
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-8 gap-1.5 text-[11px]"
-                onClick={handleExportProject}
-              >
-                <Download className="h-3.5 w-3.5" />
-                Export Current
-              </Button>
-            </div>
-          </div>
 
-          <ScrollArea className="h-[min(60vh,520px)] rounded-2xl border border-gray-200/70 bg-white/70 p-2 dark:border-white/10 dark:bg-slate-950/35">
-            <div className="space-y-2">
+          {remoteError ? (
+            <p className="mb-3 text-xs text-red-500 dark:text-red-400">{remoteError}</p>
+          ) : isRemoteLoading ? (
+            <p className="mb-3 text-xs text-gray-400 dark:text-white/35">Loading projects...</p>
+          ) : null}
+
+          <ScrollArea className="max-h-[min(55vh,440px)]">
+            <div className="space-y-0.5">
               {projects.map((project) => {
                 const isActive = project.id === activeProject.id;
                 const currentSnapshot =
@@ -521,38 +544,79 @@ function ProjectManagerDialog({
                   project.snapshots[0];
 
                 return (
-                  <InspectorListRow key={project.id} asChild selected={isActive} tone="cyan">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        selectProject(project.id);
-                        setOpen(false);
-                      }}
-                      className="flex w-full items-center justify-between px-1 py-1 text-left"
-                    >
-                      <div className="min-w-0">
+                  <button
+                    key={project.id}
+                    type="button"
+                    onClick={() => {
+                      selectProject(project.id);
+                      setOpen(false);
+                    }}
+                    className={cn(
+                      "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors",
+                      isActive
+                        ? "bg-indigo-50 dark:bg-indigo-500/10"
+                        : "hover:bg-gray-50 dark:hover:bg-white/5",
+                    )}
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
                         <p className="truncate text-sm font-medium text-gray-900 dark:text-white">
                           {project.name}
                         </p>
-                        <p className="truncate text-[11px] text-gray-500 dark:text-white/45">
-                          {currentSnapshot?.name} · {project.snapshots.length}{" "}
-                          {project.snapshots.length === 1 ? "snapshot" : "snapshots"}
-                        </p>
+                        {isActive ? (
+                          <span className="shrink-0 rounded-full bg-indigo-100 px-1.5 py-0.5 text-[10px] font-medium text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-300">
+                            Active
+                          </span>
+                        ) : null}
                       </div>
-                      <div className="shrink-0 pl-4 text-right">
-                        <p className="text-[11px] text-gray-400 dark:text-white/35">
-                          {formatProjectBrowserDate(project.updatedAt)}
-                        </p>
-                        <p className="mt-1 text-[11px] text-gray-400 dark:text-white/35">
-                          {isActive ? "Current" : "Open"}
-                        </p>
-                      </div>
-                    </button>
-                  </InspectorListRow>
+                      <p className="mt-0.5 truncate text-[11px] text-gray-400 dark:text-white/35">
+                        {currentSnapshot?.name}
+                        {project.snapshots.length > 1
+                          ? ` + ${project.snapshots.length - 1} more`
+                          : ""}
+                        {" · "}
+                        {formatProjectBrowserDate(project.updatedAt)}
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 shrink-0 p-0 text-gray-400 hover:text-red-600 dark:text-white/35 dark:hover:text-red-300"
+                      title={`Delete ${project.name}`}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        confirmDeleteProject(project.id, project.name);
+                      }}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      <span className="sr-only">Delete {project.name}</span>
+                    </Button>
+                  </button>
                 );
               })}
             </div>
           </ScrollArea>
+
+          <div className="mt-3 flex items-center gap-2 border-t border-gray-100 pt-3 dark:border-white/5">
+            <button
+              type="button"
+              className="flex items-center gap-1.5 text-[11px] text-gray-400 hover:text-gray-600 dark:text-white/30 dark:hover:text-white/50"
+              onClick={() => importInputRef.current?.click()}
+            >
+              <Upload className="size-3" />
+              Import
+            </button>
+            <span className="text-gray-200 dark:text-white/10">·</span>
+            <button
+              type="button"
+              className="flex items-center gap-1.5 text-[11px] text-gray-400 hover:text-gray-600 dark:text-white/30 dark:hover:text-white/50"
+              onClick={handleExportProject}
+            >
+              <Download className="size-3" />
+              Export
+            </button>
+          </div>
         </div>
       </SuiteDialogContent>
     </Dialog>
@@ -626,10 +690,16 @@ function SidebarProjectActions({
 
 function ProjectBrowserSection({
   controls,
+  isRemoteLoading,
+  isRemoteSyncing,
+  remoteError,
   projectBrowserOpen,
   setProjectBrowserOpen,
 }: {
   controls: ProjectControls;
+  isRemoteLoading: boolean;
+  isRemoteSyncing: boolean;
+  remoteError: string | null;
   projectBrowserOpen: boolean;
   setProjectBrowserOpen: (open: boolean) => void;
 }) {
@@ -637,6 +707,7 @@ function ProjectBrowserSection({
     activeProject,
     activeSnapshot,
     createSnapshot,
+    deleteProject,
     deleteSnapshot,
     renameProject,
     renameSnapshot,
@@ -663,8 +734,15 @@ function ProjectBrowserSection({
   return (
     <>
       <ProjectManagerDialog
-        {...controls}
+        activeProject={controls.activeProject}
+        deleteProject={controls.deleteProject}
+        exportProject={controls.exportProject}
+        importProject={controls.importProject}
+        isRemoteLoading={isRemoteLoading}
         open={projectBrowserOpen}
+        projects={controls.projects}
+        remoteError={remoteError}
+        selectProject={controls.selectProject}
         setOpen={setProjectBrowserOpen}
       />
       <Collapsible
@@ -716,8 +794,41 @@ function ProjectBrowserSection({
                     />
                   </div>
                 </div>
+                <p
+                  className={cn(
+                    "text-xs",
+                    remoteError
+                      ? "text-red-500 dark:text-red-400"
+                      : "text-gray-500 dark:text-white/45",
+                  )}
+                >
+                  {remoteError
+                    ? remoteError
+                    : isRemoteLoading
+                      ? "Loading account projects..."
+                      : isRemoteSyncing
+                        ? "Saving project changes to your account..."
+                        : "Project changes save to your account."}
+                </p>
 
                 <div className="grid gap-2 sm:grid-cols-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="justify-start border-red-200 text-red-600 hover:border-red-300 hover:bg-red-50 hover:text-red-700 dark:border-red-500/25 dark:text-red-300 dark:hover:border-red-500/40 dark:hover:bg-red-500/10 dark:hover:text-red-200"
+                    onClick={() => {
+                      const message =
+                        controls.projects.length === 1
+                          ? `Delete "${activeProject.name}"? A fresh blank project will be created so you still have a workspace.`
+                          : `Delete "${activeProject.name}" and all of its snapshots?`;
+                      if (window.confirm(message)) {
+                        deleteProject(activeProject.id);
+                      }
+                    }}
+                  >
+                    <Trash2 className="mr-2 h-3.5 w-3.5" />
+                    Delete Project
+                  </Button>
                   <Separator className="sm:col-span-2" />
                 </div>
 
@@ -2381,6 +2492,9 @@ export function Sidebar({ planner, projects }: SidebarProps) {
   const [wallsOpen, setWallsOpen] = useState(false);
   const [furnitureOpen, setFurnitureOpen] = useState(true);
   const [historyDebugOpen, setHistoryDebugOpen] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
+  const [importSuccessMessage, setImportSuccessMessage] = useState<string | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
   const isHistoryEditingLocked = planner.isHistoryEditingLocked;
 
   const { canRedo, canUndo, redo, selectedId, selectedWallId, undo } = planner;
@@ -2418,6 +2532,22 @@ export function Sidebar({ planner, projects }: SidebarProps) {
     }
     previousSelectedIdRef.current = selectedId;
   }, [selectedId, furnitureOpen]);
+
+  const handleImportLocal = useCallback(async () => {
+    setImportError(null);
+    setImportSuccessMessage(null);
+    setIsImporting(true);
+    try {
+      const result = await projects.importLocalProjects();
+      if (!result.success) {
+        setImportError(result.error || "Unable to import local projects");
+        return;
+      }
+      setImportSuccessMessage("Local planner projects imported into your account.");
+    } finally {
+      setIsImporting(false);
+    }
+  }, [projects]);
 
   useEffect(() => {
     if (!isOpen || !selectedWallId || !wallsOpen) return;
@@ -2506,7 +2636,10 @@ export function Sidebar({ planner, projects }: SidebarProps) {
             <div className="max-w-full space-y-0 overflow-hidden p-4">
               <ProjectBrowserSection
                 controls={projects}
+                isRemoteLoading={projects.isRemoteLoading}
+                isRemoteSyncing={projects.isRemoteSyncing}
                 projectBrowserOpen={projectBrowserOpen}
+                remoteError={projects.remoteError}
                 setProjectBrowserOpen={setProjectBrowserOpen}
               />
 
@@ -2553,6 +2686,48 @@ export function Sidebar({ planner, projects }: SidebarProps) {
               />
             </div>
           </ScrollArea>
+
+          {/* Auth footer */}
+          <div className="border-t border-gray-200/50 px-4 py-2 dark:border-white/5">
+            {projects.canImportLocal ? (
+              <div className="mb-2 rounded-lg border border-indigo-200 bg-indigo-50/80 px-2.5 py-2 dark:border-indigo-500/30 dark:bg-indigo-500/10">
+                <p className="text-[11px] text-indigo-700 dark:text-indigo-200">
+                  Local projects found.{" "}
+                  <button
+                    type="button"
+                    className="underline hover:no-underline disabled:opacity-50"
+                    onClick={() => void handleImportLocal()}
+                    disabled={isImporting}
+                  >
+                    {isImporting ? "Importing..." : "Import to account"}
+                  </button>
+                </p>
+                {importError ? (
+                  <p className="mt-1 text-[11px] text-red-500 dark:text-red-400">{importError}</p>
+                ) : null}
+              </div>
+            ) : null}
+            {!projects.canImportLocal && importSuccessMessage ? (
+              <div className="mb-2 rounded-lg border border-emerald-200 bg-emerald-50/80 px-2.5 py-1.5 dark:border-emerald-500/30 dark:bg-emerald-500/10">
+                <p className="text-[11px] text-emerald-700 dark:text-emerald-200">
+                  {importSuccessMessage}{" "}
+                  <button
+                    type="button"
+                    className="underline hover:no-underline"
+                    onClick={() => setImportSuccessMessage(null)}
+                  >
+                    Dismiss
+                  </button>
+                </p>
+              </div>
+            ) : null}
+            <AuthPanel />
+            {projects.remoteError ? (
+              <p className="mt-1 text-[11px] text-red-500 dark:text-red-400">
+                {projects.remoteError}
+              </p>
+            ) : null}
+          </div>
         </ToolPanel>
       </motion.div>
     </div>

@@ -1,12 +1,22 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { authClient } from "@/lib/auth-client";
 import type { SavedLayout } from "@/types";
 
 const STORAGE_KEY = "picture-hanging-layouts";
 const LOADED_LAYOUT_KEY = "picture-hanging-loaded-layout-id";
+const IMPORT_COMPLETE_KEY = "picture-hanging-remote-import-complete";
 const URL_CHANGE_EVENT = "hang-time:url-change";
 
 let historyPatchRefs = 0;
 let restoreHistoryPatch: (() => void) | null = null;
+
+interface LayoutMutationResult {
+  error?: string;
+  success: boolean;
+}
+
+const REMOTE_UNAVAILABLE_MESSAGE =
+  "Unable to reach account storage. Your local data is safe — changes will sync when the connection is restored.";
 
 function patchHistoryForUrlChanges() {
   if (typeof window === "undefined") return () => {};
@@ -43,13 +53,40 @@ function patchHistoryForUrlChanges() {
   };
 }
 
+async function parseLayoutsResponse(response: Response) {
+  const contentType = response.headers.get("content-type") ?? "";
+  if (!contentType.includes("application/json")) {
+    throw new Error(REMOTE_UNAVAILABLE_MESSAGE);
+  }
+
+  const data = (await response.json()) as {
+    error?: string;
+    layout?: SavedLayout;
+    layouts?: SavedLayout[];
+  };
+
+  if (!response.ok) {
+    throw new Error(data.error || "Request failed");
+  }
+
+  return data;
+}
+
 export function useSavedLayouts() {
-  const [layouts, setLayouts] = useState<SavedLayout[]>([]);
+  const { data: session } = authClient.useSession();
+  const [localLayouts, setLocalLayouts] = useState<SavedLayout[]>([]);
+  const [remoteLayouts, setRemoteLayouts] = useState<SavedLayout[]>([]);
   const [loadedLayoutId, setLoadedLayoutId] = useState<string | null>(null);
   const [currentUrl, setCurrentUrl] = useState(() => window.location.search);
   const [isDetached, setIsDetached] = useState(false);
+  const [isRemoteLoading, setIsRemoteLoading] = useState(false);
+  const [remoteError, setRemoteError] = useState<string | null>(null);
+  const [hasDismissedImport, setHasDismissedImport] = useState(() => {
+    return localStorage.getItem(IMPORT_COMPLETE_KEY) === "true";
+  });
+  const isSignedIn = Boolean(session);
+  const layouts = isSignedIn ? remoteLayouts : localLayouts;
 
-  // Track URL changes to detect modifications without interval polling
   useEffect(() => {
     const unpatchHistory = patchHistoryForUrlChanges();
 
@@ -70,62 +107,126 @@ export function useSavedLayouts() {
     };
   }, []);
 
-  // Load from localStorage on mount
   useEffect(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
-        setLayouts(JSON.parse(stored));
+        setLocalLayouts(JSON.parse(stored));
       }
-      // Restore which layout was loaded
+
       const loadedId = sessionStorage.getItem(LOADED_LAYOUT_KEY);
       if (loadedId) {
         setLoadedLayoutId(loadedId);
       }
     } catch {
-      // Invalid JSON, start fresh
-      setLayouts([]);
+      setLocalLayouts([]);
     }
   }, []);
 
-  // Sync to localStorage whenever layouts change
-  const syncToStorage = useCallback((newLayouts: SavedLayout[]) => {
+  const syncLocalLayouts = useCallback((newLayouts: SavedLayout[]) => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(newLayouts));
-    setLayouts(newLayouts);
+    setLocalLayouts(newLayouts);
   }, []);
 
-  // Check if a name already exists (optionally exclude a specific layout)
+  const loadRemoteLayouts = useCallback(async () => {
+    setIsRemoteLoading(true);
+    setRemoteError(null);
+
+    try {
+      const response = await fetch("/api/layouts", {
+        credentials: "include",
+      });
+      const data = await parseLayoutsResponse(response);
+      setRemoteLayouts(data.layouts ?? []);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to load saved layouts";
+      setRemoteError(message);
+      setRemoteLayouts([]);
+    } finally {
+      setIsRemoteLoading(false);
+    }
+  }, []);
+
+  const importLocalLayouts = useCallback(async (): Promise<LayoutMutationResult> => {
+    if (!isSignedIn || localLayouts.length === 0) {
+      return { success: true };
+    }
+
+    try {
+      const response = await fetch("/api/layouts/import-local", {
+        body: JSON.stringify({
+          layouts: localLayouts,
+        }),
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        method: "POST",
+      });
+      const contentType = response.headers.get("content-type") ?? "";
+      if (!contentType.includes("application/json")) {
+        return {
+          success: false,
+          error: REMOTE_UNAVAILABLE_MESSAGE,
+        };
+      }
+      const data = (await response.json()) as { error?: string; layouts?: SavedLayout[] };
+      if (!response.ok) {
+        return {
+          success: false,
+          error: data.error || "Unable to import local layouts",
+        };
+      }
+
+      localStorage.setItem(IMPORT_COMPLETE_KEY, "true");
+      setHasDismissedImport(true);
+      await loadRemoteLayouts();
+      return { success: true };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : REMOTE_UNAVAILABLE_MESSAGE;
+      return { success: false, error: message };
+    }
+  }, [isSignedIn, loadRemoteLayouts, localLayouts]);
+
+  useEffect(() => {
+    if (!isSignedIn) {
+      setRemoteLayouts([]);
+      setRemoteError(null);
+      setIsRemoteLoading(false);
+      return;
+    }
+
+    void loadRemoteLayouts();
+  }, [isSignedIn, loadRemoteLayouts]);
+
   const isNameTaken = useCallback(
     (name: string, excludeId?: string) => {
       const trimmed = name.trim().toLowerCase();
-      return layouts.some((l) => l.title.toLowerCase() === trimmed && l.id !== excludeId);
+      return layouts.some(
+        (layout) => layout.title.toLowerCase() === trimmed && layout.id !== excludeId,
+      );
     },
     [layouts],
   );
 
-  // Check if current config is already saved (exact match)
-  // Returns null if user has "detached" from viewing saved layouts
   const existingLayoutForCurrentConfig = useMemo(() => {
     if (isDetached) return null;
-    return layouts.find((l) => l.url === currentUrl) || null;
+    return layouts.find((layout) => layout.url === currentUrl) || null;
   }, [layouts, currentUrl, isDetached]);
 
-  // The layout that was loaded (if any)
   const loadedLayout = useMemo(() => {
-    return layouts.find((l) => l.id === loadedLayoutId) || null;
+    return layouts.find((layout) => layout.id === loadedLayoutId) || null;
   }, [layouts, loadedLayoutId]);
 
-  // Check if current config has diverged from loaded layout
   const hasUnsavedChanges = useMemo(() => {
     if (!loadedLayout) return false;
     return currentUrl !== loadedLayout.url;
   }, [loadedLayout, currentUrl]);
 
   const save = useCallback(
-    (title: string): { success: boolean; error?: string } => {
+    async (title: string): Promise<LayoutMutationResult> => {
       const trimmedTitle = title.trim();
 
-      // Validate name not taken
       if (isNameTaken(trimmedTitle)) {
         return {
           success: false,
@@ -133,8 +234,7 @@ export function useSavedLayouts() {
         };
       }
 
-      // Check if config already saved
-      const existingConfig = layouts.find((l) => l.url === currentUrl);
+      const existingConfig = layouts.find((layout) => layout.url === currentUrl);
       if (existingConfig) {
         return {
           success: false,
@@ -142,27 +242,54 @@ export function useSavedLayouts() {
         };
       }
 
-      const layout: SavedLayout = {
-        id: crypto.randomUUID(),
-        title: trimmedTitle || "Untitled Layout",
-        url: currentUrl,
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-      };
-      syncToStorage([...layouts, layout]);
-      // Track this as the loaded layout
-      setLoadedLayoutId(layout.id);
-      sessionStorage.setItem(LOADED_LAYOUT_KEY, layout.id);
-      return { success: true };
+      try {
+        if (isSignedIn) {
+          const response = await fetch("/api/layouts", {
+            body: JSON.stringify({
+              title: trimmedTitle || "Untitled Layout",
+              url: currentUrl,
+            }),
+            credentials: "include",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            method: "POST",
+          });
+          const data = await parseLayoutsResponse(response);
+          if (!data.layout) {
+            throw new Error("Missing layout response");
+          }
+          setRemoteLayouts((current) => [data.layout!, ...current]);
+          setLoadedLayoutId(data.layout.id);
+          sessionStorage.setItem(LOADED_LAYOUT_KEY, data.layout.id);
+          return { success: true };
+        }
+
+        const now = Date.now();
+        const layout: SavedLayout = {
+          id: crypto.randomUUID(),
+          title: trimmedTitle || "Untitled Layout",
+          url: currentUrl,
+          createdAt: now,
+          updatedAt: now,
+        };
+        syncLocalLayouts([...localLayouts, layout]);
+        setLoadedLayoutId(layout.id);
+        sessionStorage.setItem(LOADED_LAYOUT_KEY, layout.id);
+        return { success: true };
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Failed to save";
+        return { success: false, error: message };
+      }
     },
-    [layouts, currentUrl, syncToStorage, isNameTaken],
+    [currentUrl, isNameTaken, isSignedIn, layouts, localLayouts, syncLocalLayouts],
   );
 
-  // Update an existing layout with current config
   const update = useCallback(
-    (id: string): { success: boolean; error?: string } => {
-      // Check if this exact config is already saved elsewhere
-      const existingConfig = layouts.find((l) => l.url === currentUrl && l.id !== id);
+    async (id: string): Promise<LayoutMutationResult> => {
+      const existingConfig = layouts.find(
+        (layout) => layout.url === currentUrl && layout.id !== id,
+      );
       if (existingConfig) {
         return {
           success: false,
@@ -170,18 +297,41 @@ export function useSavedLayouts() {
         };
       }
 
-      const updatedLayouts = layouts.map((l) =>
-        l.id === id ? { ...l, url: currentUrl, updatedAt: Date.now() } : l,
-      );
-      syncToStorage(updatedLayouts);
-      return { success: true };
+      try {
+        if (isSignedIn) {
+          const response = await fetch(`/api/layouts/${id}`, {
+            body: JSON.stringify({ url: currentUrl }),
+            credentials: "include",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            method: "PATCH",
+          });
+          const data = await parseLayoutsResponse(response);
+          if (!data.layout) {
+            throw new Error("Missing layout response");
+          }
+          setRemoteLayouts((current) =>
+            current.map((layout) => (layout.id === id ? data.layout! : layout)),
+          );
+          return { success: true };
+        }
+
+        const updatedLayouts = localLayouts.map((layout) =>
+          layout.id === id ? { ...layout, url: currentUrl, updatedAt: Date.now() } : layout,
+        );
+        syncLocalLayouts(updatedLayouts);
+        return { success: true };
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Failed to update";
+        return { success: false, error: message };
+      }
     },
-    [layouts, currentUrl, syncToStorage],
+    [currentUrl, isSignedIn, layouts, localLayouts, syncLocalLayouts],
   );
 
-  // Rename a layout
   const rename = useCallback(
-    (id: string, newTitle: string): { success: boolean; error?: string } => {
+    async (id: string, newTitle: string): Promise<LayoutMutationResult> => {
       const trimmedTitle = newTitle.trim();
 
       if (!trimmedTitle) {
@@ -195,37 +345,74 @@ export function useSavedLayouts() {
         };
       }
 
-      const updatedLayouts = layouts.map((l) =>
-        l.id === id ? { ...l, title: trimmedTitle, updatedAt: Date.now() } : l,
-      );
-      syncToStorage(updatedLayouts);
-      return { success: true };
+      try {
+        if (isSignedIn) {
+          const response = await fetch(`/api/layouts/${id}`, {
+            body: JSON.stringify({ title: trimmedTitle }),
+            credentials: "include",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            method: "PATCH",
+          });
+          const data = await parseLayoutsResponse(response);
+          if (!data.layout) {
+            throw new Error("Missing layout response");
+          }
+          setRemoteLayouts((current) =>
+            current.map((layout) => (layout.id === id ? data.layout! : layout)),
+          );
+          return { success: true };
+        }
+
+        const updatedLayouts = localLayouts.map((layout) =>
+          layout.id === id ? { ...layout, title: trimmedTitle, updatedAt: Date.now() } : layout,
+        );
+        syncLocalLayouts(updatedLayouts);
+        return { success: true };
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Failed to rename";
+        return { success: false, error: message };
+      }
     },
-    [layouts, syncToStorage, isNameTaken],
+    [isNameTaken, isSignedIn, localLayouts, syncLocalLayouts],
   );
 
   const remove = useCallback(
-    (id: string) => {
-      syncToStorage(layouts.filter((l) => l.id !== id));
-      // Clear loaded layout if it was deleted
-      if (loadedLayoutId === id) {
-        setLoadedLayoutId(null);
-        sessionStorage.removeItem(LOADED_LAYOUT_KEY);
+    async (id: string) => {
+      try {
+        if (isSignedIn) {
+          const response = await fetch(`/api/layouts/${id}`, {
+            credentials: "include",
+            method: "DELETE",
+          });
+          if (!response.ok) {
+            throw new Error("Failed to delete layout");
+          }
+          setRemoteLayouts((current) => current.filter((layout) => layout.id !== id));
+        } else {
+          syncLocalLayouts(localLayouts.filter((layout) => layout.id !== id));
+        }
+
+        if (loadedLayoutId === id) {
+          setLoadedLayoutId(null);
+          sessionStorage.removeItem(LOADED_LAYOUT_KEY);
+        }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Failed to delete layout";
+        setRemoteError(message);
       }
     },
-    [layouts, syncToStorage, loadedLayoutId],
+    [isSignedIn, loadedLayoutId, localLayouts, syncLocalLayouts],
   );
 
   const load = useCallback((layout: SavedLayout) => {
-    // Track which layout we're loading
     setLoadedLayoutId(layout.id);
     setIsDetached(false);
     sessionStorage.setItem(LOADED_LAYOUT_KEY, layout.id);
-    // Navigate to the saved URL
     window.location.search = layout.url;
   }, []);
 
-  // Start fresh - detach from any saved layout view
   const startFresh = useCallback(() => {
     setLoadedLayoutId(null);
     setIsDetached(true);
@@ -233,17 +420,22 @@ export function useSavedLayouts() {
   }, []);
 
   return {
-    layouts,
-    save,
-    update,
-    rename,
-    remove,
-    load,
-    startFresh,
-    isNameTaken,
     existingLayoutForCurrentConfig,
-    loadedLayout,
     hasUnsavedChanges,
+    isNameTaken,
+    isRemoteLoading,
+    isSignedIn,
+    canImportLocal: isSignedIn && localLayouts.length > 0 && !hasDismissedImport,
+    importLocalLayouts,
+    layouts,
+    load,
+    loadedLayout,
+    remoteError,
+    remove,
+    rename,
+    save,
+    startFresh,
+    update,
   };
 }
 

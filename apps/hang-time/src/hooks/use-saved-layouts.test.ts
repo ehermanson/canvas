@@ -107,12 +107,12 @@ describe("useSavedLayouts", () => {
   });
 
   describe("save", () => {
-    it("saves a new layout successfully", () => {
+    it("saves a new layout successfully", async () => {
       const { result } = renderHook(() => useSavedLayouts());
 
-      let saveResult: { success: boolean; error?: string };
-      act(() => {
-        saveResult = result.current.save("My Layout");
+      let saveResult: { success: boolean; error?: string } | undefined;
+      await act(async () => {
+        saveResult = await result.current.save("My Layout");
       });
 
       expect(saveResult!.success).toBe(true);
@@ -126,27 +126,27 @@ describe("useSavedLayouts", () => {
       });
     });
 
-    it("trims whitespace from title", () => {
+    it("trims whitespace from title", async () => {
       const { result } = renderHook(() => useSavedLayouts());
 
-      act(() => {
-        result.current.save("  Padded Title  ");
+      await act(async () => {
+        await result.current.save("  Padded Title  ");
       });
 
       expect(result.current.layouts[0].title).toBe("Padded Title");
     });
 
-    it('uses "Untitled Layout" for empty title', () => {
+    it('uses "Untitled Layout" for empty title', async () => {
       const { result } = renderHook(() => useSavedLayouts());
 
-      act(() => {
-        result.current.save("   ");
+      await act(async () => {
+        await result.current.save("   ");
       });
 
       expect(result.current.layouts[0].title).toBe("Untitled Layout");
     });
 
-    it("rejects duplicate names (case insensitive)", () => {
+    it("rejects duplicate names (case insensitive)", async () => {
       const existingLayouts = [
         {
           id: "existing-1",
@@ -160,16 +160,16 @@ describe("useSavedLayouts", () => {
 
       const { result } = renderHook(() => useSavedLayouts());
 
-      let saveResult: { success: boolean; error?: string };
-      act(() => {
-        saveResult = result.current.save("my layout"); // lowercase
+      let saveResult: { success: boolean; error?: string } | undefined;
+      await act(async () => {
+        saveResult = await result.current.save("my layout"); // lowercase
       });
 
       expect(saveResult!.success).toBe(false);
       expect(saveResult!.error).toBe("A layout with this name already exists");
     });
 
-    it("rejects saving duplicate configuration", () => {
+    it("rejects saving duplicate configuration", async () => {
       const existingLayouts = [
         {
           id: "existing-1",
@@ -183,31 +183,31 @@ describe("useSavedLayouts", () => {
 
       const { result } = renderHook(() => useSavedLayouts());
 
-      let saveResult: { success: boolean; error?: string };
-      act(() => {
-        saveResult = result.current.save("New Name");
+      let saveResult: { success: boolean; error?: string } | undefined;
+      await act(async () => {
+        saveResult = await result.current.save("New Name");
       });
 
       expect(saveResult!.success).toBe(false);
       expect(saveResult!.error).toBe('This configuration is already saved as "Existing Layout"');
     });
 
-    it("sets the saved layout as loaded layout", () => {
+    it("sets the saved layout as loaded layout", async () => {
       const { result } = renderHook(() => useSavedLayouts());
 
-      act(() => {
-        result.current.save("My Layout");
+      await act(async () => {
+        await result.current.save("My Layout");
       });
 
       expect(result.current.loadedLayout?.id).toBe("12345678-1234-1234-1234-123456789012");
       expect(mockSessionStorage[LOADED_LAYOUT_KEY]).toBe("12345678-1234-1234-1234-123456789012");
     });
 
-    it("persists to localStorage", () => {
+    it("persists to localStorage", async () => {
       const { result } = renderHook(() => useSavedLayouts());
 
-      act(() => {
-        result.current.save("My Layout");
+      await act(async () => {
+        await result.current.save("My Layout");
       });
 
       const stored = JSON.parse(mockLocalStorage[STORAGE_KEY]);
@@ -217,7 +217,7 @@ describe("useSavedLayouts", () => {
   });
 
   describe("update", () => {
-    it("updates an existing layout with current config", () => {
+    it("updates an existing layout with current config", async () => {
       const existingLayouts = [
         {
           id: "layout-1",
@@ -231,9 +231,9 @@ describe("useSavedLayouts", () => {
 
       const { result } = renderHook(() => useSavedLayouts());
 
-      let updateResult: { success: boolean; error?: string };
-      act(() => {
-        updateResult = result.current.update("layout-1");
+      let updateResult: { success: boolean; error?: string } | undefined;
+      await act(async () => {
+        updateResult = await result.current.update("layout-1");
       });
 
       expect(updateResult!.success).toBe(true);
@@ -241,7 +241,7 @@ describe("useSavedLayouts", () => {
       expect(result.current.layouts[0].updatedAt).toBe(1000000);
     });
 
-    it("rejects update if config exists in another layout", () => {
+    it("rejects update if config exists in another layout", async () => {
       const existingLayouts = [
         {
           id: "layout-1",
@@ -262,9 +262,9 @@ describe("useSavedLayouts", () => {
 
       const { result } = renderHook(() => useSavedLayouts());
 
-      let updateResult: { success: boolean; error?: string };
-      act(() => {
-        updateResult = result.current.update("layout-1");
+      let updateResult: { success: boolean; error?: string } | undefined;
+      await act(async () => {
+        updateResult = await result.current.update("layout-1");
       });
 
       expect(updateResult!.success).toBe(false);
@@ -273,7 +273,7 @@ describe("useSavedLayouts", () => {
   });
 
   describe("rename", () => {
-    it("renames a layout successfully", () => {
+    it("renames a layout successfully", async () => {
       const existingLayouts = [
         {
           id: "layout-1",
@@ -287,9 +287,9 @@ describe("useSavedLayouts", () => {
 
       const { result } = renderHook(() => useSavedLayouts());
 
-      let renameResult: { success: boolean; error?: string };
-      act(() => {
-        renameResult = result.current.rename("layout-1", "New Name");
+      let renameResult: { success: boolean; error?: string } | undefined;
+      await act(async () => {
+        renameResult = await result.current.rename("layout-1", "New Name");
       });
 
       expect(renameResult!.success).toBe(true);
@@ -297,7 +297,7 @@ describe("useSavedLayouts", () => {
       expect(result.current.layouts[0].updatedAt).toBe(1000000);
     });
 
-    it("rejects empty name", () => {
+    it("rejects empty name", async () => {
       const existingLayouts = [
         {
           id: "layout-1",
@@ -311,16 +311,16 @@ describe("useSavedLayouts", () => {
 
       const { result } = renderHook(() => useSavedLayouts());
 
-      let renameResult: { success: boolean; error?: string };
-      act(() => {
-        renameResult = result.current.rename("layout-1", "   ");
+      let renameResult: { success: boolean; error?: string } | undefined;
+      await act(async () => {
+        renameResult = await result.current.rename("layout-1", "   ");
       });
 
       expect(renameResult!.success).toBe(false);
       expect(renameResult!.error).toBe("Name cannot be empty");
     });
 
-    it("rejects duplicate name (excluding self)", () => {
+    it("rejects duplicate name (excluding self)", async () => {
       const existingLayouts = [
         {
           id: "layout-1",
@@ -341,16 +341,16 @@ describe("useSavedLayouts", () => {
 
       const { result } = renderHook(() => useSavedLayouts());
 
-      let renameResult: { success: boolean; error?: string };
-      act(() => {
-        renameResult = result.current.rename("layout-1", "Layout 2");
+      let renameResult: { success: boolean; error?: string } | undefined;
+      await act(async () => {
+        renameResult = await result.current.rename("layout-1", "Layout 2");
       });
 
       expect(renameResult!.success).toBe(false);
       expect(renameResult!.error).toBe("A layout with this name already exists");
     });
 
-    it("allows renaming to same name (case change)", () => {
+    it("allows renaming to same name (case change)", async () => {
       const existingLayouts = [
         {
           id: "layout-1",
@@ -364,9 +364,9 @@ describe("useSavedLayouts", () => {
 
       const { result } = renderHook(() => useSavedLayouts());
 
-      let renameResult: { success: boolean; error?: string };
-      act(() => {
-        renameResult = result.current.rename("layout-1", "My Layout");
+      let renameResult: { success: boolean; error?: string } | undefined;
+      await act(async () => {
+        renameResult = await result.current.rename("layout-1", "My Layout");
       });
 
       expect(renameResult!.success).toBe(true);
@@ -375,7 +375,7 @@ describe("useSavedLayouts", () => {
   });
 
   describe("remove", () => {
-    it("removes a layout", () => {
+    it("removes a layout", async () => {
       const existingLayouts = [
         {
           id: "layout-1",
@@ -396,15 +396,15 @@ describe("useSavedLayouts", () => {
 
       const { result } = renderHook(() => useSavedLayouts());
 
-      act(() => {
-        result.current.remove("layout-1");
+      await act(async () => {
+        await result.current.remove("layout-1");
       });
 
       expect(result.current.layouts).toHaveLength(1);
       expect(result.current.layouts[0].id).toBe("layout-2");
     });
 
-    it("clears loadedLayoutId if deleted layout was loaded", () => {
+    it("clears loadedLayoutId if deleted layout was loaded", async () => {
       const existingLayouts = [
         {
           id: "layout-1",
@@ -419,8 +419,8 @@ describe("useSavedLayouts", () => {
 
       const { result } = renderHook(() => useSavedLayouts());
 
-      act(() => {
-        result.current.remove("layout-1");
+      await act(async () => {
+        await result.current.remove("layout-1");
       });
 
       expect(result.current.loadedLayout).toBeNull();

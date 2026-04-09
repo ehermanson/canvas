@@ -56,7 +56,7 @@ describe("usePlannerProjects", () => {
     expect(result.current.activeProject.name).toBe("Untitled Room");
     expect(result.current.activeSnapshot.name).toBe("Current Layout");
     expect(localStorage.getItem(LEGACY_PLANNER_STORAGE_KEY)).toBeNull();
-    expect(localStorage.getItem(PLANNER_PROJECTS_STORAGE_KEY)).toContain('"version":1');
+    expect(localStorage.getItem(PLANNER_PROJECTS_STORAGE_KEY)).toBeNull();
   });
 
   it("migrates flat legacy sessions into projects and preserves the active selection", () => {
@@ -125,6 +125,20 @@ describe("usePlannerProjects", () => {
     });
     expect(result.current.projects).toHaveLength(2);
     expect(result.current.activeProjectId).not.toBe(firstProjectId);
+  });
+
+  it("replaces the last deleted project with a fresh default project", () => {
+    const { result } = renderHook(() => usePlannerProjects());
+    const initialProjectId = result.current.activeProjectId;
+
+    act(() => {
+      result.current.deleteProject(initialProjectId);
+    });
+
+    expect(result.current.projects).toHaveLength(1);
+    expect(result.current.activeProjectId).not.toBe(initialProjectId);
+    expect(result.current.activeProject.name).toBe("Untitled Room");
+    expect(result.current.activeProject.snapshots).toHaveLength(1);
   });
 
   it("creates, duplicates, renames, selects, and deletes snapshots within a project", () => {

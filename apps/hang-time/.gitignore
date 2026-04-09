@@ -23,6 +23,7 @@ npm-debug.log*
 .env
 .env.local
 .env.*.local
+.dev.vars
 
 # TypeScript
 *.tsbuildinfo

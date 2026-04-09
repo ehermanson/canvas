@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
+import { AuthPanel } from "@/components/auth-panel";
 import { GalleryExamples } from "@/components/gallery-examples";
 import { HowToHang } from "@/components/how-to-hang";
 import { Measurements } from "@/components/measurements";
@@ -78,6 +79,10 @@ interface SidebarProps {
 export function Sidebar({ calculator }: SidebarProps) {
   const { state } = calculator;
   const {
+    canImportLocal,
+    importLocalLayouts,
+    isRemoteLoading,
+    isSignedIn,
     layouts,
     save,
     update,
@@ -89,11 +94,15 @@ export function Sidebar({ calculator }: SidebarProps) {
     existingLayoutForCurrentConfig,
     loadedLayout,
     hasUnsavedChanges,
+    remoteError,
   } = useSavedLayouts();
   const [copied, setCopied] = useState(false);
   const [editingBookmark, setEditingBookmark] = useState(false);
   const [bookmarkEditValue, setBookmarkEditValue] = useState("");
   const [bookmarkEditError, setBookmarkEditError] = useState<string | null>(null);
+  const [importError, setImportError] = useState<string | null>(null);
+  const [importSuccessMessage, setImportSuccessMessage] = useState<string | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 1024);
   const [isMinimized, setIsMinimized] = useState(() => window.innerWidth < 1024);
   const bookmarkInputRef = useRef<HTMLInputElement>(null);
@@ -114,9 +123,9 @@ export function Sidebar({ calculator }: SidebarProps) {
     setBookmarkEditError(null);
   };
 
-  const saveBookmarkEdit = () => {
+  const saveBookmarkEdit = async () => {
     if (!currentLayout) return;
-    const result = rename(currentLayout.id, bookmarkEditValue);
+    const result = await rename(currentLayout.id, bookmarkEditValue);
     if (result.success) {
       setEditingBookmark(false);
       setBookmarkEditValue("");
@@ -128,7 +137,7 @@ export function Sidebar({ calculator }: SidebarProps) {
 
   const handleBookmarkKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
-      saveBookmarkEdit();
+      void saveBookmarkEdit();
     } else if (e.key === "Escape") {
       cancelBookmarkEdit();
     }
@@ -156,6 +165,22 @@ export function Sidebar({ calculator }: SidebarProps) {
     if (hasActiveLayoutState) {
       window.history.pushState({}, "", window.location.pathname);
       window.location.reload();
+    }
+  };
+
+  const handleImportLocal = async () => {
+    setImportError(null);
+    setImportSuccessMessage(null);
+    setIsImporting(true);
+    try {
+      const result = await importLocalLayouts();
+      if (!result.success) {
+        setImportError(result.error || "Unable to import local layouts");
+        return;
+      }
+      setImportSuccessMessage("Local layouts imported into your account.");
+    } finally {
+      setIsImporting(false);
     }
   };
 
@@ -273,7 +298,7 @@ export function Sidebar({ calculator }: SidebarProps) {
                       variant="ghost"
                       size="sm"
                       className="size-6 p-0 text-green-600 hover:bg-green-100 hover:text-green-700 dark:text-green-400 dark:hover:bg-green-500/20 dark:hover:text-green-300"
-                      onClick={saveBookmarkEdit}
+                      onClick={() => void saveBookmarkEdit()}
                     >
                       <Check className="size-3.5" />
                     </Button>
@@ -324,6 +349,9 @@ export function Sidebar({ calculator }: SidebarProps) {
                   onLoad={load}
                   onDelete={remove}
                   onRename={rename}
+                  isRemoteLoading={isRemoteLoading}
+                  isSignedIn={isSignedIn}
+                  remoteError={remoteError}
                   iconOnly
                   tooltipLabel="Browse Layouts"
                   buttonClassName="bg-white/80 dark:bg-slate-900/60"
@@ -345,6 +373,9 @@ export function Sidebar({ calculator }: SidebarProps) {
                   existingLayoutForCurrentConfig={existingLayoutForCurrentConfig}
                   loadedLayout={loadedLayout}
                   hasUnsavedChanges={hasUnsavedChanges}
+                  isRemoteLoading={isRemoteLoading}
+                  isSignedIn={isSignedIn}
+                  remoteError={remoteError}
                   iconOnly
                   tooltipLabel="Save Layout"
                   buttonClassName="bg-white/80 dark:bg-slate-900/60"
@@ -428,6 +459,46 @@ export function Sidebar({ calculator }: SidebarProps) {
               </ScrollArea>
             </TabsContent>
           </Tabs>
+
+          {/* Auth footer */}
+          <div className="border-t border-gray-200/50 px-4 py-2 dark:border-white/5">
+            {canImportLocal ? (
+              <div className="mb-2 rounded-lg border border-indigo-200 bg-indigo-50/80 px-2.5 py-2 dark:border-indigo-500/30 dark:bg-indigo-500/10">
+                <p className="text-[11px] text-indigo-700 dark:text-indigo-200">
+                  Local layouts found.{" "}
+                  <button
+                    type="button"
+                    className="underline hover:no-underline disabled:opacity-50"
+                    onClick={() => void handleImportLocal()}
+                    disabled={isImporting}
+                  >
+                    {isImporting ? "Importing..." : "Import to account"}
+                  </button>
+                </p>
+                {importError ? (
+                  <p className="mt-1 text-[11px] text-red-500 dark:text-red-400">{importError}</p>
+                ) : null}
+              </div>
+            ) : null}
+            {!canImportLocal && importSuccessMessage ? (
+              <div className="mb-2 rounded-lg border border-emerald-200 bg-emerald-50/80 px-2.5 py-1.5 dark:border-emerald-500/30 dark:bg-emerald-500/10">
+                <p className="text-[11px] text-emerald-700 dark:text-emerald-200">
+                  {importSuccessMessage}{" "}
+                  <button
+                    type="button"
+                    className="underline hover:no-underline"
+                    onClick={() => setImportSuccessMessage(null)}
+                  >
+                    Dismiss
+                  </button>
+                </p>
+              </div>
+            ) : null}
+            <AuthPanel />
+            {remoteError ? (
+              <p className="mt-1 text-[11px] text-red-500 dark:text-red-400">{remoteError}</p>
+            ) : null}
+          </div>
         </ToolPanel>
       </motion.div>
     </div>

@@ -16,6 +16,7 @@
     "test:watch": "vp test"
   },
   "dependencies": {
+    "@canvas-tools/auth-db": "file:../../packages/auth-db",
     "@canvas-tools/theme": "file:../../packages/theme",
     "@canvas-tools/ui": "file:../../packages/ui",
     "@canvas-tools/viewport": "file:../../packages/viewport",

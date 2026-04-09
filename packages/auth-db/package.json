@@ -1,0 +1,13 @@
+{
+  "name": "@canvas-tools/auth-db",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./client": "./src/client.ts"
+  },
+  "dependencies": {
+    "better-auth": "^1.5.3"
+  }
+}

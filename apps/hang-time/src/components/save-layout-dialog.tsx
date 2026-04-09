@@ -18,12 +18,15 @@ import { cn } from "@/lib/utils";
 import type { SavedLayout } from "@/types";
 
 interface SaveLayoutDialogProps {
-  onSave: (title: string) => { success: boolean; error?: string };
-  onUpdate: (id: string) => { success: boolean; error?: string };
+  onSave: (title: string) => Promise<{ success: boolean; error?: string }>;
+  onUpdate: (id: string) => Promise<{ success: boolean; error?: string }>;
   isNameTaken: (name: string, excludeId?: string) => boolean;
   existingLayoutForCurrentConfig: SavedLayout | null;
   loadedLayout: SavedLayout | null;
   hasUnsavedChanges: boolean;
+  isRemoteLoading?: boolean;
+  isSignedIn?: boolean;
+  remoteError?: string | null;
   buttonClassName?: string;
   buttonLabel?: string;
   iconOnly?: boolean;
@@ -37,6 +40,9 @@ export function SaveLayoutDialog({
   existingLayoutForCurrentConfig,
   loadedLayout,
   hasUnsavedChanges,
+  isRemoteLoading = false,
+  isSignedIn = false,
+  remoteError = null,
   buttonClassName,
   buttonLabel,
   iconOnly = false,
@@ -45,6 +51,7 @@ export function SaveLayoutDialog({
   const [title, setTitle] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [mode, setMode] = useState<"update" | "new">("update");
 
   // Check for duplicate name as user types
@@ -59,38 +66,58 @@ export function SaveLayoutDialog({
     }
   }, [isOpen]);
 
-  const handleSave = () => {
-    const result = onSave(title);
-    if (result.success) {
-      setIsOpen(false);
-    } else {
-      setError(result.error || "Failed to save");
+  const handleSave = async () => {
+    setIsSubmitting(true);
+    try {
+      const result = await onSave(title);
+      if (result.success) {
+        setIsOpen(false);
+      } else {
+        setError(result.error || "Failed to save");
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const handleUpdate = () => {
+  const handleUpdate = async () => {
     if (!loadedLayout) return;
-    const result = onUpdate(loadedLayout.id);
-    if (result.success) {
-      setIsOpen(false);
-    } else {
-      setError(result.error || "Failed to update");
+    setIsSubmitting(true);
+    try {
+      const result = await onUpdate(loadedLayout.id);
+      if (result.success) {
+        setIsOpen(false);
+      } else {
+        setError(result.error || "Failed to update");
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && title.trim() && !nameTaken) {
-      handleSave();
+    if (e.key === "Enter" && title.trim() && !nameTaken && !isSubmitting) {
+      void handleSave();
     }
   };
 
-  const canSave = title.trim() && !nameTaken;
+  const canSave = title.trim() && !nameTaken && !isSubmitting;
   const triggerClassName = cn(
     iconOnly ? "h-9 w-9 rounded-xl p-0" : buttonLabel ? "justify-start" : "flex-1",
     buttonClassName,
   );
   const triggerIconClassName = iconOnly ? "h-4 w-4" : buttonLabel ? "mr-2 h-4 w-4" : "size-4";
   const resolvedTooltipLabel = tooltipLabel ?? buttonLabel ?? "Save layout";
+  const statusMessage = remoteError
+    ? remoteError
+    : isSignedIn
+      ? isRemoteLoading
+        ? "Loading account layouts..."
+        : "Layouts save to your account."
+      : "Layouts stay on this device.";
+  const statusClassName = remoteError
+    ? "text-red-500 dark:text-red-400"
+    : "text-gray-500 dark:text-white/50";
 
   // If already saved (exact match), just show disabled button
   if (existingLayoutForCurrentConfig) {
@@ -146,6 +173,7 @@ export function SaveLayoutDialog({
             <DialogTitle>Save Changes</DialogTitle>
             <DialogDescription>You've made changes to "{loadedLayout.title}"</DialogDescription>
           </DialogHeader>
+          <p className={cn("text-xs", statusClassName)}>{statusMessage}</p>
 
           {mode === "update" ? (
             <>
@@ -154,15 +182,24 @@ export function SaveLayoutDialog({
               </div>
               {error && <p className="text-sm text-red-500 dark:text-red-400">{error}</p>}
               <DialogFooter className="flex-col sm:flex-col gap-2">
-                <Button onClick={handleUpdate} className="w-full">
+                <Button
+                  onClick={() => void handleUpdate()}
+                  className="w-full"
+                  disabled={isSubmitting}
+                >
                   Update "{loadedLayout.title}"
                 </Button>
-                <Button variant="outline" onClick={() => setMode("new")} className="w-full">
+                <Button
+                  variant="outline"
+                  onClick={() => setMode("new")}
+                  className="w-full"
+                  disabled={isSubmitting}
+                >
                   Save as New Layout
                 </Button>
                 <DialogClose
                   render={
-                    <Button variant="ghost" className="w-full">
+                    <Button variant="ghost" className="w-full" disabled={isSubmitting}>
                       Cancel
                     </Button>
                   }
@@ -195,10 +232,10 @@ export function SaveLayoutDialog({
                 )}
               </div>
               <DialogFooter>
-                <Button variant="outline" onClick={() => setMode("update")}>
+                <Button variant="outline" onClick={() => setMode("update")} disabled={isSubmitting}>
                   Back
                 </Button>
-                <Button onClick={handleSave} disabled={!canSave}>
+                <Button onClick={() => void handleSave()} disabled={!canSave}>
                   Save as New
                 </Button>
               </DialogFooter>
@@ -237,6 +274,7 @@ export function SaveLayoutDialog({
           <DialogTitle>Save Layout</DialogTitle>
           <DialogDescription>Give this layout a name to save it for later.</DialogDescription>
         </DialogHeader>
+        <p className={cn("text-xs", statusClassName)}>{statusMessage}</p>
 
         <div className="space-y-2">
           <Label htmlFor="layout-title">Title</Label>
@@ -261,8 +299,14 @@ export function SaveLayoutDialog({
         </div>
 
         <DialogFooter>
-          <DialogClose render={<Button variant="outline">Cancel</Button>} />
-          <Button onClick={handleSave} disabled={!canSave}>
+          <DialogClose
+            render={
+              <Button variant="outline" disabled={isSubmitting}>
+                Cancel
+              </Button>
+            }
+          />
+          <Button onClick={() => void handleSave()} disabled={!canSave}>
             Save Layout
           </Button>
         </DialogFooter>

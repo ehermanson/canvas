@@ -17,8 +17,11 @@ import type { SavedLayout } from "@/types";
 interface SavedLayoutsDialogProps {
   layouts: SavedLayout[];
   onLoad: (layout: SavedLayout) => void;
-  onDelete: (id: string) => void;
-  onRename: (id: string, newTitle: string) => { success: boolean; error?: string };
+  onDelete: (id: string) => Promise<void>;
+  onRename: (id: string, newTitle: string) => Promise<{ success: boolean; error?: string }>;
+  isRemoteLoading?: boolean;
+  isSignedIn?: boolean;
+  remoteError?: string | null;
   buttonClassName?: string;
   buttonLabel?: string;
   iconOnly?: boolean;
@@ -38,6 +41,9 @@ export function SavedLayoutsDialog({
   onLoad,
   onDelete,
   onRename,
+  isRemoteLoading = false,
+  isSignedIn = false,
+  remoteError = null,
   buttonClassName,
   buttonLabel,
   iconOnly = false,
@@ -46,6 +52,7 @@ export function SavedLayoutsDialog({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
   const [editError, setEditError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const startEditing = (layout: SavedLayout, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -61,31 +68,41 @@ export function SavedLayoutsDialog({
     setEditError(null);
   };
 
-  const saveEdit = (e: React.MouseEvent) => {
+  const saveEdit = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!editingId) return;
 
-    const result = onRename(editingId, editValue);
-    if (result.success) {
-      setEditingId(null);
-      setEditValue("");
-      setEditError(null);
-    } else {
-      setEditError(result.error || "Failed to rename");
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      e.stopPropagation();
-      if (!editingId) return;
-      const result = onRename(editingId, editValue);
+    setIsSubmitting(true);
+    try {
+      const result = await onRename(editingId, editValue);
       if (result.success) {
         setEditingId(null);
         setEditValue("");
         setEditError(null);
       } else {
         setEditError(result.error || "Failed to rename");
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleKeyDown = async (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      e.stopPropagation();
+      if (!editingId) return;
+      setIsSubmitting(true);
+      try {
+        const result = await onRename(editingId, editValue);
+        if (result.success) {
+          setEditingId(null);
+          setEditValue("");
+          setEditError(null);
+        } else {
+          setEditError(result.error || "Failed to rename");
+        }
+      } finally {
+        setIsSubmitting(false);
       }
     } else if (e.key === "Escape") {
       setEditingId(null);
@@ -108,6 +125,16 @@ export function SavedLayoutsDialog({
       {!iconOnly && buttonLabel ? <span>{buttonLabel}</span> : null}
     </Button>
   );
+  const statusMessage = remoteError
+    ? remoteError
+    : isSignedIn
+      ? isRemoteLoading
+        ? "Loading account layouts..."
+        : "Layouts in this list are account-backed."
+      : "Layouts in this list are stored on this device.";
+  const statusClassName = remoteError
+    ? "text-red-500 dark:text-red-400"
+    : "text-gray-500 dark:text-white/50";
 
   return (
     <Dialog>
@@ -124,6 +151,7 @@ export function SavedLayoutsDialog({
           <DialogTitle>Saved Layouts</DialogTitle>
           <DialogDescription>Click a layout to load it.</DialogDescription>
         </DialogHeader>
+        <p className={cn("text-xs", statusClassName)}>{statusMessage}</p>
 
         {layouts.length === 0 ? (
           <div className="py-8 text-center text-gray-500 dark:text-white/50">
@@ -150,6 +178,7 @@ export function SavedLayoutsDialog({
                         onKeyDown={handleKeyDown}
                         autoFocus
                         className={`h-8 ${editError ? "border-red-500" : ""}`}
+                        disabled={isSubmitting}
                       />
                       {editError && (
                         <p className="text-xs text-red-500 dark:text-red-400">{editError}</p>
@@ -173,7 +202,8 @@ export function SavedLayoutsDialog({
                         variant="ghost"
                         size="sm"
                         className="text-green-600 hover:text-green-700 hover:bg-green-50 dark:text-green-400 dark:hover:text-green-300 dark:hover:bg-green-500/20"
-                        onClick={saveEdit}
+                        onClick={(e) => void saveEdit(e)}
+                        disabled={isSubmitting}
                       >
                         <Check className="h-4 w-4" />
                       </Button>
@@ -182,6 +212,7 @@ export function SavedLayoutsDialog({
                         size="sm"
                         className="text-gray-400 hover:text-gray-600 dark:text-white/40 dark:hover:text-white/60 dark:hover:bg-white/10"
                         onClick={cancelEditing}
+                        disabled={isSubmitting}
                       >
                         <X className="h-4 w-4" />
                       </Button>
@@ -202,7 +233,7 @@ export function SavedLayoutsDialog({
                         className="text-gray-400 hover:text-red-600 hover:bg-red-50 dark:text-white/40 dark:hover:text-red-400 dark:hover:bg-red-500/20"
                         onClick={(e) => {
                           e.stopPropagation();
-                          onDelete(layout.id);
+                          void onDelete(layout.id);
                         }}
                       >
                         <Trash2 className="h-4 w-4" />

@@ -6,10 +6,23 @@
   "compatibility_date": "2026-03-16",
   "compatibility_flags": ["nodejs_compat"],
 
+  // Required for auth/db rollout:
+  // - add a shared D1 binding named DB
+  // - set BETTER_AUTH_SECRET with `wrangler secret put`
+  // - set GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET (Google first; Apple later)
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "canvas-auth",
+      "database_id": "7e6c07b1-f357-427b-89d9-8077bd875bba",
+    },
+  ],
+
   // Serve static assets from the Vite build output
   "assets": {
     "directory": "./dist",
     "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"],
   },
 
   // Enable observability for logs in the Cloudflare dashboard

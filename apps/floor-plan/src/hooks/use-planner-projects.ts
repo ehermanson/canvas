@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { authClient } from "@/lib/auth-client";
 import { createId } from "@/lib/id";
 import { getPlannerSnapshotHistoryKey, removePlannerHistoryState } from "@/lib/planner-history";
 import { createDefaultPlannerState, normalizePlannerState } from "@/lib/planner-state";
@@ -33,6 +34,13 @@ interface PlannerUrlSelection {
   snapshotId: string | null;
 }
 
+interface RemotePlannerStoreResponse {
+  projects: PlannerProject[];
+}
+
+const REMOTE_UNAVAILABLE_MESSAGE =
+  "Unable to reach account storage. Your local data is safe — changes will sync when the connection is restored.";
+
 type UrlUpdateMode = "push" | "replace";
 
 export const LEGACY_PLANNER_STORAGE_KEY = "floor-planner-state";
@@ -41,6 +49,7 @@ export const LEGACY_SESSIONS_STORAGE_KEY = "floor-planner-sessions";
 export const PLANNER_ACTIVE_PROJECT_STORAGE_KEY = "floor-planner-active-project";
 export const PLANNER_PROJECTS_STORAGE_KEY = "floor-planner-projects";
 export const PLANNER_PROJECTS_STORAGE_VERSION = 1;
+const PLANNER_REMOTE_IMPORT_COMPLETE_KEY = "floor-planner-remote-import-complete";
 
 const PREVIOUS_PLANNER_STORAGE_KEY = "room-planner-state";
 const PREVIOUS_ACTIVE_SESSION_STORAGE_KEY = "room-planner-active-session";
@@ -52,6 +61,12 @@ const DEFAULT_PROJECT_NAME = "Untitled Room";
 const DEFAULT_SNAPSHOT_NAME = "Current Layout";
 const PROJECT_ID_QUERY_PARAM = "projectId";
 const SNAPSHOT_ID_QUERY_PARAM = "snapshotId";
+const DEFAULT_ROOM_VERTICES = [
+  { x: 0, y: 0 },
+  { x: 144, y: 0 },
+  { x: 144, y: 120 },
+  { x: 0, y: 120 },
+] as const;
 
 function nowIso() {
   return new Date().toISOString();
@@ -228,6 +243,59 @@ function getActiveSnapshotForProject(project: PlannerProject) {
   );
 }
 
+function isDefaultPlannerState(state: RoomPlannerState) {
+  if (
+    state.unit !== "in" ||
+    state.gridSnap !== 1 ||
+    state.showMeasurements !== true ||
+    state.showGrid !== true ||
+    state.neutralFurnitureColors !== false ||
+    state.furniture.length > 0
+  ) {
+    return false;
+  }
+
+  if (
+    state.room.endpoints.length !== DEFAULT_ROOM_VERTICES.length ||
+    state.room.walls.length !== DEFAULT_ROOM_VERTICES.length
+  ) {
+    return false;
+  }
+
+  const hasDefaultVertices = DEFAULT_ROOM_VERTICES.every((vertex, index) => {
+    const endpoint = state.room.endpoints[index];
+    return endpoint?.x === vertex.x && endpoint?.y === vertex.y;
+  });
+
+  if (!hasDefaultVertices) {
+    return false;
+  }
+
+  return state.room.walls.every((wall) => wall.features.length === 0);
+}
+
+function isMeaningfulPlannerProjectsState(store: PlannerProjectsState) {
+  if (store.projects.length !== 1) {
+    return true;
+  }
+
+  const [project] = store.projects;
+  if (!project) {
+    return false;
+  }
+
+  if (project.snapshots.length !== 1) {
+    return true;
+  }
+
+  const [snapshot] = project.snapshots;
+  if (!snapshot) {
+    return false;
+  }
+
+  return !isDefaultPlannerState(snapshot.state);
+}
+
 function readPlannerUrlSelection(): PlannerUrlSelection {
   if (typeof window === "undefined") {
     return {
@@ -365,6 +433,34 @@ function migrateLegacySessionsToProjects(sessions: LegacyPlannerSession[]): Plan
   }, []);
 }
 
+function buildPlannerProjectsState(projects: PlannerProject[], activeProjectId?: string | null) {
+  const normalizedProjects = normalizeProjects(projects);
+  if (normalizedProjects.length === 0) {
+    const defaultProject = createDefaultProject([]);
+    return applyPlannerUrlSelection(
+      {
+        activeProjectId: defaultProject.id,
+        projects: [defaultProject],
+      },
+      readPlannerUrlSelection(),
+    );
+  }
+
+  const resolvedActiveProjectId = normalizedProjects.some(
+    (project) => project.id === activeProjectId,
+  )
+    ? activeProjectId!
+    : normalizedProjects[0].id;
+
+  return applyPlannerUrlSelection(
+    {
+      activeProjectId: resolvedActiveProjectId,
+      projects: normalizedProjects,
+    },
+    readPlannerUrlSelection(),
+  );
+}
+
 function loadPlannerProjectsState(): PlannerProjectsState {
   try {
     const rawProjects =
@@ -444,7 +540,110 @@ function loadPlannerProjectsState(): PlannerProjectsState {
   );
 }
 
+function hasLocalPlannerData() {
+  try {
+    const rawProjects =
+      localStorage.getItem(PLANNER_PROJECTS_STORAGE_KEY) ??
+      localStorage.getItem(PREVIOUS_PROJECTS_STORAGE_KEY);
+    if (rawProjects) {
+      const parsed = JSON.parse(rawProjects) as Partial<PlannerProjectStore>;
+      return isMeaningfulPlannerProjectsState(buildPlannerProjectsState(parsed.projects ?? []));
+    }
+  } catch {
+    // fall through to other legacy keys
+  }
+
+  try {
+    const rawSessions =
+      localStorage.getItem(LEGACY_SESSIONS_STORAGE_KEY) ??
+      localStorage.getItem(PREVIOUS_SESSIONS_STORAGE_KEY);
+    if (rawSessions) {
+      const parsed = JSON.parse(rawSessions) as Partial<LegacyPlannerSessionStore>;
+      const sessions = normalizeLegacySessions(parsed.sessions);
+      if (sessions.length === 0) {
+        return false;
+      }
+
+      if (sessions.length > 1) {
+        return true;
+      }
+
+      return !isDefaultPlannerState(sessions[0].state);
+    }
+  } catch {
+    // fall through to older legacy state
+  }
+
+  try {
+    const rawLegacyState =
+      localStorage.getItem(LEGACY_PLANNER_STORAGE_KEY) ??
+      localStorage.getItem(PREVIOUS_PLANNER_STORAGE_KEY);
+    if (rawLegacyState) {
+      const parsedLegacyState = JSON.parse(rawLegacyState) as Partial<RoomPlannerState>;
+      return !isDefaultPlannerState(normalizePlannerState(parsedLegacyState));
+    }
+  } catch {
+    // ignore corrupt legacy state
+  }
+
+  return false;
+}
+
+async function fetchRemotePlannerProjects() {
+  const response = await fetch("/api/planner-projects", {
+    credentials: "include",
+  });
+  const contentType = response.headers.get("content-type") ?? "";
+  if (!contentType.includes("application/json")) {
+    throw new Error(REMOTE_UNAVAILABLE_MESSAGE);
+  }
+  const data = (await response.json()) as RemotePlannerStoreResponse & { error?: string };
+  if (!response.ok) {
+    throw new Error(data.error || "Unable to load planner projects");
+  }
+  return data.projects;
+}
+
+async function syncRemotePlannerProjects(store: PlannerProjectsState) {
+  const response = await fetch("/api/planner-projects/sync", {
+    body: JSON.stringify({
+      activeProjectId: store.activeProjectId,
+      projects: store.projects,
+    }),
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    method: "POST",
+  });
+  const contentType = response.headers.get("content-type") ?? "";
+  if (!contentType.includes("application/json")) {
+    throw new Error(REMOTE_UNAVAILABLE_MESSAGE);
+  }
+  const data = (await response.json()) as
+    | { error?: string; store?: { activeProjectId: string; projects: PlannerProject[] } }
+    | undefined;
+  if (!response.ok) {
+    throw new Error(data?.error || "Unable to sync planner projects");
+  }
+  return data?.store;
+}
+
 function persistPlannerProjectsState(store: PlannerProjectsState) {
+  if (!isMeaningfulPlannerProjectsState(store)) {
+    localStorage.removeItem(PLANNER_PROJECTS_STORAGE_KEY);
+    localStorage.removeItem(PLANNER_ACTIVE_PROJECT_STORAGE_KEY);
+    localStorage.removeItem(LEGACY_PLANNER_STORAGE_KEY);
+    localStorage.removeItem(LEGACY_SESSIONS_STORAGE_KEY);
+    localStorage.removeItem(LEGACY_ACTIVE_SESSION_STORAGE_KEY);
+    localStorage.removeItem(PREVIOUS_PLANNER_STORAGE_KEY);
+    localStorage.removeItem(PREVIOUS_SESSIONS_STORAGE_KEY);
+    localStorage.removeItem(PREVIOUS_ACTIVE_SESSION_STORAGE_KEY);
+    localStorage.removeItem(PREVIOUS_ACTIVE_PROJECT_STORAGE_KEY);
+    localStorage.removeItem(PREVIOUS_PROJECTS_STORAGE_KEY);
+    return;
+  }
+
   const serializedStore: PlannerProjectStore = {
     version: PLANNER_PROJECTS_STORAGE_VERSION,
     projects: store.projects,
@@ -580,12 +779,131 @@ function parsePlannerProjectExport(raw: string): PlannerProjectExport {
 }
 
 export function usePlannerProjects() {
+  const { data: session } = authClient.useSession();
   const [store, setStore] = useState(loadPlannerProjectsState);
+  const [isRemoteLoading, setIsRemoteLoading] = useState(false);
+  const [isRemoteSyncing, setIsRemoteSyncing] = useState(false);
+  const [remoteError, setRemoteError] = useState<string | null>(null);
+  const [hasLoadedRemoteStore, setHasLoadedRemoteStore] = useState(false);
+  const [hasDismissedImport, setHasDismissedImport] = useState(() => {
+    return localStorage.getItem(PLANNER_REMOTE_IMPORT_COMPLETE_KEY) === "true";
+  });
+  const isSignedIn = Boolean(session);
   const nextUrlUpdateModeRef = useRef<UrlUpdateMode>("replace");
 
   useEffect(() => {
+    if (isSignedIn) {
+      return;
+    }
     persistPlannerProjectsState(store);
-  }, [store]);
+  }, [isSignedIn, store]);
+
+  useEffect(() => {
+    if (!isSignedIn) {
+      setIsRemoteLoading(false);
+      setIsRemoteSyncing(false);
+      setRemoteError(null);
+      setHasLoadedRemoteStore(false);
+      return;
+    }
+
+    let isActive = true;
+
+    void (async () => {
+      setIsRemoteLoading(true);
+      setRemoteError(null);
+
+      try {
+        const projects = await fetchRemotePlannerProjects();
+        if (!isActive) {
+          return;
+        }
+        setStore((current) => buildPlannerProjectsState(projects, current.activeProjectId));
+        setHasLoadedRemoteStore(true);
+      } catch (error) {
+        if (!isActive) {
+          return;
+        }
+        const message = error instanceof Error ? error.message : REMOTE_UNAVAILABLE_MESSAGE;
+        setRemoteError(message);
+        setHasLoadedRemoteStore(true);
+      } finally {
+        if (isActive) {
+          setIsRemoteLoading(false);
+        }
+      }
+    })();
+
+    return () => {
+      isActive = false;
+    };
+  }, [isSignedIn]);
+
+  useEffect(() => {
+    if (!isSignedIn || !hasLoadedRemoteStore) {
+      return;
+    }
+
+    setRemoteError(null);
+    setIsRemoteSyncing(true);
+    const timeout = window.setTimeout(() => {
+      void syncRemotePlannerProjects(store)
+        .catch((error) => {
+          const message = error instanceof Error ? error.message : REMOTE_UNAVAILABLE_MESSAGE;
+          setRemoteError(message);
+        })
+        .finally(() => {
+          setIsRemoteSyncing(false);
+        });
+    }, 350);
+
+    return () => {
+      window.clearTimeout(timeout);
+    };
+  }, [hasLoadedRemoteStore, isSignedIn, store]);
+
+  const importLocalProjects = useCallback(async () => {
+    if (!isSignedIn || !hasLocalPlannerData()) {
+      return { success: true };
+    }
+
+    try {
+      const localStore = loadPlannerProjectsState();
+      const response = await fetch("/api/planner-projects/import-local", {
+        body: JSON.stringify({
+          projects: localStore.projects,
+        }),
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        method: "POST",
+      });
+      const contentType = response.headers.get("content-type") ?? "";
+      if (!contentType.includes("application/json")) {
+        return {
+          success: false,
+          error: REMOTE_UNAVAILABLE_MESSAGE,
+        };
+      }
+      const data = (await response.json()) as { error?: string };
+      if (!response.ok) {
+        return {
+          success: false,
+          error: data.error || "Unable to import local projects",
+        };
+      }
+
+      localStorage.setItem(PLANNER_REMOTE_IMPORT_COMPLETE_KEY, "true");
+      setHasDismissedImport(true);
+      const remoteProjects = await fetchRemotePlannerProjects();
+      setStore((current) => buildPlannerProjectsState(remoteProjects, current.activeProjectId));
+      return { success: true };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : REMOTE_UNAVAILABLE_MESSAGE;
+      return { success: false, error: message };
+    }
+  }, [isSignedIn]);
 
   const activeProject = useMemo(() => {
     return (
@@ -907,6 +1225,9 @@ export function usePlannerProjects() {
     activeProjectId: activeProject.id,
     activeSnapshot,
     activeSnapshotId: activeSnapshot.id,
+    isRemoteLoading,
+    isRemoteSyncing,
+    isSignedIn,
     createProject: createProjectFromDefault,
     createSnapshot: createSnapshotFromCurrent,
     deleteProject,
@@ -914,8 +1235,11 @@ export function usePlannerProjects() {
     duplicateProject,
     duplicateSnapshot,
     exportProject,
+    canImportLocal: isSignedIn && hasLocalPlannerData() && !hasDismissedImport,
+    importLocalProjects,
     importProject,
     projects: store.projects,
+    remoteError,
     renameProject,
     renameSnapshot,
     selectProject,
