@@ -195,7 +195,8 @@ export function getWallInteriorUnitNormal(
 }
 
 export function shouldDrawSelectedWallMeasurements(wallLength: number, features: WallFeature[]) {
-  const spans = getWallMeasurementSpans(wallLength, features);
+  const blockingFeatures = features.filter((f) => f.type === "door" || f.type === "opening");
+  const spans = getWallMeasurementSpans(wallLength, blockingFeatures);
   if (spans.length !== 1) {
     return spans.length > 0;
   }
