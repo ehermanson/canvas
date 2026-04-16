@@ -147,6 +147,9 @@ describe("getWallLabelLayout", () => {
 describe("shouldDrawSelectedWallMeasurements", () => {
   it("returns false when the selected wall would only duplicate the default full-wall label", () => {
     expect(shouldDrawSelectedWallMeasurements(120, [])).toBe(false);
+  });
+
+  it("returns true when features split the wall into meaningful spans", () => {
     expect(
       shouldDrawSelectedWallMeasurements(120, [
         {
@@ -156,10 +159,8 @@ describe("shouldDrawSelectedWallMeasurements", () => {
           width: 24,
         },
       ]),
-    ).toBe(false);
-  });
+    ).toBe(true);
 
-  it("returns true when blocking features split the wall into meaningful spans", () => {
     expect(
       shouldDrawSelectedWallMeasurements(120, [
         {
