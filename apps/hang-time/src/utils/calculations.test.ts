@@ -2,6 +2,7 @@ import { describe, expect, it } from "vite-plus/test";
 import type { CalculatorState, GalleryFrame } from "@/types";
 import {
   calculateLayoutPositions,
+  calculateLayout,
   formatMeasurement,
   formatShort,
   fromDisplayUnit,
@@ -141,6 +142,64 @@ describe("Measurement Formatting", () => {
 });
 
 describe("calculateLayoutPositions", () => {
+  it("applies translation rigidly while legacy state defaults to zero", () => {
+    const legacy = createDefaultState({
+      frames: [createFrame(10, 12, 0), createFrame(20, 12, 0), createFrame(8, 8, 3)],
+      uniformSize: false,
+    });
+    const original = calculateLayoutPositions(legacy);
+    const moved = calculateLayoutPositions({ ...legacy, galleryOffsetX: 7, galleryOffsetY: -4 });
+    expect(moved.map((frame, i) => [frame.x - original[i].x, frame.y - original[i].y])).toEqual([
+      [7, -4],
+      [7, -4],
+      [7, -4],
+    ]);
+    expect(calculateLayoutPositions({ ...legacy, galleryOffsetX: 0, galleryOffsetY: 0 })).toEqual(
+      original,
+    );
+  });
+
+  it("distributes span layouts within furniture bounds", () => {
+    const state = createDefaultState({
+      frames: createFrames(3, 20, 20),
+      uniformSize: true,
+      frameWidth: 20,
+      anchorType: "furniture",
+      frameFurnitureAlign: "span",
+      furnitureWidth: 80,
+      furnitureAnchor: "left",
+      furnitureOffset: 10,
+      hDistribution: "space-between",
+    });
+    const positions = calculateLayoutPositions(state);
+    expect(positions.map((frame) => frame.x)).toEqual([10, 40, 70]);
+  });
+
+  it("reports width shortage, overlap, bounds, and limiting hardware frames", () => {
+    const state = createDefaultState({
+      frames: [createFrame(50, 4), createFrame(50, 10), createFrame(50, 10)],
+      uniformSize: false,
+      wallWidth: 120,
+      hDistribution: "space-between",
+      hangingOffset: 5,
+      hangingType: "dual",
+      hookInset: 26,
+    });
+    const result = calculateLayout(state);
+    expect(result.isValid).toBe(false);
+    expect(
+      result.issues.some(
+        (issue) => issue.code === "horizontal-shortage" && issue.requiredExtraSpace === 30,
+      ),
+    ).toBe(true);
+    expect(result.issues.some((issue) => issue.code === "frame-overlap")).toBe(true);
+    expect(
+      result.issues.find((issue) => issue.code === "hanging-offset-invalid")?.frameIds,
+    ).toContain(state.frames[0].id);
+    expect(
+      result.issues.find((issue) => issue.code === "hook-inset-invalid")?.frameIds,
+    ).toHaveLength(3);
+  });
   describe("Basic Layout", () => {
     it("returns correct number of frames", () => {
       const state = createDefaultState({

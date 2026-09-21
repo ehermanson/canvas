@@ -1,4 +1,5 @@
 import { act, renderHook } from "@testing-library/react";
+import { StrictMode, type PropsWithChildren } from "react";
 import { beforeEach, describe, expect, it } from "vite-plus/test";
 
 import { useRoomPlanner } from "@/hooks/use-floor-planner";
@@ -56,10 +57,135 @@ function createPlannerState(overrides: Partial<RoomPlannerState> = {}): RoomPlan
   };
 }
 
+function StrictModeWrapper({ children }: PropsWithChildren) {
+  return <StrictMode>{children}</StrictMode>;
+}
+
 describe("useRoomPlanner", () => {
   beforeEach(() => {
     localStorage.clear();
     sessionStorage.clear();
+  });
+
+  it("rejects endpoint changes shared with a locked wall without adding history", () => {
+    const state = createPlannerState();
+    state.room.walls[0] = { ...state.room.walls[0], locked: true };
+    const { result } = renderHook(() => useRoomPlanner(state));
+    const historyPosition = result.current.historyDebug.currentPosition;
+
+    act(() => result.current.moveEndpoint("b", { x: 150, y: 0 }));
+    act(() => result.current.commitEndpointMove());
+
+    expect(result.current.room.endpoints.find((endpoint) => endpoint.id === "b")).toMatchObject({
+      x: 144,
+      y: 0,
+    });
+    expect(result.current.historyDebug.currentPosition).toBe(historyPosition);
+    expect(result.current.constraintViolation).toMatchObject({
+      code: "locked-wall",
+      wallId: "w1",
+    });
+    expect(result.current.constraintViolation?.message).toContain("Wall 1 is locked");
+  });
+
+  it("rejects wall shortening that would strand an opening", () => {
+    const state = createPlannerState();
+    state.room.walls[0] = {
+      ...state.room.walls[0],
+      features: [{ id: "door", type: "door", offset: 100, width: 36 }],
+    };
+    const { result } = renderHook(() => useRoomPlanner(state));
+
+    act(() => result.current.setWallLength("w1", 120));
+
+    expect(result.current.room.endpoints.find((endpoint) => endpoint.id === "b")?.x).toBe(144);
+    expect(result.current.constraintViolation).toMatchObject({
+      code: "feature-containment",
+      wallId: "w1",
+    });
+    expect(result.current.constraintViolation?.message).toContain("door on wall 1");
+  });
+
+  it("rejects invalid feature dimensions atomically and allows an explicit repair", () => {
+    const state = createPlannerState();
+    state.room.walls[0] = {
+      ...state.room.walls[0],
+      features: [{ id: "window", type: "window", offset: 20, width: 30 }],
+    };
+    const { result } = renderHook(() => useRoomPlanner(state));
+
+    act(() => result.current.updateWallFeature("w1", "window", { width: -1 }));
+    expect(result.current.room.walls[0].features[0]?.width).toBe(30);
+    expect(result.current.constraintViolation?.code).toBe("feature-containment");
+
+    act(() => result.current.updateWallFeature("w1", "window", { offset: 100, width: 40 }));
+    expect(result.current.room.walls[0].features[0]).toMatchObject({ offset: 100, width: 40 });
+    expect(result.current.constraintViolation).toBeNull();
+  });
+
+  it("keeps history unchanged for rejected edits under StrictMode", () => {
+    const state = createPlannerState();
+    state.room.walls[0] = { ...state.room.walls[0], locked: true };
+    const { result } = renderHook(() => useRoomPlanner(state), { wrapper: StrictModeWrapper });
+
+    act(() => result.current.setWallLength("w1", 100));
+
+    expect(result.current.room.endpoints.find((endpoint) => endpoint.id === "b")?.x).toBe(144);
+    expect(result.current.historyDebug.currentPosition).toBe(0);
+    expect(result.current.historyDebug.totalCount).toBe(1);
+    expect(result.current.constraintViolation?.code).toBe("locked-wall");
+  });
+
+  it("can unlock and repair a locked legacy wall with an invalid opening", () => {
+    const state = createPlannerState();
+    state.room.walls[0] = {
+      ...state.room.walls[0],
+      locked: true,
+      features: [{ id: "door", type: "door", offset: 130, width: 36 }],
+    };
+    const { result } = renderHook(() => useRoomPlanner(state));
+
+    act(() => result.current.updateWall("w1", { locked: false }));
+    expect(result.current.room.walls[0].locked).toBe(false);
+    expect(result.current.constraintViolation).toBeNull();
+
+    act(() => result.current.updateWallFeature("w1", "door", { offset: 100 }));
+    expect(result.current.room.walls[0].features[0]).toMatchObject({ offset: 100, width: 36 });
+    expect(result.current.constraintViolation).toBeNull();
+  });
+
+  it("does not let an unrelated legacy opening freeze valid edits", () => {
+    const state = createPlannerState();
+    state.room.walls[0] = {
+      ...state.room.walls[0],
+      features: [{ id: "legacy-window", type: "window", offset: 140, width: 24 }],
+    };
+    const { result } = renderHook(() => useRoomPlanner(state));
+
+    act(() => result.current.setWallLength("w3", 130));
+
+    expect(result.current.room.endpoints.find((endpoint) => endpoint.id === "d")?.x).toBe(14);
+    expect(result.current.constraintViolation).toBeNull();
+    expect(result.current.historyDebug.currentPosition).toBe(1);
+  });
+
+  it("rejects new walls with zero or nonfinite length", () => {
+    const { result } = renderHook(() => useRoomPlanner(createPlannerState()));
+
+    let endpointId: string | null = "unexpected";
+    act(() => {
+      endpointId = result.current.addWallToNewPoint("a", { x: 0, y: 0 });
+    });
+    expect(endpointId).toBeNull();
+    expect(result.current.room.walls).toHaveLength(4);
+    expect(result.current.constraintViolation?.code).toBe("invalid-wall");
+
+    act(() => {
+      endpointId = result.current.addWallToNewPoint("a", { x: Number.NaN, y: 20 });
+    });
+    expect(endpointId).toBeNull();
+    expect(result.current.room.walls).toHaveLength(4);
+    expect(result.current.historyDebug.totalCount).toBe(1);
   });
 
   it("defaults grid snapping to 1 inch", () => {

@@ -1,5 +1,5 @@
 import type { Bounds } from "@/lib/room-geometry";
-import { distSq, projectOntoSegment } from "@/lib/room-geometry";
+import { projectOntoSegment } from "@/lib/room-geometry";
 import type { FurnitureItem, Point } from "@/types";
 
 export type FurnitureResizeEdge = "bottom" | "left" | "right" | "top";
@@ -32,10 +32,6 @@ function normalizeVector(vector: Point) {
   }
 
   return { x: vector.x / length, y: vector.y / length };
-}
-
-function clampNumber(value: number, min: number, max: number) {
-  return Math.max(min, Math.min(max, value));
 }
 
 function crossProduct(a: Point, b: Point, c: Point) {
@@ -150,14 +146,6 @@ function getPolygonEdges(points: Point[]) {
   }));
 }
 
-function getFurnitureSnapPoints(item: FurnitureItem) {
-  if (item.shape === "circle") {
-    return getFurnitureEdgePoints(item);
-  }
-
-  return [...getRectangleCorners(item), ...getFurnitureEdgePoints(item)];
-}
-
 function getPolygonCentroid(points: Point[]) {
   return {
     x: points.reduce((sum, point) => sum + point.x, 0) / points.length,
@@ -183,12 +171,18 @@ function getBoundsReferenceValue(
 
 export function getFurnitureBounds(item: FurnitureItem) {
   if (item.shape === "circle") {
-    const radius = item.width / 2;
+    const radians = (item.rotation * Math.PI) / 180;
+    const cos = Math.cos(radians);
+    const sin = Math.sin(radians);
+    const radiusX = item.width / 2;
+    const radiusY = item.depth / 2;
+    const extentX = Math.hypot(radiusX * cos, radiusY * sin);
+    const extentY = Math.hypot(radiusX * sin, radiusY * cos);
     return {
-      minX: item.x - radius,
-      maxX: item.x + radius,
-      minY: item.y - radius,
-      maxY: item.y + radius,
+      minX: item.x - extentX,
+      maxX: item.x + extentX,
+      minY: item.y - extentY,
+      maxY: item.y + extentY,
     };
   }
 
@@ -245,33 +239,6 @@ export function resizeFurnitureFromEdge(
   let right = halfWidth;
   let top = -halfDepth;
   let bottom = halfDepth;
-
-  if (item.shape === "circle") {
-    if (edge === "left") {
-      left = Math.min(right - MIN_FURNITURE_SIZE, snapValue(localPointer.x, step));
-    } else if (edge === "right") {
-      right = Math.max(left + MIN_FURNITURE_SIZE, snapValue(localPointer.x, step));
-    } else if (edge === "top") {
-      top = Math.min(bottom - MIN_FURNITURE_SIZE, snapValue(localPointer.y, step));
-    } else {
-      bottom = Math.max(top + MIN_FURNITURE_SIZE, snapValue(localPointer.y, step));
-    }
-
-    const diameter = edge === "left" || edge === "right" ? right - left : bottom - top;
-    const clampedDiameter = Math.max(MIN_FURNITURE_SIZE, diameter);
-    const centerShiftLocal =
-      edge === "left" || edge === "right"
-        ? { x: (left + right) / 2, y: 0 }
-        : { x: 0, y: (top + bottom) / 2 };
-    const centerShiftWorld = rotateLocalVectorToWorld(centerShiftLocal, item.rotation);
-
-    return {
-      x: item.x + centerShiftWorld.x,
-      y: item.y + centerShiftWorld.y,
-      width: clampedDiameter,
-      depth: clampedDiameter,
-    };
-  }
 
   if (edge === "left") {
     left = Math.min(right - MIN_FURNITURE_SIZE, snapValue(localPointer.x, step));
@@ -525,25 +492,97 @@ function checkRectangleCollision(a: FurnitureItem, b: FurnitureItem) {
   );
 }
 
-function checkCircleCollision(a: FurnitureItem, b: FurnitureItem) {
-  const radiusSum = a.width / 2 + b.width / 2;
-  return distSq(a, b) < radiusSum ** 2;
+export function getFurnitureSupportPoint(item: FurnitureItem, direction: Point): Point {
+  const localDirection = rotatePointToLocalSpace(direction, { x: 0, y: 0 }, item.rotation);
+  const halfWidth = item.width / 2;
+  const halfDepth = item.depth / 2;
+  let localSupport: Point;
+
+  if (item.shape === "circle") {
+    const denominator = Math.hypot(halfWidth * localDirection.x, halfDepth * localDirection.y);
+    localSupport =
+      denominator <= GEOMETRY_EPSILON
+        ? { x: 0, y: 0 }
+        : {
+            x: (halfWidth * halfWidth * localDirection.x) / denominator,
+            y: (halfDepth * halfDepth * localDirection.y) / denominator,
+          };
+  } else {
+    localSupport = {
+      x: localDirection.x < 0 ? -halfWidth : halfWidth,
+      y: localDirection.y < 0 ? -halfDepth : halfDepth,
+    };
+  }
+
+  const world = rotateLocalVectorToWorld(localSupport, item.rotation);
+  return { x: item.x + world.x, y: item.y + world.y };
 }
 
-function checkCircleRectangleCollision(circle: FurnitureItem, rectangle: FurnitureItem) {
-  const localCenter = rotatePointToLocalSpace(
-    { x: circle.x, y: circle.y },
-    { x: rectangle.x, y: rectangle.y },
-    rectangle.rotation,
+export function isPointInFurniture(point: Point, item: FurnitureItem) {
+  const local = rotatePointToLocalSpace(point, item, item.rotation);
+  const halfWidth = item.width / 2;
+  const halfDepth = item.depth / 2;
+  if (halfWidth <= 0 || halfDepth <= 0) return false;
+  if (item.shape === "circle") {
+    return (local.x / halfWidth) ** 2 + (local.y / halfDepth) ** 2 <= 1 + GEOMETRY_EPSILON;
+  }
+  return (
+    Math.abs(local.x) <= halfWidth + GEOMETRY_EPSILON &&
+    Math.abs(local.y) <= halfDepth + GEOMETRY_EPSILON
   );
-  const halfWidth = rectangle.width / 2;
-  const halfDepth = rectangle.depth / 2;
-  const nearestX = clampNumber(localCenter.x, -halfWidth, halfWidth);
-  const nearestY = clampNumber(localCenter.y, -halfDepth, halfDepth);
-  const dx = localCenter.x - nearestX;
-  const dy = localCenter.y - nearestY;
+}
 
-  return dx * dx + dy * dy < (circle.width / 2) ** 2;
+function supportDifference(a: FurnitureItem, b: FurnitureItem, direction: Point) {
+  const aPoint = getFurnitureSupportPoint(a, direction);
+  const bPoint = getFurnitureSupportPoint(b, { x: -direction.x, y: -direction.y });
+  return { x: aPoint.x - bPoint.x, y: aPoint.y - bPoint.y };
+}
+
+function tripleProduct(a: Point, b: Point, c: Point): Point {
+  const ac = dot(a, c);
+  const bc = dot(b, c);
+  return { x: b.x * ac - a.x * bc, y: b.y * ac - a.y * bc };
+}
+
+// Gilbert-Johnson-Keerthi intersection using exact support functions for ellipses and rectangles.
+function checkConvexFurnitureCollision(a: FurnitureItem, b: FurnitureItem) {
+  let direction = { x: b.x - a.x, y: b.y - a.y };
+  if (Math.hypot(direction.x, direction.y) <= GEOMETRY_EPSILON) direction = { x: 1, y: 0 };
+  const simplex: Point[] = [supportDifference(a, b, direction)];
+  direction = { x: -simplex[0].x, y: -simplex[0].y };
+
+  for (let iteration = 0; iteration < 32; iteration++) {
+    const point = supportDifference(a, b, direction);
+    if (dot(point, direction) <= GEOMETRY_EPSILON) return false;
+    simplex.push(point);
+    const newest = simplex[simplex.length - 1];
+    const ao = { x: -newest.x, y: -newest.y };
+    const previous = simplex[simplex.length - 2];
+    const ab = { x: previous.x - newest.x, y: previous.y - newest.y };
+
+    if (simplex.length === 2) {
+      direction = tripleProduct(ab, ao, ab);
+      if (Math.hypot(direction.x, direction.y) <= GEOMETRY_EPSILON) return true;
+      continue;
+    }
+
+    const oldest = simplex[0];
+    const ac = { x: oldest.x - newest.x, y: oldest.y - newest.y };
+    const abPerpendicular = tripleProduct(ac, ab, ab);
+    if (dot(abPerpendicular, ao) > 0) {
+      simplex.splice(0, 1);
+      direction = abPerpendicular;
+      continue;
+    }
+    const acPerpendicular = tripleProduct(ab, ac, ac);
+    if (dot(acPerpendicular, ao) > 0) {
+      simplex.splice(1, 1);
+      direction = acPerpendicular;
+      continue;
+    }
+    return true;
+  }
+  return false;
 }
 
 export function checkFurnitureCollision(a: FurnitureItem, b: FurnitureItem) {
@@ -551,19 +590,9 @@ export function checkFurnitureCollision(a: FurnitureItem, b: FurnitureItem) {
     return false;
   }
 
-  if (a.shape === "circle" && b.shape === "circle") {
-    return checkCircleCollision(a, b);
-  }
-
-  if (a.shape === "circle") {
-    return checkCircleRectangleCollision(a, b);
-  }
-
-  if (b.shape === "circle") {
-    return checkCircleRectangleCollision(b, a);
-  }
-
-  return checkRectangleCollision(a, b);
+  return a.shape === "rectangle" && b.shape === "rectangle"
+    ? checkRectangleCollision(a, b)
+    : checkConvexFurnitureCollision(a, b);
 }
 
 export function snapFurnitureToRoomWalls(
@@ -577,7 +606,6 @@ export function snapFurnitureToRoomWalls(
 
   const roomEdges = getPolygonEdges(roomPolygon);
   const roomCentroid = getPolygonCentroid(roomPolygon);
-  const snapPoints = getFurnitureSnapPoints(item);
   let bestDelta: Point | null = null;
   let bestDistance = threshold + GEOMETRY_EPSILON;
 
@@ -606,6 +634,10 @@ export function snapFurnitureToRoomWalls(
             y: -candidateNormal.y,
           };
 
+    const snapPoints =
+      item.shape === "circle"
+        ? [getFurnitureSupportPoint(item, { x: -inwardNormal.x, y: -inwardNormal.y })]
+        : [...getRectangleCorners(item), ...getFurnitureEdgePoints(item)];
     for (const snapPoint of snapPoints) {
       const projection = projectOntoSegment(
         snapPoint.x,
@@ -670,14 +702,27 @@ export function checkFurnitureRoomCollision(item: FurnitureItem, roomPolygon: Po
   const roomEdges = getPolygonEdges(roomPolygon);
 
   if (item.shape === "circle") {
-    const radius = item.width / 2;
     if (!pointInPolygon(item, roomPolygon)) {
       return true;
     }
 
     return roomEdges.some(({ start, end }) => {
-      const projection = projectOntoSegment(item.x, item.y, start.x, start.y, end.x, end.y);
-      return projection.dist < radius - GEOMETRY_EPSILON;
+      const localStart = rotatePointToLocalSpace(start, item, item.rotation);
+      const localEnd = rotatePointToLocalSpace(end, item, item.rotation);
+      const radiusX = item.width / 2;
+      const radiusY = item.depth / 2;
+      if (radiusX <= 0 || radiusY <= 0) return true;
+      const scaledStart = { x: localStart.x / radiusX, y: localStart.y / radiusY };
+      const scaledEnd = { x: localEnd.x / radiusX, y: localEnd.y / radiusY };
+      const projection = projectOntoSegment(
+        0,
+        0,
+        scaledStart.x,
+        scaledStart.y,
+        scaledEnd.x,
+        scaledEnd.y,
+      );
+      return projection.dist < 1 - GEOMETRY_EPSILON;
     });
   }
 
@@ -701,6 +746,15 @@ export function checkFurnitureRoomCollision(item: FurnitureItem, roomPolygon: Po
 }
 
 export function getFurnitureEdgePoints(item: FurnitureItem): Point[] {
+  if (item.shape === "circle") {
+    const directions = [
+      rotateLocalVectorToWorld({ x: 0, y: -1 }, item.rotation),
+      rotateLocalVectorToWorld({ x: 1, y: 0 }, item.rotation),
+      rotateLocalVectorToWorld({ x: 0, y: 1 }, item.rotation),
+      rotateLocalVectorToWorld({ x: -1, y: 0 }, item.rotation),
+    ];
+    return directions.map((direction) => getFurnitureSupportPoint(item, direction));
+  }
   const radians = (item.rotation * Math.PI) / 180;
   const cos = Math.cos(radians);
   const sin = Math.sin(radians);

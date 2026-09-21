@@ -1,7 +1,7 @@
 import { ViewportToolbar, ViewportToolbarButton, ViewportToolbarValue } from "@canvas-tools/ui";
 import type { ViewportBounds } from "@canvas-tools/viewport";
 import { useElementSize, useViewportController } from "@canvas-tools/viewport";
-import { HelpCircle, Moon, Settings, Sun } from "lucide-react";
+import { Hand, HelpCircle, LocateFixed, Moon, Settings, Sun } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -55,6 +55,7 @@ type FrameDragSession = {
   originalPosition: UseCalculatorReturn["layoutPositions"][number];
   startClientX: number;
   startClientY: number;
+  startGalleryOffset: { x: number; y: number };
 };
 
 const ROW_SWITCH_HYSTERESIS = 2;
@@ -62,6 +63,18 @@ const SLOT_SWITCH_HYSTERESIS = 1;
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
+}
+
+export function galleryOffsetForMove(
+  startOffset: { x: number; y: number },
+  startBounds: Pick<LayoutBounds, "minX" | "minY">,
+  nextMinX: number,
+  nextMinY: number,
+) {
+  return {
+    x: startOffset.x + nextMinX - startBounds.minX,
+    y: startOffset.y + nextMinY - startBounds.minY,
+  };
 }
 
 function getLayoutBounds(frames: PositionedFrame[]): LayoutBounds | null {
@@ -309,6 +322,9 @@ function CanvasLegendPopover({ hasOutOfBoundsItems }: { hasOutOfBoundsItems: boo
               Click a hook to see measurements.
               <br />
               Shift+click another to compare.
+              <br />
+              Turn on Move gallery, Alt+drag a frame, or use arrow keys to move the whole gallery.
+              Shift+Arrow moves 5 units.
             </p>
           </div>
         </div>
@@ -376,7 +392,8 @@ function CanvasSettingsPopover({ setUnit, unit }: { setUnit: (unit: Unit) => voi
 }
 
 export function Preview({ calculator }: PreviewProps) {
-  const { layoutPositions, setFrames, setManualPosition, setUnit, state } = calculator;
+  const { layoutPositions, resetGalleryOffset, setFrames, setGalleryOffset, setUnit, state } =
+    calculator;
   const { theme } = useTheme();
   const isDark = theme === "dark";
 
@@ -385,6 +402,7 @@ export function Preview({ calculator }: PreviewProps) {
   const containerSize = useElementSize(containerRef);
   const [isPanning, setIsPanning] = useState(false);
   const [isDraggingFrame, setIsDraggingFrame] = useState(false);
+  const [moveGalleryMode, setMoveGalleryMode] = useState(false);
   const [selectedFrameId, setSelectedFrameId] = useState<string | null>(null);
   const [dragPreviewFrames, setDragPreviewFrames] = useState<
     UseCalculatorReturn["state"]["frames"] | null
@@ -396,6 +414,12 @@ export function Preview({ calculator }: PreviewProps) {
   const frameDragRef = useRef<FrameDragSession | null>(null);
   const suppressCanvasClickRef = useRef(false);
   const lastManualPositionRef = useRef<{ x: number; y: number } | null>(null);
+  const pointersRef = useRef(new Map<number, { x: number; y: number }>());
+  const pinchRef = useRef<{
+    distance: number;
+    worldAnchor: { x: number; y: number };
+    zoom: number;
+  } | null>(null);
 
   // Track reference hook (shows wall measurements) and compare hook (shows distance from reference)
   const [referenceHook, setReferenceHook] = useState<HookSelection | null>(null);
@@ -403,8 +427,8 @@ export function Preview({ calculator }: PreviewProps) {
 
   const positionedFrames = useMemo<PositionedFrame[]>(
     () =>
-      layoutPositions.map((position, index) => ({
-        frameId: state.frames[index]?.id ?? String(position.id),
+      layoutPositions.map((position) => ({
+        frameId: position.frameId,
         position,
       })),
     [layoutPositions, state.frames],
@@ -421,17 +445,28 @@ export function Preview({ calculator }: PreviewProps) {
   const displayedFrames = dragPreviewFrames ?? state.frames;
   const displayedPositionedFrames = useMemo<PositionedFrame[]>(
     () =>
-      previewLayoutPositions.map((position, index) => ({
-        frameId: displayedFrames[index]?.id ?? String(position.id),
+      previewLayoutPositions.map((position) => ({
+        frameId: position.frameId,
         position,
       })),
     [displayedFrames, previewLayoutPositions],
   );
 
   const moveLayoutTo = useCallback(
-    (nextMinX: number, nextMinY: number, bounds: LayoutBounds) => {
-      const clampedX = clamp(nextMinX, 0, state.wallWidth - bounds.width);
-      const clampedY = clamp(nextMinY, 0, state.wallHeight - bounds.height);
+    (
+      nextMinX: number,
+      nextMinY: number,
+      bounds: LayoutBounds,
+      startOffset?: { x: number; y: number },
+    ) => {
+      const clampedX =
+        bounds.width <= state.wallWidth
+          ? clamp(nextMinX, 0, state.wallWidth - bounds.width)
+          : nextMinX;
+      const clampedY =
+        bounds.height <= state.wallHeight
+          ? clamp(nextMinY, 0, state.wallHeight - bounds.height)
+          : nextMinY;
       const lastPosition = lastManualPositionRef.current;
 
       if (
@@ -443,14 +478,20 @@ export function Preview({ calculator }: PreviewProps) {
       }
 
       lastManualPositionRef.current = { x: clampedX, y: clampedY };
-      setManualPosition({
-        anchorType: "floor",
-        anchorValue: state.wallHeight - (clampedY + bounds.height),
-        hAnchorType: "left",
-        hAnchorValue: clampedX,
-      });
+      const baseOffset = startOffset ?? {
+        x: state.galleryOffsetX ?? 0,
+        y: state.galleryOffsetY ?? 0,
+      };
+      const nextOffset = galleryOffsetForMove(baseOffset, bounds, clampedX, clampedY);
+      setGalleryOffset(nextOffset.x, nextOffset.y);
     },
-    [setManualPosition, state.wallHeight, state.wallWidth],
+    [
+      setGalleryOffset,
+      state.galleryOffsetX,
+      state.galleryOffsetY,
+      state.wallHeight,
+      state.wallWidth,
+    ],
   );
 
   const fmt = useCallback(
@@ -486,37 +527,48 @@ export function Preview({ calculator }: PreviewProps) {
     state.wallHeight,
   ]);
 
-  const { fitToView, pan, startPan, stepZoom, stopPan, updatePan, zoom, zoomAtPoint, zoomPercent } =
-    useViewportController({
-      containerRef,
-      getFitTransform: useCallback(
-        (viewport: ViewportBounds) => {
-          const scaledWallWidth = state.wallWidth * baseScale;
-          const scaledWallHeight = state.wallHeight * baseScale;
-          const contentStartX = reservedSidebarWidth + padding;
-          const contentWidth = Math.max(viewport.width - reservedSidebarWidth - padding * 2, 1);
-          const centeredWallX = contentStartX + (contentWidth - scaledWallWidth) / 2;
-          const maxWallX = viewport.width - padding - scaledWallWidth;
-          const wallX =
-            maxWallX >= contentStartX
-              ? Math.min(Math.max(centeredWallX, contentStartX), maxWallX)
-              : contentStartX;
+  const {
+    fitToView,
+    pan,
+    setPan,
+    setZoom,
+    startPan,
+    stepZoom,
+    stopPan,
+    updatePan,
+    zoom,
+    zoomAtPoint,
+    zoomPercent,
+  } = useViewportController({
+    containerRef,
+    getFitTransform: useCallback(
+      (viewport: ViewportBounds) => {
+        const scaledWallWidth = state.wallWidth * baseScale;
+        const scaledWallHeight = state.wallHeight * baseScale;
+        const contentStartX = reservedSidebarWidth + padding;
+        const contentWidth = Math.max(viewport.width - reservedSidebarWidth - padding * 2, 1);
+        const centeredWallX = contentStartX + (contentWidth - scaledWallWidth) / 2;
+        const maxWallX = viewport.width - padding - scaledWallWidth;
+        const wallX =
+          maxWallX >= contentStartX
+            ? Math.min(Math.max(centeredWallX, contentStartX), maxWallX)
+            : contentStartX;
 
-          return {
-            centerX: scaledWallWidth / 2,
-            centerY: scaledWallHeight / 2,
-            pan: {
-              x: wallX,
-              y: padding,
-            },
-            zoom: 1,
-          };
-        },
-        [baseScale, padding, reservedSidebarWidth, state.wallHeight, state.wallWidth],
-      ),
-      maxZoom: 10,
-      minZoom: 0.1,
-    });
+        return {
+          centerX: scaledWallWidth / 2,
+          centerY: scaledWallHeight / 2,
+          pan: {
+            x: wallX,
+            y: padding,
+          },
+          zoom: 1,
+        };
+      },
+      [baseScale, padding, reservedSidebarWidth, state.wallHeight, state.wallWidth],
+    ),
+    maxZoom: 10,
+    minZoom: 0.1,
+  });
 
   // Effective scale = base scale * zoom
   const scale = baseScale * zoom;
@@ -617,8 +669,38 @@ export function Preview({ calculator }: PreviewProps) {
   }, [handleWheel]);
 
   // Pan handlers
-  const handleMouseDown = useCallback(
-    (e: React.MouseEvent) => {
+  const handlePointerDown = useCallback(
+    (e: React.PointerEvent<HTMLCanvasElement>) => {
+      e.currentTarget.setPointerCapture(e.pointerId);
+      pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (pointersRef.current.size === 2) {
+        const interruptedDrag = frameDragRef.current;
+        if (interruptedDrag?.mode === "layout") {
+          setGalleryOffset(
+            interruptedDrag.startGalleryOffset.x,
+            interruptedDrag.startGalleryOffset.y,
+          );
+        }
+        frameDragRef.current = null;
+        setDragPreviewFrames(null);
+        setDragPreviewOffset(null);
+        setIsDraggingFrame(false);
+        suppressCanvasClickRef.current = true;
+        const [a, b] = [...pointersRef.current.values()];
+        const rect = e.currentTarget.getBoundingClientRect();
+        const midpoint = {
+          x: (a.x + b.x) / 2 - rect.left,
+          y: (a.y + b.y) / 2 - rect.top,
+        };
+        pinchRef.current = {
+          distance: Math.hypot(a.x - b.x, a.y - b.y),
+          worldAnchor: { x: (midpoint.x - pan.x) / zoom, y: (midpoint.y - pan.y) / zoom },
+          zoom,
+        };
+        setIsPanning(true);
+        startPan(midpoint.x, midpoint.y);
+        return;
+      }
       containerRef.current?.focus();
 
       if (e.button === 1) {
@@ -666,11 +748,12 @@ export function Preview({ calculator }: PreviewProps) {
         frameDragRef.current = {
           frameId: frameHit.frameId,
           bounds,
-          mode: e.altKey || positionedFrames.length === 1 ? "layout" : "gallery",
+          mode: moveGalleryMode || e.altKey || positionedFrames.length === 1 ? "layout" : "gallery",
           moved: false,
           originalPosition: frameHit.position,
           startClientX: e.clientX,
           startClientY: e.clientY,
+          startGalleryOffset: { x: state.galleryOffsetX ?? 0, y: state.galleryOffsetY ?? 0 },
         };
         lastManualPositionRef.current = {
           x: bounds.minX,
@@ -684,11 +767,42 @@ export function Preview({ calculator }: PreviewProps) {
       setIsPanning(true);
       startPan(e.clientX, e.clientY);
     },
-    [pan, positionedFrames, scale, startPan],
+    [
+      moveGalleryMode,
+      pan,
+      positionedFrames,
+      scale,
+      setGalleryOffset,
+      startPan,
+      state.galleryOffsetX,
+      state.galleryOffsetY,
+      zoom,
+    ],
   );
 
-  const handleMouseMove = useCallback(
-    (e: React.MouseEvent) => {
+  const handlePointerMove = useCallback(
+    (e: React.PointerEvent<HTMLCanvasElement>) => {
+      if (!pointersRef.current.has(e.pointerId)) return;
+      pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (pointersRef.current.size >= 2) {
+        const [a, b] = [...pointersRef.current.values()];
+        const rect = e.currentTarget.getBoundingClientRect();
+        const midpoint = {
+          x: (a.x + b.x) / 2 - rect.left,
+          y: (a.y + b.y) / 2 - rect.top,
+        };
+        const distance = Math.hypot(a.x - b.x, a.y - b.y);
+        const pinch = pinchRef.current;
+        if (pinch && pinch.distance > 0) {
+          const nextZoom = clamp(pinch.zoom * (distance / pinch.distance), 0.1, 10);
+          setZoom(nextZoom);
+          setPan({
+            x: midpoint.x - pinch.worldAnchor.x * nextZoom,
+            y: midpoint.y - pinch.worldAnchor.y * nextZoom,
+          });
+        }
+        return;
+      }
       const dragSession = frameDragRef.current;
       if (dragSession) {
         const deltaX = (e.clientX - dragSession.startClientX) / scale;
@@ -715,6 +829,7 @@ export function Preview({ calculator }: PreviewProps) {
             dragSession.bounds.minX + deltaX,
             dragSession.bounds.minY + deltaY,
             dragSession.bounds,
+            dragSession.startGalleryOffset,
           );
           return;
         }
@@ -741,11 +856,18 @@ export function Preview({ calculator }: PreviewProps) {
 
       updatePan(e.clientX, e.clientY);
     },
-    [displayedFrames, displayedPositionedFrames, moveLayoutTo, scale, updatePan],
+    [displayedFrames, displayedPositionedFrames, moveLayoutTo, scale, setPan, setZoom, updatePan],
   );
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLDivElement>) => {
+      const target = e.target as HTMLElement;
+      if (
+        target !== e.currentTarget &&
+        (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT|BUTTON)$/.test(target.tagName))
+      ) {
+        return;
+      }
       if (!selectedFrameId) {
         return;
       }
@@ -782,40 +904,42 @@ export function Preview({ calculator }: PreviewProps) {
     [moveLayoutTo, positionedFrames, selectedFrameId, state.unit],
   );
 
-  const handleMouseUp = useCallback(() => {
-    const dragSession = frameDragRef.current;
-    if (dragSession) {
-      if (dragSession.mode === "gallery" && dragPreviewFrames) {
-        setFrames(dragPreviewFrames);
+  const finishPointer = useCallback(
+    (e: React.PointerEvent<HTMLCanvasElement>, cancelled = false) => {
+      pointersRef.current.delete(e.pointerId);
+      if (e.currentTarget.hasPointerCapture(e.pointerId))
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      if (pinchRef.current) {
+        pinchRef.current = null;
+        frameDragRef.current = null;
+        setDragPreviewFrames(null);
+        setDragPreviewOffset(null);
+        setIsDraggingFrame(false);
+        setIsPanning(false);
+        stopPan();
+        return;
       }
-      frameDragRef.current = null;
-      lastManualPositionRef.current = null;
-      setIsDraggingFrame(false);
-      setDragPreviewFrames(null);
-      setDragPreviewOffset(null);
-      return;
-    }
-
-    setIsPanning(false);
-    stopPan();
-  }, [dragPreviewFrames, setFrames, stopPan]);
-
-  // Also handle mouse leave to stop panning
-  const handleMouseLeave = useCallback(() => {
-    const dragSession = frameDragRef.current;
-    if (dragSession) {
-      if (dragSession.mode === "gallery" && dragPreviewFrames) {
-        setFrames(dragPreviewFrames);
+      const dragSession = frameDragRef.current;
+      if (dragSession) {
+        if (cancelled && dragSession.mode === "layout") {
+          setGalleryOffset(dragSession.startGalleryOffset.x, dragSession.startGalleryOffset.y);
+        }
+        if (!cancelled && dragSession.mode === "gallery" && dragPreviewFrames) {
+          setFrames(dragPreviewFrames);
+        }
+        frameDragRef.current = null;
+        lastManualPositionRef.current = null;
+        setIsDraggingFrame(false);
+        setDragPreviewFrames(null);
+        setDragPreviewOffset(null);
+        return;
       }
-      frameDragRef.current = null;
-      lastManualPositionRef.current = null;
-      setIsDraggingFrame(false);
-      setDragPreviewFrames(null);
-      setDragPreviewOffset(null);
-    }
-    setIsPanning(false);
-    stopPan();
-  }, [dragPreviewFrames, setFrames, stopPan]);
+
+      setIsPanning(false);
+      stopPan();
+    },
+    [dragPreviewFrames, setFrames, setGalleryOffset, stopPan],
+  );
 
   // Draw background on canvas (wall, rulers, furniture - but NOT frames for gallery mode)
   useEffect(() => {
@@ -1400,10 +1524,6 @@ export function Preview({ calculator }: PreviewProps) {
       role="application"
       tabIndex={0}
       onKeyDown={handleKeyDown}
-      onMouseDown={handleMouseDown}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseLeave}
       aria-label="Picture layout canvas"
       style={{
         cursor: isDraggingFrame || isPanning ? "grabbing" : "grab",
@@ -1415,7 +1535,12 @@ export function Preview({ calculator }: PreviewProps) {
           className="absolute inset-0"
           style={{
             cursor: isDraggingFrame || isPanning ? "grabbing" : "grab",
+            touchAction: "none",
           }}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={(event) => finishPointer(event)}
+          onPointerCancel={(event) => finishPointer(event, true)}
           onClick={handleCanvasClick}
         />
       </div>
@@ -1429,6 +1554,21 @@ export function Preview({ calculator }: PreviewProps) {
           +
         </ViewportToolbarButton>
         <ViewportToolbarButton onClick={fitToView}>Fit</ViewportToolbarButton>
+        <ViewportToolbarButton
+          aria-label="Move whole gallery"
+          aria-pressed={moveGalleryMode}
+          title="Move whole gallery by dragging any frame"
+          onClick={() => setMoveGalleryMode((active) => !active)}
+        >
+          <Hand className="size-4" /> Move gallery
+        </ViewportToolbarButton>
+        <ViewportToolbarButton
+          onClick={resetGalleryOffset}
+          aria-label="Reset gallery position"
+          title="Reset gallery position"
+        >
+          <LocateFixed className="size-4" /> Reset position
+        </ViewportToolbarButton>
         <CanvasLegendPopover hasOutOfBoundsItems={layoutPositions.some((f) => f.isOutOfBounds)} />
         <CanvasSettingsPopover setUnit={setUnit} unit={state.unit} />
       </ViewportToolbar>

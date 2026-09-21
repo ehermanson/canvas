@@ -14,6 +14,8 @@ import {
   verticesToRoom,
 } from "@/lib/planner-state";
 import { syncPulloutSofaItem } from "@/lib/pullout-sofa";
+import { validateRoomMutation } from "@/lib/room-constraints";
+import type { RoomConstraintViolation } from "@/lib/room-constraints";
 import { findRoomPolygon, getBounds, getWallLength, rotatePointAround } from "@/lib/room-geometry";
 import type {
   FurnitureItem,
@@ -170,8 +172,12 @@ export function useRoomPlanner(initialState?: RoomPlannerState, historyKey?: str
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [selectedWallId, setSelectedWallId] = useState<string | null>(null);
   const [activeHistoryKey, setActiveHistoryKey] = useState(historyKey ?? null);
+  const [constraintViolation, setConstraintViolation] = useState<RoomConstraintViolation | null>(
+    null,
+  );
 
   const applyHistoryState = useCallback((nextHistoryState: PlannerHistoryState) => {
+    setConstraintViolation(null);
     setHistoryState(nextHistoryState);
     setRoom(structuredClone(nextHistoryState.present.room));
     setFurniture(structuredClone(nextHistoryState.present.furniture));
@@ -200,6 +206,20 @@ export function useRoomPlanner(initialState?: RoomPlannerState, historyKey?: str
       };
     });
   }, []);
+
+  const acceptRoomMutation = useCallback(
+    (previous: Room, next: Room, recordHistory = true) => {
+      const violation = validateRoomMutation(previous, next);
+      if (violation) {
+        setConstraintViolation(violation);
+        return previous;
+      }
+      setConstraintViolation(null);
+      if (recordHistory) pushHistory(next, furniture);
+      return next;
+    },
+    [furniture, pushHistory],
+  );
 
   const undo = useCallback(() => {
     if (historyState.past.length === 0) return;
@@ -305,6 +325,7 @@ export function useRoomPlanner(initialState?: RoomPlannerState, historyKey?: str
       setNeutralFurnitureColors(normalized.neutralFurnitureColors);
       setSelectedIds([]);
       setSelectedWallId(null);
+      setConstraintViolation(null);
       applyHistoryState(restoredHistoryState);
       setActiveHistoryKey(nextHistoryKey ?? activeHistoryKey);
     },
@@ -339,14 +360,23 @@ export function useRoomPlanner(initialState?: RoomPlannerState, historyKey?: str
   // ── Endpoint mutations ──
 
   /** Live-update endpoint position during drag (no history push) */
-  const moveEndpoint = useCallback((id: string, point: Point) => {
-    setRoom((prev) => ({
-      ...prev,
-      endpoints: prev.endpoints.map((ep) =>
-        ep.id === id ? { ...ep, x: point.x, y: point.y } : ep,
-      ),
-    }));
-  }, []);
+  const moveEndpoint = useCallback(
+    (id: string, point: Point) => {
+      setRoom((prev) =>
+        acceptRoomMutation(
+          prev,
+          {
+            ...prev,
+            endpoints: prev.endpoints.map((ep) =>
+              ep.id === id ? { ...ep, x: point.x, y: point.y } : ep,
+            ),
+          },
+          false,
+        ),
+      );
+    },
+    [acceptRoomMutation],
+  );
 
   /** Push history after drag ends */
   const commitEndpointMove = useCallback(() => {
@@ -358,31 +388,35 @@ export function useRoomPlanner(initialState?: RoomPlannerState, historyKey?: str
 
   /** Create a new wall from an existing endpoint to a new point. Returns new endpoint ID. */
   const addWallToNewPoint = useCallback(
-    (fromEndpointId: string, toPoint: Point): string => {
+    (fromEndpointId: string, toPoint: Point): string | null => {
       const newEpId = createId();
-      setRoom((prev) => {
-        const newEndpoint: WallEndpoint = {
-          id: newEpId,
-          x: toPoint.x,
-          y: toPoint.y,
-        };
-        const newWall: Wall = {
-          id: createId(),
-          startId: fromEndpointId,
-          endId: newEpId,
-          features: [],
-        };
-        const updated = {
-          ...prev,
-          endpoints: [...prev.endpoints, newEndpoint],
-          walls: [...prev.walls, newWall],
-        };
-        pushHistory(updated, furniture);
-        return updated;
-      });
+      const newEndpoint: WallEndpoint = {
+        id: newEpId,
+        x: toPoint.x,
+        y: toPoint.y,
+      };
+      const newWall: Wall = {
+        id: createId(),
+        startId: fromEndpointId,
+        endId: newEpId,
+        features: [],
+      };
+      const updated = {
+        ...room,
+        endpoints: [...room.endpoints, newEndpoint],
+        walls: [...room.walls, newWall],
+      };
+      const violation = validateRoomMutation(room, updated);
+      if (violation) {
+        setConstraintViolation(violation);
+        return null;
+      }
+      setConstraintViolation(null);
+      setRoom(updated);
+      pushHistory(updated, furniture);
       return newEpId;
     },
-    [furniture, pushHistory],
+    [furniture, pushHistory, room],
   );
 
   /** Create a wall between two existing endpoints */
@@ -408,11 +442,10 @@ export function useRoomPlanner(initialState?: RoomPlannerState, historyKey?: str
           ...prev,
           walls: [...prev.walls, newWall],
         };
-        pushHistory(updated, furniture);
-        return updated;
+        return acceptRoomMutation(prev, updated);
       });
     },
-    [furniture, pushHistory],
+    [acceptRoomMutation],
   );
 
   /** Merge sourceEndpoint into targetEndpoint (connect) */
@@ -436,11 +469,10 @@ export function useRoomPlanner(initialState?: RoomPlannerState, historyKey?: str
         });
         const endpoints = prev.endpoints.filter((ep) => ep.id !== sourceId);
         const updated = { ...prev, endpoints, walls: dedupedWalls };
-        pushHistory(updated, furniture);
-        return updated;
+        return acceptRoomMutation(prev, updated);
       });
     },
-    [furniture, pushHistory],
+    [acceptRoomMutation],
   );
 
   /** Disconnect an endpoint from a specific wall (split shared endpoint) */
@@ -476,11 +508,10 @@ export function useRoomPlanner(initialState?: RoomPlannerState, historyKey?: str
           endpoints: [...prev.endpoints, newEp],
           walls,
         };
-        pushHistory(updated, furniture);
-        return updated;
+        return acceptRoomMutation(prev, updated);
       });
     },
-    [furniture, pushHistory],
+    [acceptRoomMutation],
   );
 
   /** Split a shared endpoint apart: each wall gets its own endpoint, nudged along its direction */
@@ -543,11 +574,10 @@ export function useRoomPlanner(initialState?: RoomPlannerState, historyKey?: str
         }
 
         const updated = { ...prev, endpoints, walls };
-        pushHistory(updated, furniture);
-        return updated;
+        return acceptRoomMutation(prev, updated);
       });
     },
-    [furniture, pushHistory],
+    [acceptRoomMutation],
   );
 
   /** Remove a wall segment and clean up orphaned endpoints */
@@ -566,11 +596,10 @@ export function useRoomPlanner(initialState?: RoomPlannerState, historyKey?: str
         }
         const endpoints = prev.endpoints.filter((ep) => usedIds.has(ep.id));
         const updated = { ...prev, endpoints, walls };
-        pushHistory(updated, furniture);
-        return updated;
+        return acceptRoomMutation(prev, updated);
       });
     },
-    [furniture, pushHistory],
+    [acceptRoomMutation],
   );
 
   // ── Wall updates ──
@@ -580,11 +609,10 @@ export function useRoomPlanner(initialState?: RoomPlannerState, historyKey?: str
       setRoom((prev) => {
         const walls = prev.walls.map((w) => (w.id === wallId ? { ...w, ...updates } : w));
         const updated = { ...prev, walls };
-        pushHistory(updated, furniture);
-        return updated;
+        return acceptRoomMutation(prev, updated);
       });
     },
-    [furniture, pushHistory],
+    [acceptRoomMutation],
   );
 
   // ── Wall length editing ──
@@ -611,11 +639,10 @@ export function useRoomPlanner(initialState?: RoomPlannerState, historyKey?: str
           ep.id === wall.endId ? { ...ep, x: newBx, y: newBy } : ep,
         );
         const updated = { ...prev, endpoints };
-        pushHistory(updated, furniture);
-        return updated;
+        return acceptRoomMutation(prev, updated);
       });
     },
-    [furniture, pushHistory],
+    [acceptRoomMutation],
   );
 
   // ── Wall features ──
@@ -632,11 +659,10 @@ export function useRoomPlanner(initialState?: RoomPlannerState, historyKey?: str
             : w,
         );
         const updated = { ...prev, walls };
-        pushHistory(updated, furniture);
-        return updated;
+        return acceptRoomMutation(prev, updated);
       });
     },
-    [furniture, pushHistory],
+    [acceptRoomMutation],
   );
 
   const updateWallFeature = useCallback(
@@ -651,11 +677,10 @@ export function useRoomPlanner(initialState?: RoomPlannerState, historyKey?: str
             : w,
         );
         const updated = { ...prev, walls };
-        pushHistory(updated, furniture);
-        return updated;
+        return acceptRoomMutation(prev, updated);
       });
     },
-    [furniture, pushHistory],
+    [acceptRoomMutation],
   );
 
   const removeWallFeature = useCallback(
@@ -665,29 +690,31 @@ export function useRoomPlanner(initialState?: RoomPlannerState, historyKey?: str
           w.id === wallId ? { ...w, features: w.features.filter((f) => f.id !== featureId) } : w,
         );
         const updated = { ...prev, walls };
-        pushHistory(updated, furniture);
-        return updated;
+        return acceptRoomMutation(prev, updated);
       });
     },
-    [furniture, pushHistory],
+    [acceptRoomMutation],
   );
 
   /** Move a wall feature during drag (no history push) */
-  const moveWallFeature = useCallback((wallId: string, featureId: string, newOffset: number) => {
-    setRoom((prev) => {
-      const walls = prev.walls.map((w) =>
-        w.id === wallId
-          ? {
-              ...w,
-              features: w.features.map((f) =>
-                f.id === featureId ? { ...f, offset: newOffset } : f,
-              ),
-            }
-          : w,
-      );
-      return { ...prev, walls };
-    });
-  }, []);
+  const moveWallFeature = useCallback(
+    (wallId: string, featureId: string, newOffset: number) => {
+      setRoom((prev) => {
+        const walls = prev.walls.map((w) =>
+          w.id === wallId
+            ? {
+                ...w,
+                features: w.features.map((f) =>
+                  f.id === featureId ? { ...f, offset: newOffset } : f,
+                ),
+              }
+            : w,
+        );
+        return acceptRoomMutation(prev, { ...prev, walls }, false);
+      });
+    },
+    [acceptRoomMutation],
+  );
 
   const commitFeatureMove = useCallback(() => {
     setRoom((prev) => {
@@ -720,10 +747,10 @@ export function useRoomPlanner(initialState?: RoomPlannerState, historyKey?: str
           }
           return w;
         });
-        return { ...prev, walls };
+        return acceptRoomMutation(prev, { ...prev, walls }, false);
       });
     },
-    [],
+    [acceptRoomMutation],
   );
 
   const translateWall = useCallback(
@@ -738,11 +765,10 @@ export function useRoomPlanner(initialState?: RoomPlannerState, historyKey?: str
             : endpoint,
         );
         const updated = { ...prev, endpoints };
-        pushHistory(updated, furniture);
-        return updated;
+        return acceptRoomMutation(prev, updated);
       });
     },
-    [furniture, pushHistory],
+    [acceptRoomMutation],
   );
 
   const nudgeWallFeature = useCallback(
@@ -775,11 +801,10 @@ export function useRoomPlanner(initialState?: RoomPlannerState, historyKey?: str
             : entry,
         );
         const updated = { ...prev, walls };
-        pushHistory(updated, furniture);
-        return updated;
+        return acceptRoomMutation(prev, updated);
       });
     },
-    [furniture, pushHistory],
+    [acceptRoomMutation],
   );
 
   // ── Furniture mutations ──
@@ -1215,6 +1240,7 @@ export function useRoomPlanner(initialState?: RoomPlannerState, historyKey?: str
       setFurniture([]);
       pushHistory(newRoom, []);
       setSelectedIds([]);
+      setConstraintViolation(null);
     },
     [pushHistory],
   );
@@ -1249,6 +1275,7 @@ export function useRoomPlanner(initialState?: RoomPlannerState, historyKey?: str
 
       setRoom(nextRoom);
       setFurniture(nextFurniture);
+      setConstraintViolation(null);
       pushHistory(nextRoom, nextFurniture);
     },
     [furniture, pushHistory, room],
@@ -1328,6 +1355,8 @@ export function useRoomPlanner(initialState?: RoomPlannerState, historyKey?: str
 
   return {
     state,
+    constraintViolation,
+    clearConstraintViolation: () => setConstraintViolation(null),
     discardFutureHistory,
     historyDebug,
     isHistoryEditingLocked,

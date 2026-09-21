@@ -60,6 +60,7 @@ import {
   getFurnitureAlignmentMatches,
   getFurnitureBounds,
   getFurnitureResizeHandlePoints,
+  isPointInFurniture,
   getNearestBoundsClearances,
   getNearestFurnitureClearances,
   resizeFurnitureByHandleDelta,
@@ -950,6 +951,7 @@ type InteractionState =
       id: string;
       edge: FurnitureResizeEdge;
       startScreen: Point;
+      startFrame: Pick<FurnitureItem, "depth" | "width" | "x" | "y">;
     }
   | ({ mode: "pending-rotation" } & FurnitureRotationState)
   | {
@@ -957,9 +959,16 @@ type InteractionState =
       wallId: string;
       featureId: string;
       startScreen: Point;
+      startWallId: string;
+      startOffset: number;
     }
   | { mode: "selected-endpoint"; endpointId: string }
-  | { mode: "dragging-endpoint"; endpointId: string; snapTarget: string | null }
+  | {
+      mode: "dragging-endpoint";
+      endpointId: string;
+      snapTarget: string | null;
+      startWorld: Point;
+    }
   | {
       mode: "dragging-furniture";
       id: string;
@@ -981,9 +990,16 @@ type InteractionState =
       edge: FurnitureResizeEdge;
       startScreen: Point;
       moved: boolean;
+      startFrame: Pick<FurnitureItem, "depth" | "width" | "x" | "y">;
     }
   | ({ mode: "dragging-rotation" } & FurnitureRotationState)
-  | { mode: "dragging-feature"; wallId: string; featureId: string }
+  | {
+      mode: "dragging-feature";
+      wallId: string;
+      featureId: string;
+      startWallId: string;
+      startOffset: number;
+    }
   | {
       mode: "drawing-wall";
       fromEndpointId: string;
@@ -996,11 +1012,36 @@ const SNAP_RADIUS = 14;
 const CLICK_THRESHOLD = 4;
 const DRAG_INTENT_THRESHOLD = 8;
 const ROTATION_HANDLE_OFFSET = 28;
-const ROTATION_HANDLE_RADIUS = 7;
-const RESIZE_HANDLE_RADIUS = 6;
+const ROTATION_HANDLE_RADIUS = 12;
+const RESIZE_HANDLE_RADIUS = 11;
 const RESIZE_HANDLE_EDGES = ["left", "right", "top", "bottom"] as const;
 const FURNITURE_WALL_SNAP_SCREEN_THRESHOLD = 16;
 const FURNITURE_ALIGNMENT_SNAP_SCREEN_THRESHOLD = 10;
+
+export function isEditableShortcutTarget(target: EventTarget | null) {
+  return (
+    target instanceof HTMLElement &&
+    (target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName))
+  );
+}
+
+export function findFurnitureAtPoint(items: FurnitureItem[], point: Point) {
+  for (let index = items.length - 1; index >= 0; index--) {
+    const item = items[index];
+    if (isPointInFurniture(point, item)) return item;
+  }
+  return null;
+}
+
+export function getExactFurnitureNudgeUpdates(
+  items: FurnitureItem[],
+  selectedIds: string[],
+  delta: Point,
+) {
+  return items
+    .filter((item) => selectedIds.includes(item.id) && !item.locked)
+    .map((item) => ({ id: item.id, x: item.x + delta.x, y: item.y + delta.y }));
+}
 
 function getContextMenuFeatureWidth(defaultWidth: number, wallLength: number) {
   return Math.max(6, Math.min(defaultWidth, wallLength));
@@ -1175,7 +1216,8 @@ function CanvasHelpPopover() {
     { keys: "Drag Empty Space", label: "Draw a selection box" },
     { keys: "Scroll", label: "Zoom in and out" },
     { keys: "Delete", label: "Remove selected items" },
-    { keys: "Arrows", label: "Nudge selection" },
+    { keys: "Arrows", label: 'Nudge selection exactly 1" (2.54 cm)' },
+    { keys: "Shift + Arrows", label: 'Nudge selection exactly 10" (25.4 cm)' },
     { keys: "Ctrl + D", label: "Duplicate selection" },
     { keys: "Ctrl + Z", label: "Undo the last change" },
   ];
@@ -1231,6 +1273,7 @@ export function Canvas({ planner }: CanvasProps) {
   const [contextMenuTarget, setContextMenuTarget] = useState<CanvasContextMenuTarget | null>(null);
   const [renameDialog, setRenameDialog] = useState<FurnitureRenameDialogState | null>(null);
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+  const [announcement, setAnnouncement] = useState("");
 
   // ── View state ──
   const [zoom, setZoom] = useState(1);
@@ -1241,6 +1284,14 @@ export function Canvas({ planner }: CanvasProps) {
   const interactionRef = useRef<InteractionState>({ mode: "idle" });
   const alignmentGuidesRef = useRef<FurnitureAlignmentGuide[]>([]);
   const mouseScreenRef = useRef<Point>({ x: 0, y: 0 });
+  const activePointersRef = useRef(new Map<number, Point>());
+  const pinchRef = useRef<{
+    distance: number;
+    midpoint: Point;
+    pan: Point;
+    zoom: number;
+  } | null>(null);
+  const announcedSelectionRef = useRef<string | null>(null);
   const altKeyRef = useRef(false);
   const spaceKeyRef = useRef(false);
   const [, forceRender] = useState(0);
@@ -1248,6 +1299,8 @@ export function Canvas({ planner }: CanvasProps) {
 
   const {
     discardFutureHistory,
+    clearConstraintViolation,
+    constraintViolation,
     isHistoryEditingLocked,
     returnToLatestHistory,
     room,
@@ -1304,6 +1357,7 @@ export function Canvas({ planner }: CanvasProps) {
     setUnit,
     toDisplay,
     unit,
+    updateWall,
   } = planner;
 
   const contextMenuItem = useMemo(
@@ -1313,6 +1367,23 @@ export function Canvas({ planner }: CanvasProps) {
         : null,
     [contextMenuTarget, furniture],
   );
+
+  useEffect(() => {
+    const selectionKey = selectedId
+      ? `furniture:${selectedId}`
+      : selectedWallId
+        ? `wall:${selectedWallId}`
+        : null;
+    if (selectionKey === announcedSelectionRef.current) return;
+    announcedSelectionRef.current = selectionKey;
+    if (selectedId) {
+      const item = furniture.find((entry) => entry.id === selectedId);
+      if (item) setAnnouncement(`${item.name} selected`);
+    } else if (selectedWallId) {
+      const wallIndex = room.walls.findIndex((entry) => entry.id === selectedWallId);
+      if (wallIndex >= 0) setAnnouncement(`Wall ${wallIndex + 1} selected`);
+    }
+  }, [furniture, room.walls, selectedId, selectedWallId]);
   const contextMenuWall = useMemo(
     () =>
       contextMenuTarget?.kind === "wall"
@@ -1973,27 +2044,7 @@ export function Canvas({ planner }: CanvasProps) {
   );
 
   const hitTestFurniture = useCallback(
-    (worldPoint: Point): FurnitureItem | null => {
-      for (let i = furniture.length - 1; i >= 0; i--) {
-        const item = furniture[i];
-        const rad = (-item.rotation * Math.PI) / 180;
-        const cos = Math.cos(rad);
-        const sin = Math.sin(rad);
-        const dx = worldPoint.x - item.x;
-        const dy = worldPoint.y - item.y;
-        const lx = dx * cos - dy * sin;
-        const ly = dx * sin + dy * cos;
-        if (item.shape === "circle") {
-          const r = item.width / 2;
-          if (lx * lx + ly * ly <= r * r) return item;
-        } else {
-          const hw = item.width / 2;
-          const hd = item.depth / 2;
-          if (Math.abs(lx) <= hw && Math.abs(ly) <= hd) return item;
-        }
-      }
-      return null;
-    },
+    (worldPoint: Point): FurnitureItem | null => findFurnitureAtPoint(furniture, worldPoint),
     [furniture],
   );
 
@@ -2104,10 +2155,10 @@ export function Canvas({ planner }: CanvasProps) {
     [room.endpoints, worldToScreen],
   );
 
-  // ── Mouse handlers ──
+  // ── Pointer handlers ──
 
   const handleMouseDown = useCallback(
-    (e: React.MouseEvent<HTMLCanvasElement>) => {
+    (e: React.PointerEvent<HTMLCanvasElement>) => {
       const canvas = canvasRef.current;
       if (!canvas) return;
       setContextMenuTarget(null);
@@ -2139,6 +2190,15 @@ export function Canvas({ planner }: CanvasProps) {
         } else {
           const snapped = snapWallPoint(world);
           const newEpId = addWallToNewPoint(interaction.fromEndpointId, snapped);
+          if (!newEpId) {
+            interactionRef.current = {
+              ...interaction,
+              currentEnd: snapped,
+              snapTargetId: null,
+            };
+            rerender();
+            return;
+          }
           interactionRef.current = {
             mode: "drawing-wall",
             fromEndpointId: newEpId,
@@ -2212,6 +2272,12 @@ export function Canvas({ planner }: CanvasProps) {
           id: resizeHandleHit.item.id,
           edge: resizeHandleHit.edge,
           startScreen: screen,
+          startFrame: {
+            x: resizeHandleHit.item.x,
+            y: resizeHandleHit.item.y,
+            width: resizeHandleHit.item.width,
+            depth: resizeHandleHit.item.depth,
+          },
         };
         setCursor(getResizeCursor(resizeHandleHit.edge, resizeHandleHit.item.rotation));
         return;
@@ -2266,6 +2332,8 @@ export function Canvas({ planner }: CanvasProps) {
             wallId: featureHit.wallId,
             featureId: featureHit.featureId,
             startScreen: screen,
+            startWallId: featureHit.wallId,
+            startOffset: hitFeature?.offset ?? 0,
           };
           setCursor("grabbing");
           return;
@@ -2323,6 +2391,15 @@ export function Canvas({ planner }: CanvasProps) {
       setSelectedWallId(null);
       setSelectedFeature(null);
       setSelectedResizeHandle(null);
+      if (e.pointerType === "touch") {
+        interactionRef.current = {
+          mode: "panning",
+          startMouse: { x: e.clientX, y: e.clientY },
+          startPan: { ...panRef.current },
+        };
+        setCursor("grabbing");
+        return;
+      }
       interactionRef.current = {
         mode: "pending-marquee",
         additive: e.shiftKey,
@@ -2352,7 +2429,7 @@ export function Canvas({ planner }: CanvasProps) {
   );
 
   const handleMouseMove = useCallback(
-    (e: React.MouseEvent<HTMLCanvasElement>) => {
+    (e: React.PointerEvent<HTMLCanvasElement>) => {
       const canvas = canvasRef.current;
       if (!canvas) return;
       const rect = canvas.getBoundingClientRect();
@@ -2416,6 +2493,7 @@ export function Canvas({ planner }: CanvasProps) {
                   mode: "dragging-endpoint",
                   endpointId: interaction.endpointId,
                   snapTarget: null,
+                  startWorld: interaction.startWorld,
                 };
                 setCursor("grabbing");
                 return;
@@ -2426,6 +2504,7 @@ export function Canvas({ planner }: CanvasProps) {
               mode: "dragging-endpoint",
               endpointId: interaction.endpointId,
               snapTarget: null,
+              startWorld: interaction.startWorld,
             };
             setCursor("grabbing");
           }
@@ -2601,6 +2680,7 @@ export function Canvas({ planner }: CanvasProps) {
             edge: interaction.edge,
             startScreen: interaction.startScreen,
             moved: true,
+            startFrame: interaction.startFrame,
           };
 
           const item = furniture.find((entry) => entry.id === interaction.id);
@@ -2657,6 +2737,8 @@ export function Canvas({ planner }: CanvasProps) {
             mode: "dragging-feature",
             wallId: interaction.wallId,
             featureId: interaction.featureId,
+            startWallId: interaction.startWallId,
+            startOffset: interaction.startOffset,
           };
 
           const epMap = new Map(room.endpoints.map((ep) => [ep.id, ep]));
@@ -2694,6 +2776,8 @@ export function Canvas({ planner }: CanvasProps) {
               mode: "dragging-feature",
               wallId: bestWallId,
               featureId: interaction.featureId,
+              startWallId: interaction.startWallId,
+              startOffset: interaction.startOffset,
             };
             setSelectedWallId(bestWallId);
             setSelectedFeature({
@@ -2744,6 +2828,8 @@ export function Canvas({ planner }: CanvasProps) {
               mode: "dragging-feature",
               wallId: bestWallId,
               featureId: interaction.featureId,
+              startWallId: interaction.startWallId,
+              startOffset: interaction.startOffset,
             };
             setSelectedWallId(bestWallId);
             setSelectedFeature({
@@ -2989,6 +3075,149 @@ export function Canvas({ planner }: CanvasProps) {
     setSelectedIds,
     setSelectedWallId,
   ]);
+
+  const handlePointerDown = useCallback(
+    (event: React.PointerEvent<HTMLCanvasElement>) => {
+      event.currentTarget.setPointerCapture(event.pointerId);
+      activePointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+
+      if (activePointersRef.current.size === 2) {
+        const currentInteraction = interactionRef.current;
+        if (currentInteraction.mode === "dragging-furniture") {
+          moveFurnitureGroup(currentInteraction.startPositions);
+        } else if (currentInteraction.mode === "dragging-endpoint") {
+          moveEndpoint(currentInteraction.endpointId, currentInteraction.startWorld);
+          commitEndpointMove();
+        } else if (currentInteraction.mode === "dragging-resize") {
+          setFurnitureFrame(currentInteraction.id, currentInteraction.startFrame);
+        } else if (currentInteraction.mode === "dragging-rotation") {
+          setFurnitureTransforms(currentInteraction.startTransforms);
+        } else if (currentInteraction.mode === "dragging-feature") {
+          if (currentInteraction.wallId !== currentInteraction.startWallId) {
+            moveFeatureToWall(
+              currentInteraction.wallId,
+              currentInteraction.startWallId,
+              currentInteraction.featureId,
+              currentInteraction.startOffset,
+            );
+          } else {
+            moveWallFeature(
+              currentInteraction.startWallId,
+              currentInteraction.featureId,
+              currentInteraction.startOffset,
+            );
+          }
+        }
+        const [first, second] = [...activePointersRef.current.values()];
+        const midpoint = { x: (first.x + second.x) / 2, y: (first.y + second.y) / 2 };
+        pinchRef.current = {
+          distance: Math.hypot(second.x - first.x, second.y - first.y),
+          midpoint,
+          pan: { ...panRef.current },
+          zoom: zoomRef.current,
+        };
+        interactionRef.current = { mode: "idle" };
+        alignmentGuidesRef.current = [];
+        setCursor("grabbing");
+        rerender();
+        return;
+      }
+
+      if (activePointersRef.current.size === 1) {
+        handleMouseDown(event);
+      }
+    },
+    [
+      commitEndpointMove,
+      commitFeatureMove,
+      commitFurnitureMove,
+      handleMouseDown,
+      moveEndpoint,
+      moveFeatureToWall,
+      moveWallFeature,
+      rerender,
+      setFurnitureFrame,
+      setFurnitureTransforms,
+      moveFurnitureGroup,
+    ],
+  );
+
+  const handlePointerMove = useCallback(
+    (event: React.PointerEvent<HTMLCanvasElement>) => {
+      if (!activePointersRef.current.has(event.pointerId)) {
+        if (event.pointerType === "mouse") handleMouseMove(event);
+        return;
+      }
+
+      activePointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+      const pinch = pinchRef.current;
+      if (pinch && activePointersRef.current.size >= 2) {
+        event.preventDefault();
+        const [first, second] = [...activePointersRef.current.values()];
+        const midpoint = { x: (first.x + second.x) / 2, y: (first.y + second.y) / 2 };
+        const distance = Math.max(1, Math.hypot(second.x - first.x, second.y - first.y));
+        const nextZoom = Math.max(
+          MIN_CANVAS_ZOOM,
+          Math.min(MAX_CANVAS_ZOOM, pinch.zoom * (distance / Math.max(1, pinch.distance))),
+        );
+        const rect = event.currentTarget.getBoundingClientRect();
+        const anchorX = pinch.midpoint.x - rect.left;
+        const anchorY = pinch.midpoint.y - rect.top;
+        const worldX = (anchorX - pinch.pan.x) / pinch.zoom;
+        const worldY = (anchorY - pinch.pan.y) / pinch.zoom;
+        setZoom(nextZoom);
+        setPanOffset({
+          x: midpoint.x - rect.left - worldX * nextZoom,
+          y: midpoint.y - rect.top - worldY * nextZoom,
+        });
+        return;
+      }
+
+      handleMouseMove(event);
+    },
+    [handleMouseMove],
+  );
+
+  const finishPointer = useCallback(
+    (event: React.PointerEvent<HTMLCanvasElement>, cancelled: boolean) => {
+      const wasPinching = pinchRef.current !== null;
+      activePointersRef.current.delete(event.pointerId);
+      if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+        event.currentTarget.releasePointerCapture(event.pointerId);
+      }
+
+      if (wasPinching) {
+        if (activePointersRef.current.size < 2) {
+          pinchRef.current = null;
+          interactionRef.current = { mode: "idle" };
+          setCursor("default");
+        }
+        return;
+      }
+
+      if (cancelled) {
+        alignmentGuidesRef.current = [];
+        const currentInteraction = interactionRef.current;
+        if (currentInteraction.mode === "dragging-furniture") {
+          moveFurnitureGroup(currentInteraction.startPositions);
+          interactionRef.current = { mode: "idle" };
+          setCursor("default");
+          rerender();
+        } else if (currentInteraction.mode === "dragging-endpoint") {
+          moveEndpoint(currentInteraction.endpointId, currentInteraction.startWorld);
+          commitEndpointMove();
+          interactionRef.current = { mode: "idle" };
+          setCursor("default");
+          rerender();
+        } else {
+          handleMouseUp();
+        }
+        return;
+      }
+      handleMouseUp();
+    },
+    [commitEndpointMove, handleMouseUp, moveEndpoint, moveFurnitureGroup, rerender],
+  );
 
   const handleWheel = useCallback(
     (e: React.WheelEvent<HTMLCanvasElement>) => {
@@ -4253,6 +4482,7 @@ export function Canvas({ planner }: CanvasProps) {
       if (e.key === "Alt") {
         altKeyRef.current = true;
       }
+      if (isEditableShortcutTarget(e.target)) return;
       if (e.key === " " && document.activeElement === document.body && !e.repeat) {
         e.preventDefault();
         spaceKeyRef.current = true;
@@ -4300,7 +4530,6 @@ export function Canvas({ planner }: CanvasProps) {
         return;
       }
       if (e.key === "Delete" || e.key === "Backspace") {
-        if (document.activeElement !== document.body) return;
         e.preventDefault();
         if (selectedIds.length > 0) {
           removeFurnitureGroup(selectedIds);
@@ -4314,7 +4543,7 @@ export function Canvas({ planner }: CanvasProps) {
           }
         }
       }
-      if (e.key === "r" && document.activeElement === document.body) {
+      if (e.key === "r") {
         if (selectedIds.length > 1) {
           planner.rotateFurnitureGroup(selectedIds, 15);
           return;
@@ -4339,12 +4568,14 @@ export function Canvas({ planner }: CanvasProps) {
         }
       }
       if (
-        document.activeElement === document.body &&
         interactionRef.current.mode === "idle" &&
-        ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)
+        ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key) &&
+        (e.target === document.body ||
+          e.target === canvasRef.current ||
+          (e.target instanceof HTMLElement &&
+            Boolean(e.target.closest("[data-sidebar-furniture-id], [data-sidebar-wall-id]"))))
       ) {
-        const baseStep = gridSnap > 0 ? gridSnap : 1;
-        const step = e.shiftKey ? baseStep * 10 : baseStep;
+        const step = e.shiftKey ? 10 : 1;
 
         if (selectedResizeHandle && selectedId) {
           const item = furniture.find((entry) => entry.id === selectedId);
@@ -4390,6 +4621,7 @@ export function Canvas({ planner }: CanvasProps) {
           if (selectedWall && !selectedWall.locked) {
             e.preventDefault();
             translateWall(selectedWallId, delta.x, delta.y);
+            setAnnouncement(`Moved wall ${step} ${step === 1 ? "inch" : "inches"}`);
           }
           return;
         }
@@ -4407,26 +4639,7 @@ export function Canvas({ planner }: CanvasProps) {
           }
 
           e.preventDefault();
-          const snappedAnchor = getSnappedFurniturePlacement(
-            anchorItem,
-            {
-              x: anchorItem.x + delta.x,
-              y: anchorItem.y + delta.y,
-            },
-            {
-              x: delta.x !== 0,
-              y: delta.y !== 0,
-            },
-          );
-          const appliedDelta = {
-            x: snappedAnchor.x - anchorItem.x,
-            y: snappedAnchor.y - anchorItem.y,
-          };
-          const updates = movableItems.map((item) => ({
-            id: item.id,
-            x: item.x + appliedDelta.x,
-            y: item.y + appliedDelta.y,
-          }));
+          const updates = getExactFurnitureNudgeUpdates(furniture, selectedIds, delta);
 
           if (updates.length === 1 && selectedId) {
             planner.updateFurniture(selectedId, {
@@ -4436,6 +4649,9 @@ export function Canvas({ planner }: CanvasProps) {
           } else {
             updateFurnitureGroup(updates);
           }
+          setAnnouncement(
+            `Moved ${movableItems.length === 1 ? anchorItem.name : `${movableItems.length} items`} ${step} ${step === 1 ? "inch" : "inches"}`,
+          );
         }
       }
     };
@@ -4469,7 +4685,6 @@ export function Canvas({ planner }: CanvasProps) {
     contextMenuTarget,
     deleteTargetId,
     furniture,
-    gridSnap,
     nudgeWallFeature,
     planner,
     removeFurnitureGroup,
@@ -4478,13 +4693,75 @@ export function Canvas({ planner }: CanvasProps) {
     setSelectedWallId,
     updateFurnitureFrame,
     updateFurnitureGroup,
-    getSnappedFurniturePlacement,
     translateWall,
     rerender,
   ]);
 
   return (
     <div ref={containerRef} className="absolute inset-0">
+      <div className="sr-only" aria-live="polite" aria-atomic="true">
+        {announcement}
+      </div>
+      {constraintViolation ? (
+        <div
+          role="alert"
+          className="absolute top-16 left-1/2 z-40 flex max-w-md -translate-x-1/2 items-center gap-3 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-950 shadow-lg dark:border-amber-500/40 dark:bg-amber-950 dark:text-amber-100"
+        >
+          <span>{constraintViolation.message}</span>
+          {constraintViolation.code === "locked-wall" ? (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                updateWall(constraintViolation.wallId, { locked: false });
+                clearConstraintViolation();
+              }}
+            >
+              Unlock wall
+            </Button>
+          ) : null}
+          <Button size="sm" variant="ghost" onClick={clearConstraintViolation}>
+            Dismiss
+          </Button>
+        </div>
+      ) : null}
+      {interactionRef.current.mode === "selected-endpoint" ? (
+        <div className="absolute bottom-6 left-1/2 z-30 flex -translate-x-1/2 gap-2 rounded-lg border border-gray-200 bg-white/95 p-2 shadow-lg dark:border-white/10 dark:bg-slate-900/95">
+          <Button
+            size="sm"
+            onClick={() => {
+              const endpointId =
+                interactionRef.current.mode === "selected-endpoint"
+                  ? interactionRef.current.endpointId
+                  : null;
+              const endpoint = room.endpoints.find((entry) => entry.id === endpointId);
+              if (!endpoint || !endpointId) return;
+              interactionRef.current = {
+                mode: "drawing-wall",
+                fromEndpointId: endpointId,
+                currentEnd: { x: endpoint.x, y: endpoint.y },
+                snapTargetId: null,
+              };
+              setCursor("crosshair");
+              rerender();
+            }}
+          >
+            Start wall
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              if (interactionRef.current.mode !== "selected-endpoint") return;
+              splitEndpoint(interactionRef.current.endpointId);
+              interactionRef.current = { mode: "idle" };
+              rerender();
+            }}
+          >
+            Split endpoint
+          </Button>
+        </div>
+      ) : null}
       <ContextMenu
         onOpenChange={(open) => {
           if (!open) {
@@ -4496,25 +4773,11 @@ export function Canvas({ planner }: CanvasProps) {
           <canvas
             ref={canvasRef}
             className="absolute inset-0"
-            style={{ cursor }}
-            onMouseDown={handleMouseDown}
-            onMouseMove={handleMouseMove}
-            onMouseUp={handleMouseUp}
-            onMouseLeave={() => {
-              const mode = interactionRef.current.mode;
-              if (
-                mode !== "drawing-wall" &&
-                mode !== "idle" &&
-                mode !== "selected-endpoint" &&
-                mode !== "pending-endpoint" &&
-                mode !== "pending-furniture" &&
-                mode !== "pending-resize" &&
-                mode !== "pending-rotation" &&
-                mode !== "pending-feature"
-              ) {
-                handleMouseUp();
-              }
-            }}
+            style={{ cursor, touchAction: "none" }}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={(event) => finishPointer(event, false)}
+            onPointerCancel={(event) => finishPointer(event, true)}
             onDoubleClick={handleDoubleClick}
             onWheel={handleWheel}
             onContextMenuCapture={handleContextMenuCapture}

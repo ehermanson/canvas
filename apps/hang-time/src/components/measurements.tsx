@@ -7,7 +7,7 @@ interface MeasurementsProps {
 }
 
 export function Measurements({ calculator }: MeasurementsProps) {
-  const { state, layoutPositions } = calculator;
+  const { state, layoutPositions, layoutResult } = calculator;
 
   const fmt = (val: number) => formatMeasurement(toDisplayUnit(val, state.unit), state.unit);
   const fmtShort = (val: number) => formatShort(toDisplayUnit(val, state.unit), state.unit);
@@ -20,6 +20,19 @@ export function Measurements({ calculator }: MeasurementsProps) {
         </span>
         Hook Placement
       </h3>
+      {layoutResult.issues.length > 0 ? (
+        <div
+          role="alert"
+          className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200"
+        >
+          <p className="font-semibold">Fix these layout details before hanging:</p>
+          <ul className="mt-1 list-disc space-y-1 pl-4">
+            {layoutResult.issues.map((issue, index) => (
+              <li key={`${issue.code}-${index}`}>{issue.message}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
       <div className="space-y-2">
         {layoutPositions.map((frame) => (
           <div

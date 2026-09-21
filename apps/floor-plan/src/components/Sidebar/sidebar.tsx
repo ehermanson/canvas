@@ -47,7 +47,7 @@ import {
   Upload,
 } from "lucide-react";
 import { motion } from "motion/react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { AuthPanel } from "@/components/auth-panel";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -294,7 +294,7 @@ function SectionHeader({
   );
 }
 
-function NumberInput({
+export function NumberInput({
   label,
   max = 9999,
   min = 0,
@@ -314,6 +314,7 @@ function NumberInput({
   const formattedValue = value % 1 === 0 ? value.toFixed(0) : Number.parseFloat(value.toFixed(3));
   const [localValue, setLocalValue] = useState<string>(String(formattedValue));
   const [isFocused, setIsFocused] = useState(false);
+  const inputId = useId();
 
   useEffect(() => {
     if (!isFocused) {
@@ -333,9 +334,12 @@ function NumberInput({
 
   return (
     <div className="flex flex-col gap-1">
-      <Label className="text-xs text-gray-500 dark:text-white/50">{label}</Label>
+      <Label htmlFor={inputId} className="text-xs text-gray-500 dark:text-white/50">
+        {label}
+      </Label>
       <div className="relative">
         <Input
+          id={inputId}
           type="number"
           value={isFocused ? localValue : formattedValue}
           onChange={(event) => setLocalValue(event.target.value)}
@@ -766,6 +770,7 @@ function ProjectBrowserSection({
                   <div className="space-y-1">
                     <Label className="text-xs text-gray-500 dark:text-white/50">Project name</Label>
                     <Input
+                      aria-label="Project name"
                       value={projectDraftName}
                       onChange={(event) => setProjectDraftName(event.target.value)}
                       onBlur={commitProjectRename}
@@ -782,6 +787,7 @@ function ProjectBrowserSection({
                       Snapshot name
                     </Label>
                     <Input
+                      aria-label="Snapshot name"
                       value={snapshotDraftName}
                       onChange={(event) => setSnapshotDraftName(event.target.value)}
                       onBlur={commitSnapshotRename}
@@ -1039,11 +1045,18 @@ function WallCard({
       tone="cyan"
       className="cursor-pointer space-y-2"
     >
-      <div data-sidebar-wall-id={wall.id} onClick={onSelect}>
+      <div>
         <div className="flex items-center gap-2">
-          <span className="inline-flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-indigo-500/80 text-[10px] font-bold text-white">
+          <button
+            type="button"
+            data-sidebar-wall-id={wall.id}
+            onClick={onSelect}
+            aria-label={`Select wall ${wallIndex + 1}`}
+            aria-pressed={isSelected}
+            className="inline-flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-indigo-500/80 text-[10px] font-bold text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-500"
+          >
             {wallIndex + 1}
-          </span>
+          </button>
           <WallLengthInput
             wallId={wall.id}
             wallLength={wallLength}
@@ -1181,6 +1194,7 @@ function WallFeatureCard({
       <div className="flex items-center gap-1.5">
         <span className="w-7 flex-shrink-0 text-[9px] text-gray-400 dark:text-white/25">Pos</span>
         <CompactMeasurementInput
+          ariaLabel={`${label} position`}
           value={feature.offset}
           unit={unit}
           toDisplay={toDisplay}
@@ -1196,6 +1210,7 @@ function WallFeatureCard({
           W
         </span>
         <CompactMeasurementInput
+          ariaLabel={`${label} width`}
           value={feature.width}
           unit={unit}
           toDisplay={toDisplay}
@@ -1267,6 +1282,7 @@ function WallLengthInput({
   return (
     <div className="relative flex-1">
       <Input
+        aria-label={`Wall length in ${unit === "cm" ? "centimeters" : "inches"}`}
         type="number"
         value={isFocused ? localValue : displayValue}
         onChange={(event) => setLocalValue(event.target.value)}
@@ -1293,6 +1309,7 @@ function WallLengthInput({
 }
 
 function CompactMeasurementInput({
+  ariaLabel,
   disabled,
   min = 0,
   onChange,
@@ -1302,6 +1319,7 @@ function CompactMeasurementInput({
   unit,
   value,
 }: {
+  ariaLabel: string;
   disabled?: boolean;
   min?: number;
   onChange: (value: number) => void;
@@ -1335,6 +1353,7 @@ function CompactMeasurementInput({
   return (
     <div className="relative flex-1">
       <Input
+        aria-label={ariaLabel}
         type="number"
         value={isFocused ? localValue : displayValue}
         onChange={(event) => setLocalValue(event.target.value)}
@@ -1581,7 +1600,7 @@ function CustomFurnitureCreator({
             Custom Piece
           </span>
           <span className="truncate text-[11px] text-gray-500 dark:text-white/35">
-            {customShape === "circle" ? "Circle" : "Square"} •{" "}
+            {customShape === "circle" ? "Round / Oval" : "Square"} •{" "}
             {formatFurnitureFootprint(
               customPreset.width,
               customPreset.depth,
@@ -1653,7 +1672,7 @@ function CustomFurnitureCreator({
               >
                 <button type="button" onClick={() => setCustomShape("circle")}>
                   <div className="h-5 w-5 rounded-full border-2 border-current" />
-                  <span className="text-[10px] leading-tight">Circle</span>
+                  <span className="text-[10px] leading-tight">Round / Oval</span>
                 </button>
               </InspectorOptionCard>
             </div>
@@ -2160,8 +2179,15 @@ function FurnitureSection({
                     tone="cyan"
                     className="cursor-pointer text-[11px]"
                   >
-                    <div data-sidebar-furniture-id={item.id} onClick={() => setSelectedId(item.id)}>
-                      <div className="flex items-center gap-2 px-0.5 py-0.5">
+                    <div>
+                      <button
+                        type="button"
+                        data-sidebar-furniture-id={item.id}
+                        onClick={() => setSelectedId(item.id)}
+                        aria-label={`Select ${item.name}`}
+                        aria-pressed={selectedIds.includes(item.id)}
+                        className="flex w-full items-center gap-2 rounded-lg px-0.5 py-1 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-500"
+                      >
                         <div
                           className="h-3 w-3 flex-shrink-0 rounded-sm"
                           style={{ backgroundColor: item.color }}
@@ -2170,7 +2196,7 @@ function FurnitureSection({
                         <span className="text-gray-400 dark:text-white/30">
                           {toDisplay(item.width).toFixed(0)}x{toDisplay(item.depth).toFixed(0)}
                         </span>
-                      </div>
+                      </button>
                       {selectedIds.length === 1 && item.id === selectedId ? (
                         <FurnitureItemInspector
                           bringFurnitureToFront={bringFurnitureToFront}

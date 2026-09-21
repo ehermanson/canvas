@@ -68,7 +68,10 @@ interface Props {
 }
 
 export function HangingHardware({ calculator }: Props) {
-  const { state, u, fromU, setHangingOffset, setHangingType, setHookInset } = calculator;
+  const { state, layoutResult, u, fromU, setHangingOffset, setHangingType, setHookInset } =
+    calculator;
+  const offsetError = layoutResult.issues.find((issue) => issue.field === "hangingOffset");
+  const insetError = layoutResult.issues.find((issue) => issue.field === "hookInset");
 
   return (
     <Collapsible defaultOpen className="border-b border-gray-200 dark:border-white/10">
@@ -130,10 +133,17 @@ export function HangingHardware({ calculator }: Props) {
               type="number"
               step="0.125"
               min={0}
+              aria-invalid={Boolean(offsetError)}
+              aria-describedby={offsetError ? "hanging-offset-error" : undefined}
               value={parseFloat(u(state.hangingOffset).toFixed(3))}
               onChange={(e) => setHangingOffset(fromU(parseFloat(e.target.value) || 0))}
               className="h-8 text-sm"
             />
+            {offsetError ? (
+              <p id="hanging-offset-error" className="mt-1 text-xs text-red-600 dark:text-red-400">
+                {offsetError.message}
+              </p>
+            ) : null}
             <p className="text-[10px] text-gray-400 dark:text-white/40 mt-1">
               Distance from frame top to hanging point
             </p>
@@ -148,10 +158,17 @@ export function HangingHardware({ calculator }: Props) {
                 type="number"
                 step="0.125"
                 min={0}
+                aria-invalid={Boolean(insetError)}
+                aria-describedby={insetError ? "hook-inset-error" : undefined}
                 value={parseFloat(u(state.hookInset).toFixed(3))}
                 onChange={(e) => setHookInset(fromU(parseFloat(e.target.value) || 0))}
                 className="h-8 text-sm"
               />
+              {insetError ? (
+                <p id="hook-inset-error" className="mt-1 text-xs text-red-600 dark:text-red-400">
+                  {insetError.message}
+                </p>
+              ) : null}
               <p className="text-[10px] text-gray-400 dark:text-white/40 mt-1">
                 Distance from frame edge to each hook
               </p>

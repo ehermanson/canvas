@@ -4,6 +4,8 @@ import type {
   FramePosition,
   GalleryFrame,
   GalleryVAlign,
+  LayoutResult,
+  ValidationIssue,
 } from "@/types";
 
 export const INCH_TO_CM = 2.54;
@@ -72,6 +74,8 @@ export function calculateLayoutPositions(state: CalculatorState): FramePosition[
     anchorValue,
     hAnchorType,
     hAnchorValue,
+    galleryOffsetX = 0,
+    galleryOffsetY = 0,
     wallWidth,
     wallHeight,
     furnitureWidth,
@@ -97,9 +101,9 @@ export function calculateLayoutPositions(state: CalculatorState): FramePosition[
 
   // Sort by row number and create row objects
   const sortedRowNums = [...rowMap.keys()].sort((a, b) => a - b);
-  sortedRowNums.forEach((rowNum, idx) => {
+  sortedRowNums.forEach((rowNum) => {
     const rowFrames = rowMap.get(rowNum)!;
-    const rowConfig = rowConfigs.find((c) => c.id === `row-${idx}`);
+    const rowConfig = rowConfigs.find((c) => c.id === `row-${rowNum}`);
     const rowHSpacing = rowConfig?.hSpacing ?? hSpacing;
     const rowVAlign = rowConfig?.vAlign ?? vAlign;
     const rowHDistribution = rowConfig?.hDistribution ?? hDistribution;
@@ -110,7 +114,7 @@ export function calculateLayoutPositions(state: CalculatorState): FramePosition[
     const rowHeight = Math.max(...rowFrames.map((f) => getFrameDimensions(f.frame, state).height));
 
     rows.push({
-      id: `row-${idx}`,
+      id: `row-${rowNum}`,
       frames: rowFrames,
       width: rowWidth,
       height: rowHeight,
@@ -161,21 +165,32 @@ export function calculateLayoutPositions(state: CalculatorState): FramePosition[
     let effectiveHSpacing = row.hSpacing;
     let rowStartX: number;
 
+    const furnitureLeft =
+      furnitureAnchor === "center"
+        ? (wallWidth - furnitureWidth) / 2
+        : furnitureAnchor === "left"
+          ? furnitureOffset
+          : wallWidth - furnitureWidth - furnitureOffset;
+    const distributionWidth =
+      anchorType === "furniture" && frameFurnitureAlign === "span" ? furnitureWidth : wallWidth;
+    const distributionLeft =
+      anchorType === "furniture" && frameFurnitureAlign === "span" ? furnitureLeft : 0;
+
     if (row.hDistribution !== "fixed") {
-      const availableSpace = wallWidth - totalFrameWidth;
+      const availableSpace = distributionWidth - totalFrameWidth;
 
       switch (row.hDistribution) {
         case "space-between":
           effectiveHSpacing = framesInRow > 1 ? availableSpace / (framesInRow - 1) : 0;
-          rowStartX = 0;
+          rowStartX = distributionLeft;
           break;
         case "space-evenly":
           effectiveHSpacing = availableSpace / (framesInRow + 1);
-          rowStartX = effectiveHSpacing;
+          rowStartX = distributionLeft + effectiveHSpacing;
           break;
         case "space-around":
           effectiveHSpacing = availableSpace / framesInRow;
-          rowStartX = effectiveHSpacing / 2;
+          rowStartX = distributionLeft + effectiveHSpacing / 2;
           break;
         default:
           rowStartX = 0;
@@ -187,22 +202,14 @@ export function calculateLayoutPositions(state: CalculatorState): FramePosition[
 
       // Handle furniture alignment
       if (anchorType === "furniture") {
-        let furnitureLeft: number;
-        if (furnitureAnchor === "center") {
-          furnitureLeft = (wallWidth - furnitureWidth) / 2;
-        } else if (furnitureAnchor === "left") {
-          furnitureLeft = furnitureOffset;
-        } else {
-          furnitureLeft = wallWidth - furnitureWidth - furnitureOffset;
-        }
         const furnitureCenterX = furnitureLeft + furnitureWidth / 2;
 
         if (frameFurnitureAlign === "span") {
           // Use distribution within furniture width bounds
-          if (hDistribution !== "fixed") {
+          if (row.hDistribution !== "fixed") {
             const availableSpace = furnitureWidth - totalFrameWidth;
 
-            switch (hDistribution) {
+            switch (row.hDistribution) {
               case "space-between":
                 effectiveHSpacing = framesInRow > 1 ? availableSpace / (framesInRow - 1) : 0;
                 rowStartX = furnitureLeft;
@@ -256,7 +263,9 @@ export function calculateLayoutPositions(state: CalculatorState): FramePosition[
         // center
         y = currentRowY + (row.height - dims.height) / 2;
       }
-      const hookY = y + hangingOffset;
+      const translatedX = currentX + galleryOffsetX;
+      const translatedY = y + galleryOffsetY;
+      const hookY = translatedY + hangingOffset;
 
       // Calculate hook positions
       let hookX: number;
@@ -264,22 +273,26 @@ export function calculateLayoutPositions(state: CalculatorState): FramePosition[
       let hookGap: number | undefined;
 
       if (hangingType === "dual") {
-        hookX = currentX + hookInset;
-        hookX2 = currentX + dims.width - hookInset;
+        hookX = translatedX + hookInset;
+        hookX2 = translatedX + dims.width - hookInset;
         hookGap = dims.width - 2 * hookInset;
       } else {
-        hookX = currentX + dims.width / 2;
+        hookX = translatedX + dims.width / 2;
       }
 
       const isOutOfBounds =
-        currentX < 0 || y < 0 || currentX + dims.width > wallWidth || y + dims.height > wallHeight;
+        translatedX < 0 ||
+        translatedY < 0 ||
+        translatedX + dims.width > wallWidth ||
+        translatedY + dims.height > wallHeight;
 
       positions.push({
         id: originalIndex + 1,
+        frameId: frame.id,
         name: `Frame ${originalIndex + 1}`,
         row: rowIdx,
-        x: currentX,
-        y,
+        x: translatedX,
+        y: translatedY,
         width: dims.width,
         height: dims.height,
         hangingOffset,
@@ -305,4 +318,149 @@ export function calculateLayoutPositions(state: CalculatorState): FramePosition[
   positions.sort((a, b) => a.id - b.id);
 
   return positions;
+}
+
+export function calculateLayout(state: CalculatorState): LayoutResult {
+  const positions = calculateLayoutPositions(state);
+  const issues: ValidationIssue[] = [];
+  const invalidFrames = positions.filter(
+    (position) =>
+      !Number.isFinite(position.width) ||
+      !Number.isFinite(position.height) ||
+      position.width <= 0 ||
+      position.height <= 0 ||
+      ![
+        position.x,
+        position.y,
+        position.hookX,
+        position.hookX2 ?? position.hookX,
+        position.hookY,
+        position.fromFloor,
+      ].every(Number.isFinite),
+  );
+  if (
+    !Number.isFinite(state.wallWidth) ||
+    !Number.isFinite(state.wallHeight) ||
+    !Number.isFinite(state.hSpacing) ||
+    !Number.isFinite(state.rowSpacing) ||
+    !Number.isFinite(state.anchorValue) ||
+    !Number.isFinite(state.hAnchorValue) ||
+    !Number.isFinite(state.galleryOffsetX ?? 0) ||
+    !Number.isFinite(state.galleryOffsetY ?? 0) ||
+    state.wallWidth <= 0 ||
+    state.wallHeight <= 0 ||
+    invalidFrames.length
+  ) {
+    issues.push({
+      code: "dimensions-invalid",
+      message: `Wall and frame dimensions must be finite positive numbers${invalidFrames.length ? `. Check ${invalidFrames.map((frame) => frame.name).join(", ")}` : ""}.`,
+      frameIds: invalidFrames.map((frame) => frame.frameId),
+    });
+  }
+  const byRow = new Map<number, FramePosition[]>();
+  for (const position of positions) {
+    const row = position.row ?? 0;
+    byRow.set(row, [...(byRow.get(row) ?? []), position]);
+  }
+
+  for (const row of byRow.values()) {
+    const sorted = [...row].sort((a, b) => a.x - b.x);
+    const requiredWidth = sorted.reduce((sum, frame) => sum + frame.width, 0);
+    const availableWidth =
+      state.anchorType === "furniture" && state.frameFurnitureAlign === "span"
+        ? state.furnitureWidth
+        : state.wallWidth;
+    if (requiredWidth > availableWidth) {
+      const shortage = requiredWidth - availableWidth;
+      issues.push({
+        code: "horizontal-shortage",
+        message: `This row needs ${formatMeasurement(toDisplayUnit(shortage, state.unit), state.unit)} more ${state.anchorType === "furniture" && state.frameFurnitureAlign === "span" ? "furniture" : "wall"} width.`,
+        frameIds: sorted.map((frame) => frame.frameId),
+        requiredExtraSpace: shortage,
+      });
+    }
+  }
+
+  for (let first = 0; first < positions.length; first += 1) {
+    for (let second = first + 1; second < positions.length; second += 1) {
+      const a = positions[first];
+      const b = positions[second];
+      const overlapX = Math.min(a.x + a.width, b.x + b.width) - Math.max(a.x, b.x);
+      const overlapY = Math.min(a.y + a.height, b.y + b.height) - Math.max(a.y, b.y);
+      if (overlapX > 0 && overlapY > 0) {
+        issues.push({
+          code: "frame-overlap",
+          message: `${a.name} and ${b.name} overlap. Increase spacing or move one frame to another row.`,
+          frameIds: [a.frameId, b.frameId],
+        });
+      }
+    }
+  }
+
+  const outOfBounds = positions.filter((position) => position.isOutOfBounds);
+  if (outOfBounds.length) {
+    issues.push({
+      code: "frame-out-of-bounds",
+      message: `${outOfBounds.map((frame) => frame.name).join(", ")} ${outOfBounds.length === 1 ? "extends" : "extend"} beyond the wall. Move the gallery or increase the wall size.`,
+      frameIds: outOfBounds.map((frame) => frame.frameId),
+    });
+  }
+
+  if (state.anchorType === "furniture") {
+    const furnitureLeft =
+      state.furnitureAnchor === "center"
+        ? (state.wallWidth - state.furnitureWidth) / 2
+        : state.furnitureAnchor === "left"
+          ? state.furnitureOffset
+          : state.wallWidth - state.furnitureWidth - state.furnitureOffset;
+    if (
+      !Number.isFinite(state.furnitureWidth) ||
+      !Number.isFinite(state.furnitureHeight) ||
+      !Number.isFinite(state.furnitureOffset) ||
+      state.furnitureWidth <= 0 ||
+      state.furnitureHeight <= 0 ||
+      furnitureLeft < 0 ||
+      furnitureLeft + state.furnitureWidth > state.wallWidth ||
+      state.furnitureHeight > state.wallHeight
+    ) {
+      issues.push({
+        code: "furniture-out-of-bounds",
+        message: "Furniture must have positive dimensions and fit completely within the wall.",
+      });
+    }
+  }
+
+  const offsetFrames = positions.filter(
+    (position) =>
+      !Number.isFinite(state.hangingOffset) ||
+      state.hangingOffset < 0 ||
+      state.hangingOffset > position.height,
+  );
+  if (offsetFrames.length) {
+    issues.push({
+      code: "hanging-offset-invalid",
+      field: "hangingOffset",
+      frameIds: offsetFrames.map((frame) => frame.frameId),
+      message: `Hook offset must be between 0 and each frame's height. Check ${offsetFrames.map((frame) => frame.name).join(", ")}.`,
+    });
+  }
+
+  if (state.hangingType === "dual") {
+    const insetFrames = positions.filter(
+      (position) =>
+        !Number.isFinite(state.hookInset) ||
+        state.hookInset < 0 ||
+        state.hookInset >= position.width / 2,
+    );
+    if (insetFrames.length) {
+      issues.push({
+        code: "hook-inset-invalid",
+        field: "hookInset",
+        frameIds: insetFrames.map((frame) => frame.frameId),
+        message: `Dual-hook inset must be nonnegative and less than half each frame's width. Check ${insetFrames.map((frame) => frame.name).join(", ")}.`,
+      });
+    }
+  }
+
+  return { positions, issues, isValid: issues.length === 0 };
 }

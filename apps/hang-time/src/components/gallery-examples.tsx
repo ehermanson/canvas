@@ -42,6 +42,7 @@ export function GalleryExamples({
     setFurnitureOffset,
     setFrameFurnitureAlign,
     setFurnitureVAnchor,
+    resetGalleryOffset,
   } = calculator;
 
   const applyPreset = (preset: GalleryPreset) => {
@@ -53,6 +54,7 @@ export function GalleryExamples({
 
     // Apply all settings
     setFrames(framesWithFreshIds);
+    resetGalleryOffset();
     setUniformSize(preset.settings.uniformSize);
     if (preset.settings.frameWidth) setFrameWidth(preset.settings.frameWidth);
     if (preset.settings.frameHeight) setFrameHeight(preset.settings.frameHeight);

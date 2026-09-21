@@ -23,7 +23,7 @@ import type {
   HorizontalAnchorType,
   Unit,
 } from "@/types";
-import { calculateLayoutPositions, fromDisplayUnit, toDisplayUnit } from "@/utils/calculations";
+import { calculateLayout, fromDisplayUnit, toDisplayUnit } from "@/utils/calculations";
 
 const UNIT_STORAGE_KEY = "picture-hanging-unit";
 
@@ -68,6 +68,8 @@ const positionParsers = {
   av: parseAsFloat.withDefault(57),
   hat: parseAsStringLiteral(["center", "left", "right"] as const).withDefault("center"),
   hav: parseAsFloat.withDefault(0),
+  gx: parseAsFloat.withDefault(0),
+  gy: parseAsFloat.withDefault(0),
 };
 
 const furnitureParsers = {
@@ -189,6 +191,8 @@ export function useCalculator() {
       anchorValue: position.av,
       hAnchorType: position.hat as HorizontalAnchorType,
       hAnchorValue: position.hav,
+      galleryOffsetX: position.gx,
+      galleryOffsetY: position.gy,
       furnitureWidth: furniture.fuw,
       furnitureHeight: furniture.fuh,
       furnitureAnchor: furniture.fua as FurnitureAnchor,
@@ -207,7 +211,8 @@ export function useCalculator() {
   const fromU = useCallback((val: number) => fromDisplayUnit(val, state.unit), [state.unit]);
 
   // Calculate layout positions
-  const layoutPositions: FramePosition[] = useMemo(() => calculateLayoutPositions(state), [state]);
+  const layoutResult = useMemo(() => calculateLayout(state), [state]);
+  const layoutPositions: FramePosition[] = layoutResult.positions;
 
   // Setters
   const setUnit = (value: Unit) => {
@@ -278,6 +283,15 @@ export function useCalculator() {
     },
     [setPosition],
   );
+  const setGalleryOffset = useCallback(
+    (x: number, y: number) => {
+      void setPosition({ gx: x, gy: y });
+    },
+    [setPosition],
+  );
+  const resetGalleryOffset = useCallback(() => {
+    void setPosition({ gx: 0, gy: 0 });
+  }, [setPosition]);
 
   const setFurnitureWidth = (value: number) => {
     void setFurniture({ fuw: value });
@@ -373,6 +387,7 @@ export function useCalculator() {
   return {
     state,
     layoutPositions,
+    layoutResult,
     u,
     fromU,
     setUnit,
@@ -391,6 +406,8 @@ export function useCalculator() {
     setHAnchorType,
     setHAnchorValue,
     setManualPosition,
+    setGalleryOffset,
+    resetGalleryOffset,
     setFurnitureWidth,
     setFurnitureHeight,
     setFurnitureAnchor,

@@ -7,6 +7,8 @@ import {
   getFurnitureBounds,
   getFurnitureEdgePoints,
   getFurnitureResizeHandlePoints,
+  getFurnitureSupportPoint,
+  isPointInFurniture,
   getNearestBoundsClearances,
   getNearestFurnitureClearances,
   resizeFurnitureByHandleDelta,
@@ -110,7 +112,7 @@ describe("furniture-geometry", () => {
     expect(resized.depth).toBe(30);
   });
 
-  it("keeps circles square while resizing from an edge", () => {
+  it("resizes each oval axis independently", () => {
     expect(
       resizeFurnitureFromEdge(
         createItem({
@@ -126,8 +128,78 @@ describe("furniture-geometry", () => {
       x: 5,
       y: 0,
       width: 50,
-      depth: 50,
+      depth: 40,
     });
+  });
+
+  it("uses the visible rotated ellipse for bounds and point containment", () => {
+    const oval = createItem({ shape: "circle", width: 60, depth: 30, rotation: 45 });
+    const bounds = getFurnitureBounds(oval);
+    const extent = Math.sqrt(30 ** 2 / 2 + 15 ** 2 / 2);
+
+    expect(bounds.minX).toBeCloseTo(-extent);
+    expect(bounds.maxX).toBeCloseTo(extent);
+    expect(bounds.minY).toBeCloseTo(-extent);
+    expect(bounds.maxY).toBeCloseTo(extent);
+    expect(isPointInFurniture({ x: 10, y: 10 }, oval)).toBe(true);
+    expect(isPointInFurniture({ x: extent - 0.1, y: extent - 0.1 }, oval)).toBe(false);
+  });
+
+  it("detects ellipse collisions without a circular-width approximation", () => {
+    const oval = createItem({ shape: "circle", width: 60, depth: 20 });
+    expect(checkFurnitureCollision(oval, createItem({ id: "near", x: 0, y: 19 }))).toBe(true);
+    expect(
+      checkFurnitureCollision(
+        oval,
+        createItem({ id: "clear", shape: "circle", width: 10, depth: 10, x: 0, y: 16 }),
+      ),
+    ).toBe(false);
+    expect(
+      checkFurnitureCollision(
+        oval,
+        createItem({ id: "inside", shape: "circle", width: 4, depth: 4, x: 0, y: 0 }),
+      ),
+    ).toBe(true);
+    expect(
+      checkFurnitureCollision(
+        oval,
+        createItem({ id: "tangent", shape: "circle", width: 10, depth: 10, x: 35, y: 0 }),
+      ),
+    ).toBe(false);
+  });
+
+  it("snaps a rotated oval to its true horizontal support point", () => {
+    const oval = createItem({ shape: "circle", width: 60, depth: 30, x: 60, y: 24, rotation: 45 });
+    const snapped = snapFurnitureToRoomWalls(oval, roomPolygon, 2);
+    expect(getFurnitureBounds(snapped).minY).toBeCloseTo(0);
+    expect(checkFurnitureRoomCollision(snapped, roomPolygon)).toBe(false);
+  });
+
+  it("uses exact support and tangency for equally rotated ellipses", () => {
+    const rotation = 45;
+    const direction = { x: Math.SQRT1_2, y: Math.SQRT1_2 };
+    const oval = createItem({ shape: "circle", width: 60, depth: 30, rotation });
+    const support = getFurnitureSupportPoint(oval, direction);
+    expect(support.x).toBeCloseTo(30 * Math.SQRT1_2);
+    expect(support.y).toBeCloseTo(30 * Math.SQRT1_2);
+
+    const tangent = createItem({
+      id: "tangent-rotated",
+      shape: "circle",
+      width: 60,
+      depth: 30,
+      rotation,
+      x: 60 * Math.SQRT1_2,
+      y: 60 * Math.SQRT1_2,
+    });
+    expect(checkFurnitureCollision(oval, tangent)).toBe(false);
+    expect(
+      checkFurnitureCollision(oval, {
+        ...tangent,
+        x: 59.9 * Math.SQRT1_2,
+        y: 59.9 * Math.SQRT1_2,
+      }),
+    ).toBe(true);
   });
 
   it("nudges a resize handle by world delta", () => {

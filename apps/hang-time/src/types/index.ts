@@ -34,6 +34,7 @@ export interface GalleryRowConfig {
 
 export interface FramePosition {
   id: number;
+  frameId: string;
   name: string;
   row?: number;
   col?: number;
@@ -84,6 +85,8 @@ export interface CalculatorState {
   anchorValue: number;
   hAnchorType: HorizontalAnchorType;
   hAnchorValue: number;
+  galleryOffsetX?: number;
+  galleryOffsetY?: number;
 
   // Furniture positioning (when anchorType === 'furniture')
   furnitureWidth: number;
@@ -99,6 +102,29 @@ export interface CalculatorState {
 
   // Alignment
   vAlign: GalleryVAlign; // vertical alignment within rows
+}
+
+export type ValidationIssueCode =
+  | "horizontal-shortage"
+  | "frame-overlap"
+  | "frame-out-of-bounds"
+  | "furniture-out-of-bounds"
+  | "hanging-offset-invalid"
+  | "hook-inset-invalid"
+  | "dimensions-invalid";
+
+export interface ValidationIssue {
+  code: ValidationIssueCode;
+  message: string;
+  frameIds?: string[];
+  requiredExtraSpace?: number;
+  field?: "hangingOffset" | "hookInset";
+}
+
+export interface LayoutResult {
+  positions: FramePosition[];
+  issues: ValidationIssue[];
+  isValid: boolean;
 }
 
 export interface SavedLayout {
